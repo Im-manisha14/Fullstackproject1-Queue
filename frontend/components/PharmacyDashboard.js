@@ -1,5 +1,7 @@
 // Pharmacy Dashboard Component
 const PharmacyDashboard = ({ user }) => {
+    const API_BASE_URL = 'http://localhost:5000/api';
+    
     const [prescriptions, setPrescriptions] = useState([]);
     const [inventory, setInventory] = useState([]);
     const [activeTab, setActiveTab] = useState('prescriptions');

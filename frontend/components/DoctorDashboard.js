@@ -1,5 +1,7 @@
 // Doctor Dashboard Component
 const DoctorDashboard = ({ user }) => {
+    const API_BASE_URL = 'http://localhost:5000/api';
+    
     const [appointments, setAppointments] = useState([]);
     const [prescriptions, setPrescriptions] = useState([]);
     const [profile, setProfile] = useState(null);

@@ -1,5 +1,7 @@
 // Secure Login Component with Role-Based Authentication
 const SecureLogin = ({ onLogin }) => {
+    const API_BASE_URL = 'http://localhost:5000/api';
+    
     const [formData, setFormData] = useState({
         email: '',
         password: '',

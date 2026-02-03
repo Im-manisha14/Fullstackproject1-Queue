@@ -1,5 +1,7 @@
 // Admin Dashboard Component
 const AdminDashboard = ({ user }) => {
+    const API_BASE_URL = 'http://localhost:5000/api';
+    
     const [pendingUsers, setPendingUsers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
     const [activeTab, setActiveTab] = useState('pending');
