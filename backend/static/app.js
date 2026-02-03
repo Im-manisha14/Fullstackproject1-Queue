@@ -7,7 +7,7 @@ const API_BASE = 'http://localhost:5000/api';
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'short', 
+        month: 'short',
         day: 'numeric'
     });
 };
@@ -33,11 +33,11 @@ const apiService = {
 
         const response = await fetch(`${API_BASE}${endpoint}`, config);
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.message || 'Request failed');
         }
-        
+
         return data;
     },
 
@@ -161,12 +161,13 @@ const Alert = ({ type, message, onClose }) => (
 const Login = ({ onLogin }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({
-        username: '',
+        username: '', // Kept for internal consistency if needed, but unused for auth now
         password: '',
         email: '',
         full_name: '',
         phone: '',
         role: 'patient',
+        age: '', // Added Age field
         department_id: '',
         specialization: '',
         experience_years: '',
@@ -195,18 +196,27 @@ const Login = ({ onLogin }) => {
 
         try {
             if (isLogin) {
+                // Fix: Send email instead of username
                 const response = await apiService.login({
-                    username: formData.username,
+                    email: formData.email,
                     password: formData.password
                 });
-                
+
                 localStorage.setItem('token', response.access_token);
                 localStorage.setItem('user', JSON.stringify(response.user));
                 onLogin(response.user);
             } else {
-                const response = await apiService.register(formData);
+                // Calculate date_of_birth from age
+                const registrationData = { ...formData };
+                if (formData.role === 'patient' && formData.age) {
+                    const currentYear = new Date().getFullYear();
+                    const birthYear = currentYear - parseInt(formData.age);
+                    registrationData.date_of_birth = `${birthYear}-01-01`;
+                }
+
+                const response = await apiService.register(registrationData);
                 setAlert({ type: 'success', message: response.message });
-                
+
                 if (formData.role === 'patient') {
                     setTimeout(() => {
                         setIsLogin(true);
@@ -230,197 +240,230 @@ const Login = ({ onLogin }) => {
 
     return (
         <div className="login-container">
-            <div className="login-left">
+            <div className="login-card">
                 <div className="hospital-branding">
-                    <div className="hospital-logo">⚕</div>
+                    <div className="hospital-logo">⚕️</div>
                     <h1 className="hospital-name">Medical Center</h1>
                     <p className="hospital-tagline">Advanced Healthcare Management</p>
                 </div>
 
-                <div className="form-container">
-                    <h2 className="form-title">
-                        {isLogin ? 'Sign In' : 'Create Account'}
-                    </h2>
+                <h2 className="form-title" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                    {isLogin ? 'Sign In' : 'Create Account'}
+                </h2>
 
-                    {alert && (
-                        <Alert 
-                            type={alert.type} 
-                            message={alert.message} 
-                            onClose={() => setAlert(null)} 
-                        />
+                {alert && (
+                    <Alert
+                        type={alert.type}
+                        message={alert.message}
+                        onClose={() => setAlert(null)}
+                    />
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    {/* Login View: Email & Password */}
+                    {isLogin && (
+                        <>
+                            <div className="form-group">
+                                <label className="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    className="form-input"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="Enter your email"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Password</label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    className="form-input"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="Enter password"
+                                />
+                            </div>
+                        </>
                     )}
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="form-label">Username</label>
-                            <input
-                                type="text"
-                                name="username"
-                                className="form-input"
-                                value={formData.username}
-                                onChange={handleChange}
-                                required
-                                placeholder="Enter username"
-                            />
-                        </div>
+                    {/* Register View: Name, Email, Phone, Role, Age, Password */}
+                    {!isLogin && (
+                        <>
+                            <div className="form-group">
+                                <label className="form-label">Full Name</label>
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    className="form-input"
+                                    value={formData.full_name}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="Enter full name"
+                                />
+                            </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                className="form-input"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                placeholder="Enter password"
-                            />
-                        </div>
+                            <div className="form-group">
+                                <label className="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    className="form-input"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="Enter email"
+                                />
+                            </div>
 
-                        {!isLogin && (
-                            <>
+                            <div className="form-group">
+                                <label className="form-label">Phone Number</label>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    className="form-input"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="Enter phone number"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Role</label>
+                                <select
+                                    name="role"
+                                    className="form-select"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="patient">Patient</option>
+                                    <option value="doctor">Doctor</option>
+                                    <option value="pharmacy">Pharmacy Staff</option>
+                                </select>
+                            </div>
+
+                            {formData.role === 'patient' && (
                                 <div className="form-group">
-                                    <label className="form-label">Email</label>
+                                    <label className="form-label">Age</label>
                                     <input
-                                        type="email"
-                                        name="email"
+                                        type="number"
+                                        name="age"
                                         className="form-input"
-                                        value={formData.email}
+                                        value={formData.age}
                                         onChange={handleChange}
                                         required
-                                        placeholder="Enter email"
+                                        min="0"
+                                        max="120"
+                                        placeholder="Enter age"
                                     />
                                 </div>
+                            )}
 
-                                <div className="form-group">
-                                    <label className="form-label">Full Name</label>
-                                    <input
-                                        type="text"
-                                        name="full_name"
-                                        className="form-input"
-                                        value={formData.full_name}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="Enter full name"
-                                    />
-                                </div>
+                            {formData.role === 'doctor' && (
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label">Department</label>
+                                        <select
+                                            name="department_id"
+                                            className="form-select"
+                                            value={formData.department_id}
+                                            onChange={handleChange}
+                                            required
+                                        >
+                                            <option value="">Select Department</option>
+                                            {departments.map(dept => (
+                                                <option key={dept.id} value={dept.id}>
+                                                    {dept.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Phone</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        className="form-input"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="Enter phone number"
-                                    />
-                                </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Specialization</label>
+                                        <input
+                                            type="text"
+                                            name="specialization"
+                                            className="form-input"
+                                            value={formData.specialization}
+                                            onChange={handleChange}
+                                            placeholder="Your specialization"
+                                        />
+                                    </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Role</label>
-                                    <select
-                                        name="role"
-                                        className="form-select"
-                                        value={formData.role}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="patient">Patient</option>
-                                        <option value="doctor">Doctor</option>
-                                        <option value="pharmacy">Pharmacy Staff</option>
-                                    </select>
-                                </div>
-
-                                {formData.role === 'doctor' && (
-                                    <>
+                                    <div className="form-row">
                                         <div className="form-group">
-                                            <label className="form-label">Department</label>
-                                            <select
-                                                name="department_id"
-                                                className="form-select"
-                                                value={formData.department_id}
-                                                onChange={handleChange}
-                                                required
-                                            >
-                                                <option value="">Select Department</option>
-                                                {departments.map(dept => (
-                                                    <option key={dept.id} value={dept.id}>
-                                                        {dept.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">Specialization</label>
+                                            <label className="form-label">Experience (years)</label>
                                             <input
-                                                type="text"
-                                                name="specialization"
+                                                type="number"
+                                                name="experience_years"
                                                 className="form-input"
-                                                value={formData.specialization}
+                                                value={formData.experience_years}
                                                 onChange={handleChange}
-                                                placeholder="Your specialization"
+                                                min="0"
                                             />
                                         </div>
 
-                                        <div className="form-row">
-                                            <div className="form-group">
-                                                <label className="form-label">Experience (years)</label>
-                                                <input
-                                                    type="number"
-                                                    name="experience_years"
-                                                    className="form-input"
-                                                    value={formData.experience_years}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label">Consultation Fee</label>
-                                                <input
-                                                    type="number"
-                                                    name="consultation_fee"
-                                                    className="form-input"
-                                                    value={formData.consultation_fee}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                    step="0.01"
-                                                />
-                                            </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Consultation Fee</label>
+                                            <input
+                                                type="number"
+                                                name="consultation_fee"
+                                                className="form-input"
+                                                value={formData.consultation_fee}
+                                                onChange={handleChange}
+                                                min="0"
+                                                step="0.01"
+                                            />
                                         </div>
-                                    </>
-                                )}
-                            </>
-                        )}
+                                    </div>
+                                </>
+                            )}
 
-                        <button 
-                            type="submit" 
-                            className="btn btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-                        </button>
+                            <div className="form-group">
+                                <label className="form-label">Password</label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    className="form-input"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="Enter password"
+                                />
+                            </div>
+                        </>
+                    )}
 
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={loading}
+                        style={{ marginTop: '1rem' }}
+                    >
+                        {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'CREATE ACCOUNT')}
+                    </button>
+
+                    {/* Only show 'Need an account?' on Login page */}
+                    {isLogin && (
                         <button
                             type="button"
                             className="btn btn-secondary"
                             onClick={() => {
-                                setIsLogin(!isLogin);
+                                setIsLogin(false);
                                 setAlert(null);
                                 setFormData(prev => ({ ...prev, password: '' }));
                             }}
                         >
-                            {isLogin ? 'Need an account?' : 'Already have an account?'}
+                            Need an account?
                         </button>
-                    </form>
-                </div>
-            </div>
-
-            <div className="login-right">
-                <div style={{ color: 'white', textAlign: 'center', padding: '40px' }}>
-                </div>
+                    )}
+                </form>
             </div>
         </div>
     );
@@ -484,7 +527,7 @@ const PatientDashboard = ({ user }) => {
                         <h2 className="card-title">Quick Actions</h2>
                     </div>
                     <div className="card-content">
-                        <button 
+                        <button
                             className="btn btn-primary"
                             onClick={() => setShowBooking(true)}
                         >
@@ -493,7 +536,7 @@ const PatientDashboard = ({ user }) => {
                     </div>
                 </div>
             ) : (
-                <AppointmentBooking 
+                <AppointmentBooking
                     onCancel={() => setShowBooking(false)}
                     onSuccess={() => {
                         setShowBooking(false);
@@ -896,9 +939,9 @@ const DoctorDashboard = ({ user }) => {
                                             <td>{appointment.patient_name}</td>
                                             <td>{appointment.symptoms}</td>
                                             <td>
-                                                <StatusBadge 
-                                                    status={appointment.status} 
-                                                    priority={appointment.priority} 
+                                                <StatusBadge
+                                                    status={appointment.status}
+                                                    priority={appointment.priority}
                                                 />
                                             </td>
                                             <td>
@@ -906,9 +949,9 @@ const DoctorDashboard = ({ user }) => {
                                                     className="btn btn-sm btn-primary"
                                                     onClick={() => handleAdvanceQueue(appointment.id)}
                                                 >
-                                                    {appointment.status === 'booked' ? 'Call Next' : 
-                                                     appointment.status === 'in_queue' ? 'Start Consultation' :
-                                                     'Complete'}
+                                                    {appointment.status === 'booked' ? 'Call Next' :
+                                                        appointment.status === 'in_queue' ? 'Start Consultation' :
+                                                            'Complete'}
                                                 </button>
                                                 {appointment.status === 'consulting' && (
                                                     <button
@@ -1019,7 +1062,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             instructions: 'Take as prescribed',
             duration: 7
         };
-        
+
         setFormData(prev => ({
             ...prev,
             medications: [...prev.medications, medication]
@@ -1038,7 +1081,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
     const updateMedication = (index, field, value) => {
         setFormData(prev => ({
             ...prev,
-            medications: prev.medications.map((med, i) => 
+            medications: prev.medications.map((med, i) =>
                 i === index ? { ...med, [field]: value } : med
             )
         }));
@@ -1096,7 +1139,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             }}>
                 <h2 style={{ marginBottom: '20px' }}>Create Prescription</h2>
                 <p style={{ marginBottom: '20px', color: '#666' }}>
-                    Patient: <strong>{appointment.patient_name}</strong> | 
+                    Patient: <strong>{appointment.patient_name}</strong> |
                     Token: <strong>#{appointment.token_number}</strong>
                 </p>
 
@@ -1136,7 +1179,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                             }}
                             placeholder="Type medicine name..."
                         />
-                        
+
                         {medicines.length > 0 && (
                             <div style={{
                                 border: '1px solid #ddd',
@@ -1197,7 +1240,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 Remove
                                             </button>
                                         </div>
-                                        
+
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div>
                                                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Quantity</label>
@@ -1222,7 +1265,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 />
                                             </div>
                                         </div>
-                                        
+
                                         <div style={{ marginTop: '10px' }}>
                                             <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Instructions</label>
                                             <input
@@ -1341,9 +1384,9 @@ const PharmacyDashboard = ({ user }) => {
                                             Dispense
                                         </button>
                                     </div>
-                                    
+
                                     <p style={{ marginBottom: '10px' }}><strong>Diagnosis:</strong> {prescription.diagnosis}</p>
-                                    
+
                                     <div>
                                         <strong>Medications:</strong>
                                         <ul className="medication-list">
@@ -1353,8 +1396,8 @@ const PharmacyDashboard = ({ user }) => {
                                                         {medication.name} - {medication.strength}
                                                     </div>
                                                     <div className="medication-details">
-                                                        Quantity: {medication.quantity} | 
-                                                        Instructions: {medication.instructions} | 
+                                                        Quantity: {medication.quantity} |
+                                                        Instructions: {medication.instructions} |
                                                         Stock Available: {medication.available_stock}
                                                     </div>
                                                 </li>
@@ -1548,7 +1591,7 @@ const App = () => {
         // Check for stored user session
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        
+
         if (token && storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
@@ -1616,4 +1659,7 @@ const App = () => {
 };
 
 // Render the app
-ReactDOM.render(<App />, document.getElementById('root'));
+// Render the app
+const container = document.getElementById('root') || document.getElementById('app'); // Handle both conventions
+const root = ReactDOM.createRoot(container);
+root.render(<App />);
