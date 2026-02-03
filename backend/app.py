@@ -14,11 +14,14 @@ from functools import wraps
 import os
 import json
 import random
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, static_folder='static')
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/healthcare.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///instance/healthcare.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'healthcare-queue-secret-key-2026'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -31,6 +34,7 @@ CORS(app)
 # Database Models
 class User(db.Model):
     __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -56,6 +60,7 @@ class User(db.Model):
 
 class Department(db.Model):
     __tablename__ = 'departments'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -64,27 +69,28 @@ class Department(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    doctors = db.relationship('DoctorProfile', backref='department', lazy='dynamic')
-    appointments = db.relationship('Appointment', backref='department', lazy='dynamic')
+    # doctors = db.relationship('DoctorProfile', backref='department', lazy='dynamic')
+    # appointments = db.relationship('Appointment', backref='department', lazy='dynamic')
 
-class DoctorProfile(db.Model):
-    __tablename__ = 'doctor_profiles'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=False)
-    specialization = db.Column(db.String(100))
-    experience_years = db.Column(db.Integer)
-    consultation_fee = db.Column(db.Float, default=0.0)
-    available_from = db.Column(db.Time, default=datetime.strptime('09:00', '%H:%M').time())
-    available_to = db.Column(db.Time, default=datetime.strptime('17:00', '%H:%M').time())
-    max_patients_per_day = db.Column(db.Integer, default=50)
-    
-    # Relationships
-    user = db.relationship('User', backref='doctor_profile')
+# class DoctorProfile(db.Model):
+#     __tablename__ = 'doctor_profiles'
+#     
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+#     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=False)
+#     specialization = db.Column(db.String(100))
+#     experience_years = db.Column(db.Integer)
+#     consultation_fee = db.Column(db.Float, default=0.0)
+#     available_from = db.Column(db.Time, default=datetime.strptime('09:00', '%H:%M').time())
+#     available_to = db.Column(db.Time, default=datetime.strptime('17:00', '%H:%M').time())
+#     max_patients_per_day = db.Column(db.Integer, default=50)
+#     
+#     # Relationships
+#     user = db.relationship('User', backref='doctor_profile')
 
 class Appointment(db.Model):
     __tablename__ = 'appointments'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -102,64 +108,64 @@ class Appointment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    prescriptions = db.relationship('Prescription', backref='appointment', lazy='dynamic', cascade='all, delete-orphan')
-    queue_entries = db.relationship('QueueEntry', backref='appointment', lazy='dynamic', cascade='all, delete-orphan')
+    # prescriptions = db.relationship('Prescription', backref='appointment', lazy='dynamic', cascade='all, delete-orphan')
+    # queue_entries = db.relationship('QueueEntry', backref='appointment', lazy='dynamic', cascade='all, delete-orphan')
 
-class QueueEntry(db.Model):
-    __tablename__ = 'queue_entries'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
-    queue_position = db.Column(db.Integer, nullable=False)
-    estimated_wait_time = db.Column(db.Integer)  # in minutes
-    checked_in_at = db.Column(db.DateTime, default=datetime.utcnow)
-    called_at = db.Column(db.DateTime)
-    status = db.Column(db.String(20), default='waiting')  # waiting, called, consulting, completed
+# class QueueEntry(db.Model):
+#     __tablename__ = 'queue_entries'
+#     
+#     id = db.Column(db.Integer, primary_key=True)
+#     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+#     queue_position = db.Column(db.Integer, nullable=False)
+#     estimated_wait_time = db.Column(db.Integer)  # in minutes
+#     checked_in_at = db.Column(db.DateTime, default=datetime.utcnow)
+#     called_at = db.Column(db.DateTime)
+#     status = db.Column(db.String(20), default='waiting')  # waiting, called, consulting, completed
 
-class Prescription(db.Model):
-    __tablename__ = 'prescriptions'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
-    prescription_number = db.Column(db.String(20), unique=True, nullable=False)
-    diagnosis = db.Column(db.Text)
-    notes = db.Column(db.Text)
-    status = db.Column(db.String(20), default='pending')  # pending, dispensed, cancelled
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    dispensed_at = db.Column(db.DateTime)
-    
-    # Relationships
-    medications = db.relationship('PrescriptionMedication', backref='prescription', lazy='dynamic', cascade='all, delete-orphan')
+# class Prescription(db.Model):
+#     __tablename__ = 'prescriptions'
+#     
+#     id = db.Column(db.Integer, primary_key=True)
+#     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+#     prescription_number = db.Column(db.String(20), unique=True, nullable=False)
+#     diagnosis = db.Column(db.Text)
+#     notes = db.Column(db.Text)
+#     status = db.Column(db.String(20), default='pending')  # pending, dispensed, cancelled
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+#     dispensed_at = db.Column(db.DateTime)
+#     
+#     # Relationships
+#     medications = db.relationship('PrescriptionMedication', backref='prescription', lazy='dynamic', cascade='all, delete-orphan')
 
-class Medicine(db.Model):
-    __tablename__ = 'medicines'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    generic_name = db.Column(db.String(100))
-    manufacturer = db.Column(db.String(100))
-    dosage_form = db.Column(db.String(50))  # tablet, syrup, injection
-    strength = db.Column(db.String(50))
-    price_per_unit = db.Column(db.Float, nullable=False)
-    stock_quantity = db.Column(db.Integer, default=0)
-    reorder_level = db.Column(db.Integer, default=10)
-    expiry_date = db.Column(db.Date)
-    batch_number = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+# class Medicine(db.Model):
+#     __tablename__ = 'medicines'
+#     
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(100), nullable=False)
+#     generic_name = db.Column(db.String(100))
+#     manufacturer = db.Column(db.String(100))
+#     dosage_form = db.Column(db.String(50))  # tablet, syrup, injection
+#     strength = db.Column(db.String(50))
+#     price_per_unit = db.Column(db.Float, nullable=False)
+#     stock_quantity = db.Column(db.Integer, default=0)
+#     reorder_level = db.Column(db.Integer, default=10)
+#     expiry_date = db.Column(db.Date)
+#     batch_number = db.Column(db.String(50))
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class PrescriptionMedication(db.Model):
-    __tablename__ = 'prescription_medications'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    prescription_id = db.Column(db.Integer, db.ForeignKey('prescriptions.id'), nullable=False)
-    medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    dosage_instructions = db.Column(db.String(200))
-    duration_days = db.Column(db.Integer)
-    dispensed_quantity = db.Column(db.Integer, default=0)
-    
-    # Relationships
-    medicine = db.relationship('Medicine', backref='prescription_medications')
+# class PrescriptionMedication(db.Model):
+#     __tablename__ = 'prescription_medications'
+#     
+#     id = db.Column(db.Integer, primary_key=True)
+#     prescription_id = db.Column(db.Integer, db.ForeignKey('prescriptions.id'), nullable=False)
+#     medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=False)
+#     quantity = db.Column(db.Integer, nullable=False)
+#     dosage_instructions = db.Column(db.String(200))
+#     duration_days = db.Column(db.Integer)
+#     dispensed_quantity = db.Column(db.Integer, default=0)
+#     
+#     # Relationships
+#     medicine = db.relationship('Medicine', backref='prescription_medications')
 
 # JWT Claims Configuration
 @jwt.additional_claims_loader
@@ -197,55 +203,12 @@ doctor_required = role_required(['doctor', 'admin'])
 patient_required = role_required(['patient', 'admin'])
 pharmacy_required = role_required(['pharmacy', 'admin'])
 
-# All API routes continue... (keeping same logic, just formatted properly)
 @app.route('/api/auth/login', methods=['POST'])
 def login():
-    try:
-        data = request.get_json()
-        username = data.get('username')  # This can be email or username
-        password = data.get('password')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'message': 'Email/Username and password required'}), 400
-        
-        # Try to find user by email first, then by username
-        user = User.query.filter_by(email=username).first()
-        if not user:
-            user = User.query.filter_by(username=username).first()
-        
-        if not user or not check_password_hash(user.password_hash, password):
-            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
-        
-        if not user.is_verified and user.role != 'patient':
-            return jsonify({
-                'success': False, 
-                'message': 'Account pending admin verification'
-            }), 403
-        
-        # Update last login
-        user.last_login = datetime.utcnow()
-        db.session.commit()
-        
-        # Create access token
-        access_token = create_access_token(identity=user.id)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Login successful',
-            'access_token': access_token,
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'full_name': user.full_name,
-                'email': user.email,
-                'role': user.role,
-                'phone': user.phone
-            }
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+#         
+#     except Exception as e:
+#         return jsonify({'success': False, 'message': str(e)}), 500
+# 
 @app.route('/')
 def index():
     return '''
@@ -271,8 +234,7 @@ def index():
 def static_files(filename):
     return send_from_directory('static', filename)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 def patient_required(f):
     """Decorator for patient-only routes"""
@@ -644,26 +606,258 @@ def get_all_users():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Dashboard Routes
+@app.route('/api/dashboard/patient', methods=['GET'])
+@patient_required
+def get_patient_dashboard():
+    """Unified dashboard data for patients"""
+    try:
+        current_user_id = get_jwt_identity()
+        patient = Patient.query.filter_by(user_id=current_user_id).first()
+        
+        if not patient:
+            return jsonify({'error': 'Patient profile not found'}), 404
+            
+        # Get appointments
+        appointments = db.session.query(Appointment, Doctor, User, Department)\
+            .join(Doctor, Appointment.doctor_id == Doctor.id)\
+            .join(User, User.id == Doctor.user_id)\
+            .outerjoin(Department, Department.id == Doctor.department_id)\
+            .filter(Appointment.patient_id == patient.id)\
+            .order_by(Appointment.appointment_date.desc(), Appointment.appointment_time.desc())\
+            .all()
+            
+        appointment_list = []
+        for apt, doc, doc_user, dept in appointments:
+            # Check queue info if active
+            queue_info = None
+            if apt.status in ['booked', 'in_queue', 'consulting']:
+                q = QueueStatus.query.filter_by(appointment_id=apt.id).first()
+                if q:
+                    queue_info = {
+                        'position': q.queue_position,
+                        'estimated_wait': q.estimated_wait_time,
+                        'current_token': q.current_token
+                    }
+                    
+            appointment_list.append({
+                'id': apt.id,
+                'doctor': doc_user.full_name,
+                'department': dept.name if dept else 'General',
+                'date': apt.appointment_date.isoformat(),
+                'time': apt.appointment_time.strftime('%H:%M'),
+                'token_number': apt.token_number,
+                'status': apt.status,
+                'symptoms': apt.symptoms,
+                'queue_info': queue_info
+            })
+            
+        # Get prescriptions
+        prescriptions = Prescription.query.filter_by(patient_id=patient.id)\
+            .order_by(Prescription.created_at.desc()).limit(5).all()
+            
+        prescription_list = []
+        for p in prescriptions:
+            prescription_list.append({
+                'id': p.id,
+                'prescription_number': f"RX-{p.id:04d}",
+                'date': p.created_at.strftime('%Y-%m-%d'),
+                'diagnosis': p.prescription_data.get('diagnosis', 'Not specified') if isinstance(p.prescription_data, dict) else 'Not specified',
+                'status': p.status
+            })
+            
+        return jsonify({
+            'success': True,
+            'data': {
+                'appointments': appointment_list,
+                'prescriptions': prescription_list
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/dashboard/doctor', methods=['GET'])
+@doctor_required
+def get_doctor_dashboard():
+    """Unified dashboard data for doctors"""
+    try:
+        current_user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=current_user_id).first()
+        
+        if not doctor:
+            return jsonify({'error': 'Doctor profile not found'}), 404
+            
+        today = datetime.now().date()
+        
+        # Today's appointments
+        appointments = db.session.query(Appointment, Patient, User)\
+            .join(Patient, Appointment.patient_id == Patient.id)\
+            .join(User, User.id == Patient.user_id)\
+            .filter(Appointment.doctor_id == doctor.id, Appointment.appointment_date == today)\
+            .order_by(Appointment.token_number)\
+            .all()
+            
+        appointment_list = []
+        current_queue = []
+        
+        stats = {
+            'total_today': len(appointments),
+            'completed': 0,
+            'in_progress': 0,
+            'waiting': 0,
+            'average_time': 15
+        }
+        
+        for apt, pat, pat_user in appointments:
+            apt_data = {
+                'id': apt.id,
+                'patient_name': pat_user.full_name,
+                'time': apt.appointment_time.strftime('%H:%M'),
+                'token_number': apt.token_number,
+                'status': apt.status,
+                'priority': apt.priority,
+                'symptoms': apt.symptoms
+            }
+            
+            appointment_list.append(apt_data)
+            
+            if apt.status == 'completed':
+                stats['completed'] += 1
+            elif apt.status == 'consulting':
+                stats['in_progress'] += 1
+                current_queue.append(apt_data)
+            elif apt.status in ['booked', 'in_queue']:
+                stats['waiting'] += 1
+                current_queue.append(apt_data)
+                
+        return jsonify({
+            'success': True,
+            'data': {
+                'statistics': stats,
+                'appointments': appointment_list,
+                'current_queue': current_queue
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/dashboard/pharmacy', methods=['GET'])
+@pharmacy_required
+def get_pharmacy_dashboard():
+    """Unified dashboard data for pharmacy"""
+    try:
+        # Pending prescriptions
+        prescriptions = db.session.query(Prescription, Patient, User)\
+            .join(Patient, Prescription.patient_id == Patient.id)\
+            .join(User, User.id == Patient.user_id)\
+            .filter(Prescription.status.in_(['pending', 'sent_to_pharmacy', 'processing']))\
+            .order_by(Prescription.created_at.desc())\
+            .all()
+            
+        pending_list = []
+        for p, pat, pat_user in prescriptions:
+            # Safely handle prescription_data
+            p_data = p.prescription_data if isinstance(p.prescription_data, dict) else {}
+            meds = p_data.get('medications', [])
+            
+            pending_list.append({
+                'id': p.id,
+                'prescription_number': f"RX-{p.id:04d}",
+                'patient_name': pat_user.full_name,
+                'date': p.created_at.strftime('%Y-%m-%d'),
+                'diagnosis': p_data.get('diagnosis', 'Not specified'),
+                'status': p.status,
+                'medications': meds
+            })
+            
+        # Low stock alert
+        low_stock = PharmacyInventory.query.filter(
+            PharmacyInventory.quantity_in_stock <= PharmacyInventory.minimum_stock_alert
+        ).all()
+        
+        low_stock_list = [{
+            'name': item.medicine_name,
+            'strength': item.generic_name or '',
+            'current_stock': item.quantity_in_stock,
+            'reorder_level': item.minimum_stock_alert
+        } for item in low_stock]
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'statistics': {
+                    'pending_count': len(pending_list),
+                    'low_stock_count': len(low_stock_list)
+                },
+                'pending_prescriptions': pending_list,
+                'low_stock_medicines': low_stock_list
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/dashboard/admin', methods=['GET'])
+@admin_required
+def get_admin_dashboard():
+    """Unified dashboard data for admin"""
+    try:
+        today = datetime.now().date()
+        
+        stats = {
+            'total_users': User.query.count(),
+            'appointments_today': Appointment.query.filter_by(appointment_date=today).count(),
+            'pending_prescriptions': Prescription.query.filter_by(status='pending').count(),
+            'unverified_count': User.query.filter_by(is_verified=False).count()
+        }
+        
+        unverified_users = User.query.filter_by(is_verified=False).limit(10).all()
+        unverified_list = [{
+            'id': u.id,
+            'full_name': u.full_name,
+            'username': u.username,
+            'email': u.email,
+            'role': u.role,
+            'created_at': u.created_at.strftime('%Y-%m-%d')
+        } for u in unverified_users]
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'statistics': stats,
+                'unverified_users': unverified_list
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Department Routes
 @app.route('/api/departments', methods=['GET'])
-@jwt_required()
 def get_departments():
     try:
         departments = Department.query.filter_by(is_active=True).all()
-        return jsonify([{
-            'id': dept.id,
-            'name': dept.name,
-            'description': dept.description
-        } for dept in departments]), 200
+        return jsonify({
+            'departments': [{
+                'id': dept.id,
+                'name': dept.name,
+                'description': dept.description
+            } for dept in departments]
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 # Doctor Routes - Secured with Role-Based Access Control
 @app.route('/api/doctors', methods=['GET'])
-@role_required(['patient', 'admin'])  # Only patients can see doctors for appointments, admins can see all
-def get_doctors():
+@app.route('/api/doctors/<int:department_id>', methods=['GET'])
+@role_required(['patient', 'admin'])
+def get_doctors(department_id=None):
     try:
-        department_id = request.args.get('department_id')
+        # Use department_id from URL or query parameter
+        if not department_id:
+            department_id = request.args.get('department_id')
         
         # Only return verified and active doctors
         query = db.session.query(Doctor, User, Department)\
@@ -675,15 +869,17 @@ def get_doctors():
         
         doctors = query.all()
         
-        return jsonify([{
-            'id': doctor.id,
-            'name': user.full_name,
-            'specialization': doctor.specialization,
-            'department': department.name,
-            'consultation_fee': float(doctor.consultation_fee) if doctor.consultation_fee else 0,
-            'availability_start': doctor.availability_start.strftime('%H:%M') if doctor.availability_start else '09:00',
-            'availability_end': doctor.availability_end.strftime('%H:%M') if doctor.availability_end else '17:00'
-        } for doctor, user, department in doctors]), 200
+        return jsonify({
+            'doctors': [{
+                'id': doctor.id,
+                'name': user.full_name,
+                'specialization': doctor.specialization,
+                'department': department.name,
+                'consultation_fee': float(doctor.consultation_fee) if doctor.consultation_fee else 0,
+                'availability_start': doctor.availability_start.strftime('%H:%M') if doctor.availability_start else '09:00',
+                'availability_end': doctor.availability_end.strftime('%H:%M') if doctor.availability_end else '17:00'
+            } for doctor, user, department in doctors]
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1320,6 +1516,32 @@ def get_inventory():
             'minimum_stock_alert': item.minimum_stock_alert,
             'low_stock': item.quantity_in_stock <= item.minimum_stock_alert
         } for item in inventory]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/medicines/search', methods=['GET'])
+@doctor_required
+def search_medicines():
+    """Search medicines - doctors only"""
+    try:
+        query = request.args.get('q', '').strip()
+        if not query:
+            return jsonify({'medicines': []}), 200
+            
+        medicines = PharmacyInventory.query.filter(
+            (PharmacyInventory.medicine_name.ilike(f'%{query}%')) |
+            (PharmacyInventory.generic_name.ilike(f'%{query}%'))
+        ).all()
+        
+        return jsonify({
+            'medicines': [{
+                'id': m.id,
+                'name': m.medicine_name,
+                'strength': m.generic_name or '',
+                'stock_quantity': m.quantity_in_stock,
+                'unit_price': float(m.unit_price) if m.unit_price else 0
+            } for m in medicines]
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -10,8 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
-from models import (User, Department, DoctorProfile, Appointment, QueueEntry, 
-                   Prescription, Medicine, PrescriptionMedication, AuditLog)
+from app import app, db, User, Department, Doctor, Appointment, QueueStatus, Prescription, PharmacyInventory
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date, time, timedelta
 
@@ -101,19 +100,19 @@ def init_database():
             
             # Create Doctor Profiles
             doctor_profiles = [
-                DoctorProfile(user_id=2, department_id=1, specialization="Internal Medicine",
-                            experience_years=15, consultation_fee=100.0,
-                            available_from=time(9, 0), available_to=time(17, 0),
+                Doctor(user_id=2, department_id=1, specialization="Internal Medicine",
+                            consultation_fee=100.0,
+                            availability_start=time(9, 0), availability_end=time(17, 0),
                             max_patients_per_day=40),
                             
-                DoctorProfile(user_id=3, department_id=2, specialization="Interventional Cardiology",
-                            experience_years=12, consultation_fee=150.0,
-                            available_from=time(10, 0), available_to=time(16, 0),
+                Doctor(user_id=3, department_id=2, specialization="Interventional Cardiology",
+                            consultation_fee=150.0,
+                            availability_start=time(10, 0), availability_end=time(16, 0),
                             max_patients_per_day=30),
                             
-                DoctorProfile(user_id=4, department_id=3, specialization="Neurological Surgery",
-                            experience_years=18, consultation_fee=200.0,
-                            available_from=time(8, 30), available_to=time(15, 30),
+                Doctor(user_id=4, department_id=3, specialization="Neurological Surgery",
+                            consultation_fee=200.0,
+                            availability_start=time(8, 30), availability_end=time(15, 30),
                             max_patients_per_day=25),
             ]
             
@@ -122,43 +121,43 @@ def init_database():
             db.session.commit()
             print("✅ Doctor profiles created")
             
-            # Create Medicines
+            # Create Pharmacy Inventory
             medicines = [
-                Medicine(name="Paracetamol", generic_name="Acetaminophen", 
-                        manufacturer="PharmaCorp", dosage_form="Tablet",
-                        strength="500mg", price_per_unit=0.50, stock_quantity=500,
-                        reorder_level=50, expiry_date=date(2026, 12, 31),
+                PharmacyInventory(medicine_name="Paracetamol", generic_name="Acetaminophen", 
+                        manufacturer="PharmaCorp", 
+                        unit_price=0.50, quantity_in_stock=500,
+                        expiry_date=date(2026, 12, 31),
                         batch_number="PC2024001"),
                         
-                Medicine(name="Amoxicillin", generic_name="Amoxicillin",
-                        manufacturer="AntiBio Ltd", dosage_form="Capsule", 
-                        strength="250mg", price_per_unit=1.20, stock_quantity=200,
-                        reorder_level=30, expiry_date=date(2026, 10, 15),
+                PharmacyInventory(medicine_name="Amoxicillin", generic_name="Amoxicillin",
+                        manufacturer="AntiBio Ltd", 
+                        unit_price=1.20, quantity_in_stock=200,
+                        expiry_date=date(2026, 10, 15),
                         batch_number="AB2024002"),
                         
-                Medicine(name="Lisinopril", generic_name="Lisinopril",
-                        manufacturer="CardioMed", dosage_form="Tablet",
-                        strength="10mg", price_per_unit=0.80, stock_quantity=300,
-                        reorder_level=40, expiry_date=date(2027, 3, 20),
+                PharmacyInventory(medicine_name="Lisinopril", generic_name="Lisinopril",
+                        manufacturer="CardioMed",
+                        unit_price=0.80, quantity_in_stock=300,
+                        expiry_date=date(2027, 3, 20),
                         batch_number="CM2024003"),
                         
-                Medicine(name="Omeprazole", generic_name="Omeprazole",
-                        manufacturer="GastroHealth", dosage_form="Capsule",
-                        strength="20mg", price_per_unit=0.90, stock_quantity=250,
-                        reorder_level=35, expiry_date=date(2026, 8, 10),
+                PharmacyInventory(medicine_name="Omeprazole", generic_name="Omeprazole",
+                        manufacturer="GastroHealth",
+                        unit_price=0.90, quantity_in_stock=250,
+                        expiry_date=date(2026, 8, 10),
                         batch_number="GH2024004"),
                         
-                Medicine(name="Metformin", generic_name="Metformin HCl",
-                        manufacturer="DiabCare", dosage_form="Tablet",
-                        strength="500mg", price_per_unit=0.60, stock_quantity=400,
-                        reorder_level=50, expiry_date=date(2026, 11, 25),
+                PharmacyInventory(medicine_name="Metformin", generic_name="Metformin HCl",
+                        manufacturer="DiabCare",
+                        unit_price=0.60, quantity_in_stock=400,
+                        expiry_date=date(2026, 11, 25),
                         batch_number="DC2024005"),
             ]
             
             for medicine in medicines:
                 db.session.add(medicine)
             db.session.commit()
-            print("✅ Medicine inventory created")
+            print("✅ Pharmacy inventory created")
             
             # Create sample appointments for today
             today = date.today()
@@ -188,10 +187,10 @@ def init_database():
             
             # Create queue entries
             queue_entries = [
-                QueueEntry(appointment_id=2, queue_position=1, estimated_wait_time=15,
-                          status="waiting"),
-                QueueEntry(appointment_id=3, queue_position=1, estimated_wait_time=30,
-                          status="waiting"),
+                QueueStatus(appointment_id=2, queue_position=1, estimated_wait_time=15,
+                          current_token=1),
+                QueueStatus(appointment_id=3, queue_position=1, estimated_wait_time=30,
+                          current_token=2),
             ]
             
             for entry in queue_entries:
@@ -200,29 +199,28 @@ def init_database():
             print("✅ Queue entries created")
             
             # Create sample prescription for completed appointment
+            # Note: app.py Prescription model uses JSON for prescription_data, not separate diagnosis/notes fields in the way init_db expected
+            prescription_data = {
+                "prescription_number": "RX202602020001",
+                "diagnosis": "Viral fever with headache",
+                "medications": [
+                    {"name": "Paracetamol", "dosage": "1 tablet twice daily", "duration": "5 days"},
+                    {"name": "Amoxicillin", "dosage": "1 capsule twice daily", "duration": "7 days"}
+                ]
+            }
+            
             prescription = Prescription(
                 appointment_id=1,
-                prescription_number="RX202602020001",
-                diagnosis="Viral fever with headache",
+                doctor_id=2,
+                patient_id=5,
+                prescription_data=prescription_data,
                 notes="Take medications as prescribed. Rest and plenty of fluids.",
                 status="pending"
             )
             db.session.add(prescription)
             db.session.commit()
             
-            # Add medications to prescription
-            prescription_medications = [
-                PrescriptionMedication(prescription_id=1, medicine_id=1,
-                                     quantity=10, dosage_instructions="1 tablet twice daily",
-                                     duration_days=5),
-                PrescriptionMedication(prescription_id=1, medicine_id=2, 
-                                     quantity=14, dosage_instructions="1 capsule twice daily",
-                                     duration_days=7),
-            ]
-            
-            for med in prescription_medications:
-                db.session.add(med)
-            db.session.commit()
+
             print("✅ Sample prescription created")
             
             print("\n🎉 Database initialization completed successfully!")
