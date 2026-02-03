@@ -18,7 +18,7 @@ import random
 app = Flask(__name__, static_folder='static')
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///queue_healthcare.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/healthcare.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'healthcare-queue-secret-key-2026'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -39,9 +39,16 @@ class User(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20))
     role = db.Column(db.String(20), nullable=False)  # patient, doctor, pharmacy, admin
+    is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)
+    verification_token = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    
+    def set_verification_status(self):
+        """Auto-verify patients, require admin verification for doctors/pharmacy"""
+        if self.role == 'patient':
+            self.is_verified = True
     
     # Relationships
     patient_appointments = db.relationship('Appointment', foreign_keys='Appointment.patient_id', backref='patient', lazy='dynamic')
@@ -53,6 +60,7 @@ class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -194,13 +202,16 @@ pharmacy_required = role_required(['pharmacy', 'admin'])
 def login():
     try:
         data = request.get_json()
-        username = data.get('username')
+        username = data.get('username')  # This can be email or username
         password = data.get('password')
         
         if not username or not password:
-            return jsonify({'success': False, 'message': 'Username and password required'}), 400
+            return jsonify({'success': False, 'message': 'Email/Username and password required'}), 400
         
-        user = User.query.filter_by(username=username).first()
+        # Try to find user by email first, then by username
+        user = User.query.filter_by(email=username).first()
+        if not user:
+            user = User.query.filter_by(username=username).first()
         
         if not user or not check_password_hash(user.password_hash, password):
             return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
@@ -279,35 +290,6 @@ def healthcare_staff_required(f):
     """Decorator for doctor, pharmacy, and admin roles"""
     return role_required(['doctor', 'pharmacy', 'admin'])(f)
 
-# Database Models
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)
-    full_name = db.Column(db.String(255), nullable=False)
-    phone = db.Column(db.String(20))
-    is_active = db.Column(db.Boolean, default=True)
-    is_verified = db.Column(db.Boolean, default=False)  # Admin verification for doctors/pharmacy
-    verification_token = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login = db.Column(db.DateTime)
-    
-    def set_verification_status(self):
-        """Auto-verify patients, require admin verification for doctors/pharmacy"""
-        if self.role == 'patient':
-            self.is_verified = True
-        else:
-            self.is_verified = False
-
-class Department(db.Model):
-    __tablename__ = 'departments'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    is_active = db.Column(db.Boolean, default=True)
-
 class Doctor(db.Model):
     __tablename__ = 'doctors'
     id = db.Column(db.Integer, primary_key=True)
@@ -334,23 +316,6 @@ class Patient(db.Model):
     medical_history = db.Column(db.Text)
     
     user = db.relationship('User', backref='patient_profile')
-
-class Appointment(db.Model):
-    __tablename__ = 'appointments'
-    id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'))
-    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'))
-    appointment_date = db.Column(db.Date, nullable=False)
-    appointment_time = db.Column(db.Time, nullable=False)
-    token_number = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='scheduled')
-    estimated_duration = db.Column(db.Integer, default=15)
-    symptoms = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    patient = db.relationship('Patient', backref='appointments')
-    doctor = db.relationship('Doctor', backref='appointments')
 
 class QueueStatus(db.Model):
     __tablename__ = 'queue_status'
@@ -477,6 +442,7 @@ def register():
         
         # Create user account
         user = User(
+            username=email.split('@')[0],  # Use part before @ as username
             email=email,
             password_hash=generate_password_hash(password),
             role=role,

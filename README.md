@@ -20,7 +20,7 @@ Frontend (React + HTML/CSS/JS) ↔ Backend (Flask REST API) ↔ Database (Postgr
 - **Frontend**: React SPA with role-based dashboards
 - **Backend**: Flask REST API with JWT authentication
 - **Database**: PostgreSQL with normalized schema
-- **Deployment**: Docker containers with Nginx reverse proxy
+- **Deployment**: Direct Flask and HTML/CSS/JS serving
 
 ## 📋 Features by Role
 
@@ -64,14 +64,16 @@ Frontend (React + HTML/CSS/JS) ↔ Backend (Flask REST API) ↔ Database (Postgr
 - **psycopg2** - PostgreSQL adapter
 
 ### DevOps & Deployment
-- **Docker & Docker Compose** - Containerization
+- **Python Flask** - Backend API and web serving
+- **HTML/CSS/JS** - Frontend with custom styling
 - **Nginx** - Reverse proxy and static file serving
 - **PostgreSQL 15** - Production database
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
+- Python 3.8+ with pip
+- PostgreSQL 12+ (or SQLite for development)
 - PostgreSQL (if running locally)
 - Python 3.9+ (for local development)
 
