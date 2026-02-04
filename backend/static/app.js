@@ -492,73 +492,111 @@ const PatientDashboard = ({ user }) => {
     return (
         <div className="dashboard fade-in">
             <div className="dashboard-header">
-                <h1 className="dashboard-title">Patient Dashboard</h1>
-                <p className="dashboard-subtitle">Welcome back, {user.full_name}</p>
+                <div className="dashboard-brand">
+                    <div className="brand-icon-box">
+                        <i className="fas fa-user-injured"></i>
+                    </div>
+                    <div>
+                        <h1 className="dashboard-title">Patient Portal</h1>
+                        <p className="dashboard-subtitle">Welcome back, {user.full_name}</p>
+                    </div>
+                </div>
+                <div className="dashboard-actions">
+                    <button className="btn btn-secondary" onClick={fetchDashboardData}>
+                        <i className="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
             </div>
 
             {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
+            {/* 1. Statistics Overview */}
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.appointments?.length || 0}</div>
-                    <div className="stat-label">Total Appointments</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-number">
-                        {dashboardData?.appointments?.filter(apt => apt.status === 'in_queue').length || 0}
+                    <div className="stat-icon"><i className="fas fa-calendar-check"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.appointments?.length || 0}</div>
+                        <div className="stat-label">Total Visits</div>
                     </div>
-                    <div className="stat-label">In Queue</div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.prescriptions?.length || 0}</div>
-                    <div className="stat-label">Pending Prescriptions</div>
+                    <div className="stat-icon"><i className="fas fa-hourglass-half"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">
+                            {dashboardData?.appointments?.filter(apt => apt.status === 'in_queue').length || 0}
+                        </div>
+                        <div className="stat-label">Active Queue</div>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-icon"><i className="fas fa-prescription-bottle-alt"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.prescriptions?.length || 0}</div>
+                        <div className="stat-label">Prescriptions</div>
+                    </div>
                 </div>
             </div>
 
+            {/* 2. Primary Action: Booking */}
             {!showBooking ? (
-                <div className="card">
+                <div className="card" style={{ borderLeft: '4px solid var(--primary)' }}>
                     <div className="card-header">
                         <h2 className="card-title">Quick Actions</h2>
                     </div>
-                    <div className="card-content">
+                    <div className="card-content" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)', flex: 1 }}>
+                            Need to see a doctor? Schedule your visit now.
+                        </p>
                         <button
                             className="btn btn-primary"
                             onClick={() => setShowBooking(true)}
+                            style={{ maxWidth: '250px' }}
                         >
-                            Book New Appointment
+                            <i className="fas fa-plus-circle"></i> Book New Appointment
                         </button>
                     </div>
                 </div>
             ) : (
-                <AppointmentBooking
-                    onCancel={() => setShowBooking(false)}
-                    onSuccess={() => {
-                        setShowBooking(false);
-                        fetchDashboardData();
-                        setAlert({ type: 'success', message: 'Appointment booked successfully!' });
-                    }}
-                />
+                <div className="mb-4">
+                    <AppointmentBooking
+                        onCancel={() => setShowBooking(false)}
+                        onSuccess={() => {
+                            setShowBooking(false);
+                            fetchDashboardData();
+                            setAlert({ type: 'success', message: 'Appointment booked successfully!' });
+                        }}
+                    />
+                </div>
             )}
 
-            {/* Current Queue Status */}
-            {dashboardData?.appointments?.some(apt => apt.queue_info && apt.status !== 'completed') && (
+            {/* 3. Queue Status (Priority if active) */}
+            {dashboardData?.appointments?.some(apt => (apt.status === 'in_queue' || apt.status === 'booked' || apt.status === 'consulting')) && (
                 <div className="card">
                     <div className="card-header">
                         <h2 className="card-title">Your Queue Status</h2>
                     </div>
                     <div className="card-content">
                         {dashboardData.appointments
-                            .filter(apt => apt.queue_info && apt.status !== 'completed')
+                            .filter(apt => (apt.status === 'in_queue' || apt.status === 'booked' || apt.status === 'consulting'))
                             .map(appointment => (
-                                <div key={appointment.id} className="queue-info">
-                                    <div className="queue-position">
-                                        Position: {appointment.queue_info.position}
+                                <div key={appointment.id} className="alert alert-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem', borderLeft: '4px solid var(--info)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                            <i className="fas fa-ticket-alt"></i> Token #{appointment.token_number}
+                                        </span>
+                                        <StatusBadge status={appointment.status} />
                                     </div>
-                                    <div className="queue-wait-time">
-                                        Estimated wait: {appointment.queue_info.estimated_wait} minutes
-                                    </div>
-                                    <div style={{ marginTop: '10px', fontSize: '14px' }}>
-                                        {appointment.doctor} - {appointment.department}
+                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                                        <span><i className="fas fa-user-md"></i> {appointment.doctor}</span>
+                                        <span><i className="fas fa-clinic-medical"></i> {appointment.department}</span>
+                                        {appointment.queue_info && (
+                                            <>
+                                                <span style={{ fontWeight: '600' }}>Position: {appointment.queue_info.position}</span>
+                                                <span style={{ color: 'var(--primary-dark)', fontWeight: '600' }}>
+                                                    <i className="fas fa-clock"></i> Est. Wait: {appointment.queue_info.estimated_wait} mins
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -566,67 +604,76 @@ const PatientDashboard = ({ user }) => {
                 </div>
             )}
 
-            {/* Recent Appointments */}
-            <div className="card">
-                <div className="card-header">
-                    <h2 className="card-title">Your Appointments</h2>
-                </div>
-                <div className="card-content">
-                    {dashboardData?.appointments?.length ? (
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Token</th>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Doctor</th>
-                                        <th>Department</th>
-                                        <th>Status</th>
-                                        <th>Symptoms</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dashboardData.appointments.map(appointment => (
-                                        <tr key={appointment.id}>
-                                            <td>#{appointment.token_number}</td>
-                                            <td>{formatDate(appointment.date)}</td>
-                                            <td>{formatTime(appointment.time)}</td>
-                                            <td>{appointment.doctor}</td>
-                                            <td>{appointment.department}</td>
-                                            <td><StatusBadge status={appointment.status} /></td>
-                                            <td>{appointment.symptoms}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p>No appointments found. Book your first appointment!</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Prescriptions */}
-            {dashboardData?.prescriptions?.length > 0 && (
+            {/* 4. History: Appointments & Prescriptions */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+                {/* Recent Appointments */}
                 <div className="card">
                     <div className="card-header">
-                        <h2 className="card-title">Your Prescriptions</h2>
+                        <h2 className="card-title">Recent Appointments</h2>
                     </div>
                     <div className="card-content">
-                        {dashboardData.prescriptions.map(prescription => (
-                            <div key={prescription.id} className="prescription-item">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                    <strong>#{prescription.prescription_number}</strong>
-                                    <StatusBadge status={prescription.status} />
-                                </div>
-                                <p><strong>Date:</strong> {formatDate(prescription.date)}</p>
-                                <p><strong>Diagnosis:</strong> {prescription.diagnosis}</p>
+                        {dashboardData?.appointments?.length ? (
+                            <div className="table-container">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Doctor</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {dashboardData.appointments.slice(0, 5).map(appointment => (
+                                            <tr key={appointment.id}>
+                                                <td>
+                                                    <div style={{ fontWeight: '500' }}>{formatDate(appointment.date)}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatTime(appointment.time)}</div>
+                                                </td>
+                                                <td>
+                                                    <div>{appointment.doctor}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{appointment.department}</div>
+                                                </td>
+                                                <td><StatusBadge status={appointment.status} /></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        ))}
+                        ) : (
+                            <p className="text-muted text-center p-4">No appointment history.</p>
+                        )}
                     </div>
                 </div>
-            )}
+
+                {/* Prescriptions */}
+                <div className="card">
+                    <div className="card-header">
+                        <h2 className="card-title">My Prescriptions</h2>
+                    </div>
+                    <div className="card-content">
+                        {dashboardData?.prescriptions?.length ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {dashboardData.prescriptions.map(prescription => (
+                                    <div key={prescription.id} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontWeight: '600', color: 'var(--primary)' }}>#{prescription.prescription_number}</span>
+                                            <StatusBadge status={prescription.status} />
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                                            <strong>Diagnosis:</strong> {prescription.diagnosis}
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                            {formatDate(prescription.date)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted text-center p-4">No prescriptions yet.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
@@ -881,44 +928,72 @@ const DoctorDashboard = ({ user }) => {
     return (
         <div className="dashboard fade-in">
             <div className="dashboard-header">
-                <h1 className="dashboard-title">Doctor Dashboard</h1>
-                <p className="dashboard-subtitle">Good day, Dr. {user.full_name}</p>
+                <div className="dashboard-brand">
+                    <div className="brand-icon-box">
+                        <i className="fas fa-user-md"></i>
+                    </div>
+                    <div>
+                        <h1 className="dashboard-title">Doctor's Console</h1>
+                        <p className="dashboard-subtitle">Good day, Dr. {user.full_name}</p>
+                    </div>
+                </div>
+                <div className="dashboard-actions">
+                    <button className="btn btn-secondary" onClick={fetchDashboardData}>
+                        <i className="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
             </div>
 
             {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.total_today || 0}</div>
-                    <div className="stat-label">Total Today</div>
+                    <div className="stat-icon"><i className="fas fa-user-friends"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.total_today || 0}</div>
+                        <div className="stat-label">Total Today</div>
+                    </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.completed || 0}</div>
-                    <div className="stat-label">Completed</div>
+                    <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.completed || 0}</div>
+                        <div className="stat-label">Completed</div>
+                    </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.in_progress || 0}</div>
-                    <div className="stat-label">In Progress</div>
+                    <div className="stat-icon"><i className="fas fa-procedures"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.in_progress || 0}</div>
+                        <div className="stat-label">Waiting</div>
+                    </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.average_time || 15}</div>
-                    <div className="stat-label">Avg Time (min)</div>
+                    <div className="stat-icon"><i className="fas fa-clock"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.average_time || 15}</div>
+                        <div className="stat-label">Avg Time (min)</div>
+                    </div>
                 </div>
             </div>
 
             {/* Current Queue */}
-            {dashboardData?.current_queue?.length > 0 && (
-                <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">Current Queue</h2>
-                    </div>
-                    <div className="card-content">
+            <div className="card" style={{ borderTop: '4px solid var(--primary)' }}>
+                <div className="card-header flex justify-between items-center">
+                    <h2 className="card-title">Live Queue</h2>
+                    {dashboardData?.current_queue?.length > 0 && (
+                        <span className="state-badge status-in-queue">
+                            Active: {dashboardData.current_queue.length}
+                        </span>
+                    )}
+                </div>
+                <div className="card-content">
+                    {dashboardData?.current_queue?.length > 0 ? (
                         <div className="table-container">
                             <table className="table">
                                 <thead>
                                     <tr>
                                         <th>Token</th>
-                                        <th>Time</th>
                                         <th>Patient</th>
                                         <th>Symptoms</th>
                                         <th>Status</th>
@@ -927,10 +1002,12 @@ const DoctorDashboard = ({ user }) => {
                                 </thead>
                                 <tbody>
                                     {dashboardData.current_queue.map(appointment => (
-                                        <tr key={appointment.id}>
-                                            <td>#{appointment.token_number}</td>
-                                            <td>{formatTime(appointment.time)}</td>
-                                            <td>{appointment.patient_name}</td>
+                                        <tr key={appointment.id} className={appointment.status === 'consulting' ? 'bg-blue-50' : ''}>
+                                            <td className="font-bold">#{appointment.token_number}</td>
+                                            <td>
+                                                <div className="font-bold">{appointment.patient_name}</div>
+                                                <div className="text-muted text-sm">{formatTime(appointment.time)}</div>
+                                            </td>
                                             <td>{appointment.symptoms}</td>
                                             <td>
                                                 <StatusBadge
@@ -939,32 +1016,38 @@ const DoctorDashboard = ({ user }) => {
                                                 />
                                             </td>
                                             <td>
-                                                <button
-                                                    className="btn btn-sm btn-primary"
-                                                    onClick={() => handleAdvanceQueue(appointment.id)}
-                                                >
-                                                    {appointment.status === 'booked' ? 'Call Next' :
-                                                        appointment.status === 'in_queue' ? 'Start Consultation' :
-                                                            'Complete'}
-                                                </button>
-                                                {appointment.status === 'consulting' && (
+                                                <div className="flex gap-2">
                                                     <button
-                                                        className="btn btn-sm btn-success"
-                                                        onClick={() => setShowPrescription(appointment)}
-                                                        style={{ marginLeft: '5px' }}
+                                                        className="btn btn-sm btn-primary"
+                                                        onClick={() => handleAdvanceQueue(appointment.id)}
                                                     >
-                                                        Prescribe
+                                                        {appointment.status === 'booked' ? 'Call Next' :
+                                                            appointment.status === 'in_queue' ? 'Start Consult' :
+                                                                'Finish'}
                                                     </button>
-                                                )}
+                                                    {appointment.status === 'consulting' && (
+                                                        <button
+                                                            className="btn btn-sm btn-success"
+                                                            onClick={() => setShowPrescription(appointment)}
+                                                        >
+                                                            <i className="fas fa-file-prescription"></i> Prescribe
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="text-center p-4">
+                            <i className="fas fa-mug-hot text-muted" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
+                            <p className="text-muted">No patients in the active queue.</p>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* All Today's Appointments */}
             <div className="card">
@@ -980,7 +1063,6 @@ const DoctorDashboard = ({ user }) => {
                                         <th>Token</th>
                                         <th>Time</th>
                                         <th>Patient</th>
-                                        <th>Symptoms</th>
                                         <th>Status</th>
                                         <th>Priority</th>
                                     </tr>
@@ -991,11 +1073,10 @@ const DoctorDashboard = ({ user }) => {
                                             <td>#{appointment.token_number}</td>
                                             <td>{formatTime(appointment.time)}</td>
                                             <td>{appointment.patient_name}</td>
-                                            <td>{appointment.symptoms}</td>
                                             <td><StatusBadge status={appointment.status} /></td>
                                             <td>
-                                                <span className={`priority-${appointment.priority}`}>
-                                                    {appointment.priority}
+                                                <span className={`priority-${appointment.priority} font-bold`}>
+                                                    {appointment.priority.toUpperCase()}
                                                 </span>
                                             </td>
                                         </tr>
@@ -1004,7 +1085,7 @@ const DoctorDashboard = ({ user }) => {
                             </table>
                         </div>
                     ) : (
-                        <p>No appointments scheduled for today.</p>
+                        <p className="text-center text-muted">No appointments scheduled for today.</p>
                     )}
                 </div>
             </div>
@@ -1337,62 +1418,82 @@ const PharmacyDashboard = ({ user }) => {
     return (
         <div className="dashboard fade-in">
             <div className="dashboard-header">
-                <h1 className="dashboard-title">Pharmacy Dashboard</h1>
-                <p className="dashboard-subtitle">Welcome, {user.full_name}</p>
+                <div className="dashboard-brand">
+                    <div className="brand-icon-box">
+                        <i className="fas fa-clinic-medical"></i>
+                    </div>
+                    <div>
+                        <h1 className="dashboard-title">Pharmacy Panel</h1>
+                        <p className="dashboard-subtitle">Dispensing Unit - {user.full_name}</p>
+                    </div>
+                </div>
+                <button className="btn btn-secondary" onClick={fetchDashboardData}>
+                    <i className="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
 
             {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.pending_count || 0}</div>
-                    <div className="stat-label">Pending Prescriptions</div>
+                    <div className="stat-icon"><i className="fas fa-file-prescription"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.pending_count || 0}</div>
+                        <div className="stat-label">Pending Orders</div>
+                    </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-number">{dashboardData?.statistics?.low_stock_count || 0}</div>
-                    <div className="stat-label">Low Stock Items</div>
+                    <div className="stat-icon"><i className="fas fa-exclamation-triangle"></i></div>
+                    <div className="stat-content">
+                        <div className="stat-number">{dashboardData?.statistics?.low_stock_count || 0}</div>
+                        <div className="stat-label">Low Stock Items</div>
+                    </div>
                 </div>
             </div>
 
             {/* Pending Prescriptions */}
             <div className="card">
                 <div className="card-header">
-                    <h2 className="card-title">Pending Prescriptions</h2>
+                    <h2 className="card-title">Pending For Dispensing</h2>
                 </div>
                 <div className="card-content">
                     {dashboardData?.pending_prescriptions?.length ? (
-                        <div>
+                        <div className="flex flex-col gap-4">
                             {dashboardData.pending_prescriptions.map(prescription => (
-                                <div key={prescription.id} className="prescription-item">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <div key={prescription.id} className="p-4" style={{ border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                                    <div className="flex justify-between items-center mb-4">
                                         <div>
-                                            <strong>#{prescription.prescription_number}</strong>
-                                            <p style={{ margin: '5px 0', color: '#666' }}>
+                                            <div className="font-bold text-lg">#{prescription.prescription_number}</div>
+                                            <div className="text-muted text-sm">
                                                 Patient: {prescription.patient_name} | Date: {prescription.date}
-                                            </p>
+                                            </div>
                                         </div>
                                         <button
                                             className="btn btn-success btn-sm"
                                             onClick={() => handleDispensePrescription(prescription.id)}
                                         >
-                                            Dispense
+                                            <i className="fas fa-check"></i> Mark Dispensed
                                         </button>
                                     </div>
 
-                                    <p style={{ marginBottom: '10px' }}><strong>Diagnosis:</strong> {prescription.diagnosis}</p>
+                                    <div className="mb-4">
+                                        <strong>Diagnosis:</strong> {prescription.diagnosis}
+                                    </div>
 
-                                    <div>
-                                        <strong>Medications:</strong>
-                                        <ul className="medication-list">
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="font-bold mb-2">Medications:</div>
+                                        <ul className="medication-list" style={{ listStyle: 'none', padding: 0 }}>
                                             {prescription.medications.map((medication, index) => (
-                                                <li key={index} className="medication-item">
-                                                    <div className="medication-name">
-                                                        {medication.name} - {medication.strength}
+                                                <li key={index} className="medication-item" style={{ marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                    <div className="font-bold text-primary">
+                                                        {medication.name} <span className="text-muted">({medication.strength})</span>
                                                     </div>
-                                                    <div className="medication-details">
-                                                        Quantity: {medication.quantity} |
-                                                        Instructions: {medication.instructions} |
-                                                        Stock Available: {medication.available_stock}
+                                                    <div className="text-sm flex gap-4 mt-1">
+                                                        <span><strong>Qty:</strong> {medication.quantity}</span>
+                                                        <span><strong>Sig:</strong> {medication.instructions}</span>
+                                                        <span className={medication.available_stock < medication.quantity ? "text-error" : "text-success"}>
+                                                            <strong>Stock:</strong> {medication.available_stock}
+                                                        </span>
                                                     </div>
                                                 </li>
                                             ))}
@@ -1402,7 +1503,7 @@ const PharmacyDashboard = ({ user }) => {
                             ))}
                         </div>
                     ) : (
-                        <p>No pending prescriptions.</p>
+                        <p className="text-center text-muted p-4">No pending prescriptions to dispense.</p>
                     )}
                 </div>
             </div>
@@ -1411,11 +1512,11 @@ const PharmacyDashboard = ({ user }) => {
             {dashboardData?.low_stock_medicines?.length > 0 && (
                 <div className="card">
                     <div className="card-header">
-                        <h2 className="card-title">Low Stock Alert</h2>
+                        <h2 className="card-title">Stock Alerts</h2>
                     </div>
                     <div className="card-content">
                         <div className="alert alert-warning">
-                            The following medicines are running low on stock:
+                            <i className="fas fa-exclamation-circle"></i> The following medicines are running low on stock.
                         </div>
                         <div className="table-container">
                             <table className="table">
@@ -1432,7 +1533,7 @@ const PharmacyDashboard = ({ user }) => {
                                         <tr key={index}>
                                             <td>{medicine.name}</td>
                                             <td>{medicine.strength}</td>
-                                            <td style={{ color: medicine.current_stock === 0 ? '#d32f2f' : '#f57c00' }}>
+                                            <td className={medicine.current_stock === 0 ? 'text-error font-bold' : 'text-warning font-bold'}>
                                                 {medicine.current_stock}
                                             </td>
                                             <td>{medicine.reorder_level}</td>
@@ -1638,9 +1739,9 @@ const App = () => {
                     </div>
                     <div className="user-info">
                         <span className="user-name">{user.full_name}</span>
-                        <span style={{ opacity: 0.8 }}>({user.role})</span>
+                        <span className="user-role-badge">{user.role}</span>
                         <button className="logout-btn" onClick={handleLogout}>
-                            Sign Out
+                            <i className="fas fa-sign-out-alt"></i> Logout
                         </button>
                     </div>
                 </div>

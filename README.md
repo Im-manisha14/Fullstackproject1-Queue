@@ -225,18 +225,25 @@ The system includes pre-configured test accounts:
 - Password: `password123`
 
 ## 📱 User Interface
-
-### Responsive Design
-- **Mobile-First** approach with Tailwind CSS
-- **Dark/Light Mode** support
-- **Accessible** UI components with proper ARIA labels
-- **Real-time Animations** for queue updates
-
-### Dashboard Features
-- **Role-specific Interfaces** optimized for each user type
-- **Real-time Status Updates** without page refresh
-- **Intuitive Navigation** with clear visual hierarchy
-- **Interactive Components** for all system actions
+ 
+ ### Professional Design
+ - **Medical Blue Theme** (`#1E88E5`) for a calm, professional healthcare environment
+ - **Split-Screen Login** with animated branding and role selection
+ - **Clean Typography** using Inter font for maximum readability
+ 
+ ### Dashboard Experience
+ - **Patient Portal:** Streamlined flow from Booking to Queue tracking.
+   - *Key View:* Live Queue Status with estimated wait times
+ - **Doctor Console:** Efficient queue management with "Call Next" actions.
+   - *Key View:* Real-time Patient Queue & Schedule
+ - **Pharmacy Panel:** Inventory tracking and prescription dispensing.
+   - *Key View:* Pending Dispensations & Low Stock Alerts
+ 
+ ### Accessibility & Responsiveness
+ - **Mobile-First** layout ensuring usability on all devices
+ - **High Contrast** text for better readability
+ - **Clear Status Indicators** (Badges) for appointment states
+ - **Smooth Transitions** for a polished user feel
 
 ## 🛠️ Development
 
