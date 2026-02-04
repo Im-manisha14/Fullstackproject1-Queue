@@ -35,6 +35,16 @@ const apiService = {
         const data = await response.json();
 
         if (!response.ok) {
+            // Frontend Hardening: Auto-logout on 401 (Token Expired)
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                // Force reload to clear state and show Login
+                if (!window.location.hash.includes('login')) {
+                    window.location.reload();
+                }
+                throw new Error('Session expired. Please login again.');
+            }
             throw new Error(data.message || 'Request failed');
         }
 
@@ -104,6 +114,10 @@ const apiService = {
             method: 'POST',
             body: JSON.stringify({ user_id: userId })
         });
+    },
+
+    async verifySession() {
+        return this.request('/auth/verify');
     }
 };
 
@@ -1638,19 +1652,35 @@ const App = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check for stored user session
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+        const initApp = async () => {
+            const token = localStorage.getItem('token');
+            const storedUser = localStorage.getItem('user');
 
-        if (token && storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+            if (token && storedUser) {
+                try {
+                    // Frontend Hardening: Verify token with backend
+                    const response = await apiService.verifySession();
+                    if (response.valid) {
+                        const userObj = JSON.parse(storedUser);
+                        // Double check role integrity
+                        if (userObj.role !== response.role) {
+                            throw new Error('Role mismatch');
+                        }
+                        setUser(userObj);
+                    } else {
+                        throw new Error('Invalid session');
+                    }
+                } catch (error) {
+                    console.error('Session verification failed:', error);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                }
             }
-        }
-        setLoading(false);
+            setLoading(false);
+        };
+
+        initApp();
     }, []);
 
     const handleLogin = (userData) => {

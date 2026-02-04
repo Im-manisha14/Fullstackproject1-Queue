@@ -543,12 +543,37 @@ def create_appointment():
         # Parse appointment date and time
         appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
         appointment_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
+
+        # Hardening: Prevent booking past dates
+        if appointment_date < datetime.now().date():
+             return jsonify({'error': 'Cannot book appointments in the past.'}), 400
+
+        # Hardening: Check Doctor Availability (Time)
+        if doctor_profile.available_from and doctor_profile.available_to:
+            if not (doctor_profile.available_from <= appointment_time <= doctor_profile.available_to):
+                return jsonify({
+                    'error': f'Doctor is only available between {doctor_profile.available_from.strftime("%H:%M")} and {doctor_profile.available_to.strftime("%H:%M")}'
+                }), 400
+
+        # Hardening: Check for Double Booking (Same Patient, Same Doctor, Same Day)
+        existing_appointment = Appointment.query.filter_by(
+            patient_id=current_user_id,
+            doctor_id=doctor_profile.user_id,
+            appointment_date=appointment_date
+        ).filter(Appointment.status.in_(['booked', 'in_queue', 'consulting'])).first()
+        
+        if existing_appointment:
+            return jsonify({'error': 'You already have an appointment with this doctor today.'}), 409
         
         # Generate token number for the day
         daily_appointments = Appointment.query.filter_by(
             doctor_id=doctor_profile.user_id,
             appointment_date=appointment_date
         ).count()
+        
+        # Hardening: Check Max Patients
+        if daily_appointments >= doctor_profile.max_patients_per_day:
+             return jsonify({'error': 'Doctor has reached maximum patients for this day.'}), 400
         
         token_number = daily_appointments + 1
         
@@ -654,6 +679,74 @@ def get_patient_prescriptions():
         
         return jsonify([prescription.to_dict() for prescription in prescriptions]), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/verify', methods=['GET'])
+@jwt_required()
+def verify_token():
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        if not user:
+            return jsonify({'valid': False}), 401
+        return jsonify({'valid': True, 'role': user.role, 'user_id': user.id}), 200
+    except Exception:
+        return jsonify({'valid': False}), 401
+
+@app.route('/api/appointments/advance-queue', methods=['POST'])
+@role_required(['doctor'])
+def advance_queue_item():
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        appointment_id = data.get('appointment_id')
+        
+        if not appointment_id:
+            return jsonify({'error': 'Appointment ID required'}), 400
+            
+        # Hardening: Use with_for_update() to lock the row and prevent race conditions
+        # This ensures no other transaction can modify this appointment until we commit
+        appointment = db.session.query(Appointment).with_for_update().filter_by(
+            id=appointment_id,
+            doctor_id=current_user_id
+        ).first()
+        
+        if not appointment:
+            return jsonify({'error': 'Appointment not found or access denied'}), 404
+            
+        # State Transition Logic
+        if appointment.status == 'booked' or appointment.status == 'in_queue':
+            appointment.status = 'consulting'
+            appointment.actual_start_time = datetime.utcnow()
+            
+            # Update doctor's current token
+            doctor_profile = DoctorProfile.query.filter_by(user_id=current_user_id).first()
+            if doctor_profile:
+                doctor_profile.current_token = appointment.token_number
+            
+            message = 'Patient called for consultation'
+        
+        elif appointment.status == 'consulting':
+             appointment.status = 'completed'
+             appointment.actual_end_time = datetime.utcnow()
+             message = 'Consultation completed'
+             
+        else:
+             return jsonify({'error': f'Invalid status transition from {appointment.status}'}), 400
+
+        # Log the change
+        log = QueueLog(appointment_id=appointment.id, status_change=message)
+        db.session.add(log)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': message,
+            'appointment': appointment.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # =======================
@@ -928,8 +1021,15 @@ def update_appointment_status(appointment_id):
         
         # Update status
         if 'status' in data:
-            appointment.status = data['status']
-            if data['status'] == 'completed':
+            new_status = data['status']
+            
+            # Hardening: Prevent cancelling active/completed appointments
+            if new_status == 'cancelled':
+                if appointment.status in ['consulting', 'completed']:
+                     return jsonify({'error': 'Cannot cancel an appointment that is already in progress or completed.'}), 400
+            
+            appointment.status = new_status
+            if new_status == 'completed':
                 appointment.actual_end_time = datetime.utcnow()
         
         db.session.commit()
@@ -993,9 +1093,60 @@ def get_pharmacy_prescriptions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/prescriptions/dispense', methods=['POST'])
+@role_required(['pharmacy'])
+def dispense_medicines():
+    try:
+        data = request.get_json()
+        prescription_id = data.get('prescription_id')
+        
+        prescription = Prescription.query.get(prescription_id)
+        if not prescription:
+            return jsonify({'error': 'Prescription not found'}), 404
+            
+        if prescription.pharmacy_status == 'dispensed':
+            return jsonify({'error': 'Prescription already dispensed'}), 400
+
+        # Inventory Management: Decrement Stock
+        # "medications" is the key in the JSON stored in DB based on frontend structure
+        meds_list = prescription.prescription_data.get('medications', [])
+        
+        for item in meds_list:
+            medicine_id = item.get('medicine_id')
+            quantity_needed = int(item.get('quantity', 0))
+            
+            # Lock the medicine row to prevent race conditions
+            medicine = db.session.query(Medicine).with_for_update().get(medicine_id)
+            
+            if not medicine:
+                db.session.rollback()
+                return jsonify({'error': f'Medicine ID {medicine_id} not found'}), 400
+                
+            if medicine.stock_quantity < quantity_needed:
+                db.session.rollback()
+                return jsonify({'error': f'Insufficient stock for {medicine.name}. Available: {medicine.stock_quantity}'}), 400
+            
+            medicine.stock_quantity -= quantity_needed
+
+        # Update Status
+        prescription.pharmacy_status = 'dispensed'
+        prescription.dispensed_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Prescription dispensed and inventory updated',
+            'prescription': prescription.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/pharmacy/prescriptions/<int:prescription_id>/status', methods=['PUT'])
 @role_required(['pharmacy'])
 def update_prescription_status(prescription_id):
+    # Backward compatibility or manual status updates
     try:
         data = request.get_json()
         new_status = data.get('status')
