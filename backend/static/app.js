@@ -249,9 +249,9 @@ const Login = ({ onLogin }) => {
                     <div className="brand-logo">
                         <i className="fas fa-hospital-symbol"></i>
                     </div>
-                    <h1 className="brand-title">Queue-Free Healthcare</h1>
+                    <h1 className="brand-title">Queue-Free Healthcare Appointments – Track Your Turn Live</h1>
                     <p className="brand-subtitle">
-                        {isLogin ? 'Track your turn in real time. Login to continue.' : 'Book appointments & skip the wait.'}
+                        {isLogin ? 'Book appointments, monitor real-time queues, and reduce waiting time.' : 'Create your account to skip the wait.'}
                     </p>
                 </div>
 
@@ -524,12 +524,25 @@ const PatientDashboard = ({ user }) => {
                                         <span><i className="fas fa-user-md"></i> {appointment.doctor_name}</span>
                                         <span><i className="fas fa-clinic-medical"></i> {appointment.department_name}</span>
                                         {dashboardData.active_appointment && dashboardData.active_appointment.id === appointment.id && (
-                                            <>
-                                                <span className="font-bold">Position: {dashboardData.estimated_wait / 15}</span>
-                                                <span className="text-primary font-bold">
-                                                    <i className="fas fa-clock"></i> Est. Wait: {dashboardData.estimated_wait} mins
-                                                </span>
-                                            </>
+                                            <div style={{ width: '100%', marginTop: '0.5rem' }}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="font-bold text-sm">Position: {dashboardData.estimated_wait / 15}</span>
+                                                    <span className="text-primary font-bold text-sm">
+                                                        <i className="fas fa-clock"></i> ~{dashboardData.estimated_wait} mins
+                                                    </span>
+                                                </div>
+                                                {/* Progress Bar: Inverse logic (closer to 0 is better) */}
+                                                <div className="progress-container">
+                                                    <div
+                                                        className="progress-bar"
+                                                        style={{ width: `${Math.max(5, 100 - ((dashboardData.estimated_wait / 15) * 10))}%` }}
+                                                    ></div>
+                                                </div>
+                                                <div className="progress-text">
+                                                    <span>In Queue</span>
+                                                    <span>Your Turn</span>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -828,6 +841,7 @@ const DoctorDashboard = ({ user }) => {
     const [dashboardData, setDashboardData] = useState(null);
     const [showPrescription, setShowPrescription] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [processingId, setProcessingId] = useState(null);
     const [alert, setAlert] = useState(null);
 
     useEffect(() => {
@@ -848,12 +862,15 @@ const DoctorDashboard = ({ user }) => {
     };
 
     const handleAdvanceQueue = async (appointmentId) => {
+        setProcessingId(appointmentId);
         try {
             await apiService.advanceQueue(appointmentId);
             fetchDashboardData();
             setAlert({ type: 'success', message: 'Queue advanced successfully' });
         } catch (error) {
             setAlert({ type: 'error', message: error.message });
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -960,10 +977,15 @@ const DoctorDashboard = ({ user }) => {
                                                     <button
                                                         className="btn btn-sm btn-primary"
                                                         onClick={() => handleAdvanceQueue(appointment.id)}
+                                                        disabled={processingId === appointment.id}
                                                     >
-                                                        {appointment.status === 'booked' ? 'Call Next' :
-                                                            appointment.status === 'in_queue' ? 'Start Consult' :
-                                                                'Finish'}
+                                                        {processingId === appointment.id ? (
+                                                            <i className="fas fa-spinner fa-spin"></i>
+                                                        ) : (
+                                                            appointment.status === 'booked' ? 'Call Next' :
+                                                                appointment.status === 'in_queue' ? 'Start Consult' :
+                                                                    'Finish'
+                                                        )}
                                                     </button>
                                                     {appointment.status === 'consulting' && (
                                                         <button
@@ -1294,6 +1316,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
 const PharmacyDashboard = ({ user }) => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [processingId, setProcessingId] = useState(null);
     const [alert, setAlert] = useState(null);
 
     useEffect(() => {
@@ -1314,12 +1337,15 @@ const PharmacyDashboard = ({ user }) => {
     };
 
     const handleDispensePrescription = async (prescriptionId) => {
+        setProcessingId(prescriptionId);
         try {
             await apiService.dispensePrescription(prescriptionId);
             fetchDashboardData();
             setAlert({ type: 'success', message: 'Prescription dispensed successfully' });
         } catch (error) {
             setAlert({ type: 'error', message: error.message });
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -1381,8 +1407,13 @@ const PharmacyDashboard = ({ user }) => {
                                         <button
                                             className="btn btn-success btn-sm"
                                             onClick={() => handleDispensePrescription(prescription.id)}
+                                            disabled={processingId === prescription.id}
                                         >
-                                            <i className="fas fa-check"></i> Mark Dispensed
+                                            {processingId === prescription.id ? (
+                                                <span><i className="fas fa-spinner fa-spin"></i> Processing...</span>
+                                            ) : (
+                                                <span><i className="fas fa-check"></i> Mark Dispensed</span>
+                                            )}
                                         </button>
                                     </div>
 

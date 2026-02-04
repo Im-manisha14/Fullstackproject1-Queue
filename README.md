@@ -211,6 +211,24 @@ Frontend:
 - `queue_position_changed` - Real-time position updates
 - `appointment_completed` - Consultation completed
 
+## 🔄 User Flow (Mermaid)
+```mermaid
+graph TD
+    A[Start] --> B[Login Page]
+    B --> C{User Role?}
+    C -- Patient --> D[Patient Dashboard]
+    C -- Doctor --> E[Doctor Dashboard]
+    C -- Pharmacy --> F[Pharmacy Dashboard]
+    
+    D --> G[Book Appointment]
+    G --> H[View Queue / Progress]
+    E --> I[Call Next Patient]
+    I --> J[Consultation & Prescription]
+    J --> K[Update Queue]
+    F --> L[Receive Prescription]
+    L --> M[Dispense Medicine]
+```
+
 ## 🧪 Test Accounts
 
 The system includes pre-configured test accounts:
