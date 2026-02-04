@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login = () => {
@@ -185,10 +184,7 @@ const Login = () => {
 
             <div className="mt-8 text-center">
               <p className="text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-teal-600 hover:text-teal-700 font-semibold">
-                  Sign up here
-                </Link>
+                Use demo accounts above to test the system
               </p>
             </div>
           </div>

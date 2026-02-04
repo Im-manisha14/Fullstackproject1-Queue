@@ -5,12 +5,7 @@ import socketService from '../utils/socket';
 import toast from 'react-hot-toast';
 import { 
   Users, 
-  Clock, 
-  Activity, 
-  FileText, 
-  User, 
   Calendar,
-  Stethoscope,
   Play,
   CheckCircle
 } from 'lucide-react';
