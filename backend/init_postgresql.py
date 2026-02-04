@@ -10,7 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
-from app import app, db, User, Department, Doctor, Appointment, QueueStatus, Prescription, PharmacyInventory
+from app import app, db, User, Department, DoctorProfile, Appointment, Prescription, Medicine
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date, time, timedelta
 
@@ -47,50 +47,50 @@ def init_database():
                 User(username="admin", email="admin@hospital.com", 
                      password_hash=generate_password_hash("admin123"),
                      full_name="System Administrator", role="admin", 
-                     phone="+1-555-0001", is_verified=True),
+                     phone="+1-555-0001"),
                 
                 # Doctors
                 User(username="dr_smith", email="dr.smith@hospital.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Dr. John Smith", role="doctor",
-                     phone="+1-555-1001", is_verified=True),
+                     phone="+1-555-1001"),
                      
                 User(username="dr_johnson", email="dr.johnson@hospital.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Dr. Sarah Johnson", role="doctor",
-                     phone="+1-555-1002", is_verified=True),
+                     phone="+1-555-1002"),
                      
                 User(username="dr_williams", email="dr.williams@hospital.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Dr. Michael Williams", role="doctor",
-                     phone="+1-555-1003", is_verified=True),
+                     phone="+1-555-1003"),
                 
                 # Patients  
                 User(username="patient1", email="patient1@email.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Alice Cooper", role="patient",
-                     phone="+1-555-2001", is_verified=True),
+                     phone="+1-555-2001"),
                      
                 User(username="patient2", email="patient2@email.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Bob Wilson", role="patient",
-                     phone="+1-555-2002", is_verified=True),
+                     phone="+1-555-2002"),
                      
                 User(username="patient3", email="patient3@email.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Carol Martinez", role="patient",
-                     phone="+1-555-2003", is_verified=True),
+                     phone="+1-555-2003"),
                 
                 # Pharmacy Staff
                 User(username="pharmacy1", email="pharmacy1@hospital.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="David Pharmacy", role="pharmacy",
-                     phone="+1-555-3001", is_verified=True),
+                     phone="+1-555-3001"),
                      
                 User(username="pharmacy2", email="pharmacy2@hospital.com",
                      password_hash=generate_password_hash("password123"),
                      full_name="Emma Medicines", role="pharmacy",
-                     phone="+1-555-3002", is_verified=True),
+                     phone="+1-555-3002"),
             ]
             
             for user in users:
@@ -100,19 +100,19 @@ def init_database():
             
             # Create Doctor Profiles
             doctor_profiles = [
-                Doctor(user_id=2, department_id=1, specialization="Internal Medicine",
+                DoctorProfile(user_id=2, department_id=1, specialization="Internal Medicine",
                             consultation_fee=100.0,
-                            availability_start=time(9, 0), availability_end=time(17, 0),
+                            available_from=time(9, 0), available_to=time(17, 0),
                             max_patients_per_day=40),
                             
-                Doctor(user_id=3, department_id=2, specialization="Interventional Cardiology",
+                DoctorProfile(user_id=3, department_id=2, specialization="Interventional Cardiology",
                             consultation_fee=150.0,
-                            availability_start=time(10, 0), availability_end=time(16, 0),
+                            available_from=time(10, 0), available_to=time(16, 0),
                             max_patients_per_day=30),
                             
-                Doctor(user_id=4, department_id=3, specialization="Neurological Surgery",
+                DoctorProfile(user_id=4, department_id=3, specialization="Neurological Surgery",
                             consultation_fee=200.0,
-                            availability_start=time(8, 30), availability_end=time(15, 30),
+                            available_from=time(8, 30), available_to=time(15, 30),
                             max_patients_per_day=25),
             ]
             
@@ -121,37 +121,32 @@ def init_database():
             db.session.commit()
             print("Doctor profiles created")
             
-            # Create Pharmacy Inventory
+            # Create Medicines (Inventory)
             medicines = [
-                PharmacyInventory(medicine_name="Paracetamol", generic_name="Acetaminophen", 
+                Medicine(name="Paracetamol", generic_name="Acetaminophen", 
                         manufacturer="PharmaCorp", 
-                        unit_price=0.50, quantity_in_stock=500,
-                        expiry_date=date(2026, 12, 31),
-                        batch_number="PC2024001"),
+                        price_per_unit=0.50, stock_quantity=500,
+                        expiry_date=date(2026, 12, 31)),
                         
-                PharmacyInventory(medicine_name="Amoxicillin", generic_name="Amoxicillin",
+                Medicine(name="Amoxicillin", generic_name="Amoxicillin",
                         manufacturer="AntiBio Ltd", 
-                        unit_price=1.20, quantity_in_stock=200,
-                        expiry_date=date(2026, 10, 15),
-                        batch_number="AB2024002"),
+                        price_per_unit=1.20, stock_quantity=200,
+                        expiry_date=date(2026, 10, 15)),
                         
-                PharmacyInventory(medicine_name="Lisinopril", generic_name="Lisinopril",
+                Medicine(name="Lisinopril", generic_name="Lisinopril",
                         manufacturer="CardioMed",
-                        unit_price=0.80, quantity_in_stock=300,
-                        expiry_date=date(2027, 3, 20),
-                        batch_number="CM2024003"),
+                        price_per_unit=0.80, stock_quantity=300,
+                        expiry_date=date(2027, 3, 20)),
                         
-                PharmacyInventory(medicine_name="Omeprazole", generic_name="Omeprazole",
+                Medicine(name="Omeprazole", generic_name="Omeprazole",
                         manufacturer="GastroHealth",
-                        unit_price=0.90, quantity_in_stock=250,
-                        expiry_date=date(2026, 8, 10),
-                        batch_number="GH2024004"),
+                        price_per_unit=0.90, stock_quantity=250,
+                        expiry_date=date(2026, 8, 10)),
                         
-                PharmacyInventory(medicine_name="Metformin", generic_name="Metformin HCl",
+                Medicine(name="Metformin", generic_name="Metformin HCl",
                         manufacturer="DiabCare",
-                        unit_price=0.60, quantity_in_stock=400,
-                        expiry_date=date(2026, 11, 25),
-                        batch_number="DC2024005"),
+                        price_per_unit=0.60, stock_quantity=400,
+                        expiry_date=date(2026, 11, 25)),
             ]
             
             for medicine in medicines:
@@ -185,21 +180,7 @@ def init_database():
             db.session.commit()
             print("Sample appointments created")
             
-            # Create queue entries
-            queue_entries = [
-                QueueStatus(appointment_id=2, queue_position=1, estimated_wait_time=15,
-                          current_token=1),
-                QueueStatus(appointment_id=3, queue_position=1, estimated_wait_time=30,
-                          current_token=2),
-            ]
-            
-            for entry in queue_entries:
-                db.session.add(entry)
-            db.session.commit()
-            print("Queue entries created")
-            
             # Create sample prescription for completed appointment
-            # Note: app.py Prescription model uses JSON for prescription_data, not separate diagnosis/notes fields in the way init_db expected
             prescription_data = {
                 "prescription_number": "RX202602020001",
                 "diagnosis": "Viral fever with headache",
@@ -214,13 +195,12 @@ def init_database():
                 doctor_id=2,
                 patient_id=5,
                 prescription_data=prescription_data,
-                notes="Take medications as prescribed. Rest and plenty of fluids.",
-                status="pending"
+                pharmacy_notes="Take medications as prescribed. Rest and plenty of fluids.",
+                pharmacy_status="pending"
             )
             db.session.add(prescription)
             db.session.commit()
             
-
             print("Sample prescription created")
             
             print("\nDatabase initialization completed successfully!")

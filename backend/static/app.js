@@ -7,7 +7,7 @@ const API_BASE = 'http://localhost:5000/api';
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'short', 
+        month: 'short',
         day: 'numeric'
     });
 };
@@ -33,11 +33,11 @@ const apiService = {
 
         const response = await fetch(`${API_BASE}${endpoint}`, config);
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.message || 'Request failed');
         }
-        
+
         return data;
     },
 
@@ -199,14 +199,14 @@ const Login = ({ onLogin }) => {
                     username: formData.username,
                     password: formData.password
                 });
-                
+
                 localStorage.setItem('token', response.access_token);
                 localStorage.setItem('user', JSON.stringify(response.user));
                 onLogin(response.user);
             } else {
                 const response = await apiService.register(formData);
                 setAlert({ type: 'success', message: response.message });
-                
+
                 if (formData.role === 'patient') {
                     setTimeout(() => {
                         setIsLogin(true);
@@ -228,25 +228,29 @@ const Login = ({ onLogin }) => {
         });
     };
 
+    const toggleMode = () => {
+        setIsLogin(!isLogin);
+        setAlert(null);
+        setFormData(prev => ({ ...prev, password: '' }));
+    };
+
     return (
         <div className="login-container">
+            {/* LEFT SIDE - FORM */}
             <div className="login-left">
-                <div className="hospital-branding">
-                    <div className="hospital-logo">⚕</div>
-                    <h1 className="hospital-name">Medical Center</h1>
-                    <p className="hospital-tagline">Advanced Healthcare Management</p>
-                </div>
-
-                <div className="form-container">
-                    <h2 className="form-title">
-                        {isLogin ? 'Sign In' : 'Create Account'}
-                    </h2>
+                <div className="login-form-wrapper simple-fade-in">
+                    <div className="login-header">
+                        <div className="brand-title">Hospital Management Service</div>
+                        <div className="brand-subtitle">
+                            {isLogin ? 'Welcome back! Please login to your account.' : 'Create an account to get started.'}
+                        </div>
+                    </div>
 
                     {alert && (
-                        <Alert 
-                            type={alert.type} 
-                            message={alert.message} 
-                            onClose={() => setAlert(null)} 
+                        <Alert
+                            type={alert.type}
+                            message={alert.message}
+                            onClose={() => setAlert(null)}
                         />
                     )}
 
@@ -260,7 +264,7 @@ const Login = ({ onLogin }) => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 required
-                                placeholder="Enter username"
+                                placeholder="Enter your username"
                             />
                         </div>
 
@@ -273,14 +277,14 @@ const Login = ({ onLogin }) => {
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
-                                placeholder="Enter password"
+                                placeholder="Enter your password"
                             />
                         </div>
 
                         {!isLogin && (
                             <>
                                 <div className="form-group">
-                                    <label className="form-label">Email</label>
+                                    <label className="form-label">Email Address</label>
                                     <input
                                         type="email"
                                         name="email"
@@ -288,7 +292,7 @@ const Login = ({ onLogin }) => {
                                         value={formData.email}
                                         onChange={handleChange}
                                         required
-                                        placeholder="Enter email"
+                                        placeholder="email@example.com"
                                     />
                                 </div>
 
@@ -301,24 +305,24 @@ const Login = ({ onLogin }) => {
                                         value={formData.full_name}
                                         onChange={handleChange}
                                         required
-                                        placeholder="Enter full name"
+                                        placeholder="John Doe"
                                     />
                                 </div>
 
                                 <div className="form-group">
-                                    <label className="form-label">Phone</label>
+                                    <label className="form-label">Phone Number</label>
                                     <input
                                         type="tel"
                                         name="phone"
                                         className="form-input"
                                         value={formData.phone}
                                         onChange={handleChange}
-                                        placeholder="Enter phone number"
+                                        placeholder="+1 (555) 000-0000"
                                     />
                                 </div>
 
                                 <div className="form-group">
-                                    <label className="form-label">Role</label>
+                                    <label className="form-label">I am a...</label>
                                     <select
                                         name="role"
                                         className="form-select"
@@ -360,13 +364,13 @@ const Login = ({ onLogin }) => {
                                                 className="form-input"
                                                 value={formData.specialization}
                                                 onChange={handleChange}
-                                                placeholder="Your specialization"
+                                                placeholder="e.g. Cardiologist"
                                             />
                                         </div>
 
                                         <div className="form-row">
                                             <div className="form-group">
-                                                <label className="form-label">Experience (years)</label>
+                                                <label className="form-label">Experience (Years)</label>
                                                 <input
                                                     type="number"
                                                     name="experience_years"
@@ -395,31 +399,64 @@ const Login = ({ onLogin }) => {
                             </>
                         )}
 
-                        <button 
-                            type="submit" 
+                        {isLogin && (
+                            <div className="form-options">
+                                <label className="remember-me">
+                                    <input type="checkbox" />
+                                    <span>Remember me</span>
+                                </label>
+                                <a href="#" className="forgot-password">Forgot Password?</a>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
                             className="btn btn-primary"
                             disabled={loading}
                         >
-                            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                            {loading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                    <div className="loading-spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
+                                    Processing...
+                                </span>
+                            ) : (isLogin ? 'Login' : 'Create Account')}
                         </button>
 
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => {
-                                setIsLogin(!isLogin);
-                                setAlert(null);
-                                setFormData(prev => ({ ...prev, password: '' }));
-                            }}
-                        >
-                            {isLogin ? 'Need an account?' : 'Already have an account?'}
-                        </button>
+                        <div className="create-account">
+                            {isLogin ? "Don't have an account?" : "Already have an account?"}
+                            <a href="#" onClick={(e) => { e.preventDefault(); toggleMode(); }}>
+                                {isLogin ? 'Create Account' : 'Login'}
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
 
+            {/* RIGHT SIDE - ILLUSTRATION */}
             <div className="login-right">
-                <div style={{ color: 'white', textAlign: 'center', padding: '40px' }}>
+                <div className="illustration-container">
+                    <div className="icon-circle">
+                        {/* Animated Orbiting Icons */}
+                        <div className="orbit-icons">
+                            <div className="orbit-item"><i className="fas fa-stethoscope"></i></div>
+                            <div className="orbit-item"><i className="fas fa-user-md"></i></div>
+                            <div className="orbit-item"><i className="fas fa-heartbeat"></i></div>
+                            <div className="orbit-item"><i className="fas fa-pills"></i></div>
+                            <div className="orbit-item"><i className="fas fa-hospital"></i></div>
+                            <div className="orbit-item"><i className="fas fa-ambulance"></i></div>
+                            <div className="orbit-item"><i className="fas fa-notes-medical"></i></div>
+                            <div className="orbit-item"><i className="fas fa-syringe"></i></div>
+                        </div>
+
+                        {/* Center Logo/Text */}
+                        <div className="center-logo">
+                            <div style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '10px' }}>
+                                <i className="fas fa-hospital-alt"></i>
+                            </div>
+                            <h2>Hospital</h2>
+                            <span>Management Service</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -484,7 +521,7 @@ const PatientDashboard = ({ user }) => {
                         <h2 className="card-title">Quick Actions</h2>
                     </div>
                     <div className="card-content">
-                        <button 
+                        <button
                             className="btn btn-primary"
                             onClick={() => setShowBooking(true)}
                         >
@@ -493,7 +530,7 @@ const PatientDashboard = ({ user }) => {
                     </div>
                 </div>
             ) : (
-                <AppointmentBooking 
+                <AppointmentBooking
                     onCancel={() => setShowBooking(false)}
                     onSuccess={() => {
                         setShowBooking(false);
@@ -896,9 +933,9 @@ const DoctorDashboard = ({ user }) => {
                                             <td>{appointment.patient_name}</td>
                                             <td>{appointment.symptoms}</td>
                                             <td>
-                                                <StatusBadge 
-                                                    status={appointment.status} 
-                                                    priority={appointment.priority} 
+                                                <StatusBadge
+                                                    status={appointment.status}
+                                                    priority={appointment.priority}
                                                 />
                                             </td>
                                             <td>
@@ -906,9 +943,9 @@ const DoctorDashboard = ({ user }) => {
                                                     className="btn btn-sm btn-primary"
                                                     onClick={() => handleAdvanceQueue(appointment.id)}
                                                 >
-                                                    {appointment.status === 'booked' ? 'Call Next' : 
-                                                     appointment.status === 'in_queue' ? 'Start Consultation' :
-                                                     'Complete'}
+                                                    {appointment.status === 'booked' ? 'Call Next' :
+                                                        appointment.status === 'in_queue' ? 'Start Consultation' :
+                                                            'Complete'}
                                                 </button>
                                                 {appointment.status === 'consulting' && (
                                                     <button
@@ -1019,7 +1056,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             instructions: 'Take as prescribed',
             duration: 7
         };
-        
+
         setFormData(prev => ({
             ...prev,
             medications: [...prev.medications, medication]
@@ -1038,7 +1075,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
     const updateMedication = (index, field, value) => {
         setFormData(prev => ({
             ...prev,
-            medications: prev.medications.map((med, i) => 
+            medications: prev.medications.map((med, i) =>
                 i === index ? { ...med, [field]: value } : med
             )
         }));
@@ -1096,7 +1133,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             }}>
                 <h2 style={{ marginBottom: '20px' }}>Create Prescription</h2>
                 <p style={{ marginBottom: '20px', color: '#666' }}>
-                    Patient: <strong>{appointment.patient_name}</strong> | 
+                    Patient: <strong>{appointment.patient_name}</strong> |
                     Token: <strong>#{appointment.token_number}</strong>
                 </p>
 
@@ -1136,7 +1173,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                             }}
                             placeholder="Type medicine name..."
                         />
-                        
+
                         {medicines.length > 0 && (
                             <div style={{
                                 border: '1px solid #ddd',
@@ -1197,7 +1234,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 Remove
                                             </button>
                                         </div>
-                                        
+
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div>
                                                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Quantity</label>
@@ -1222,7 +1259,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 />
                                             </div>
                                         </div>
-                                        
+
                                         <div style={{ marginTop: '10px' }}>
                                             <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Instructions</label>
                                             <input
@@ -1341,9 +1378,9 @@ const PharmacyDashboard = ({ user }) => {
                                             Dispense
                                         </button>
                                     </div>
-                                    
+
                                     <p style={{ marginBottom: '10px' }}><strong>Diagnosis:</strong> {prescription.diagnosis}</p>
-                                    
+
                                     <div>
                                         <strong>Medications:</strong>
                                         <ul className="medication-list">
@@ -1353,8 +1390,8 @@ const PharmacyDashboard = ({ user }) => {
                                                         {medication.name} - {medication.strength}
                                                     </div>
                                                     <div className="medication-details">
-                                                        Quantity: {medication.quantity} | 
-                                                        Instructions: {medication.instructions} | 
+                                                        Quantity: {medication.quantity} |
+                                                        Instructions: {medication.instructions} |
                                                         Stock Available: {medication.available_stock}
                                                     </div>
                                                 </li>
@@ -1548,7 +1585,7 @@ const App = () => {
         // Check for stored user session
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        
+
         if (token && storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
@@ -1596,7 +1633,7 @@ const App = () => {
             <header className="header">
                 <div className="header-content">
                     <div className="logo">
-                        <div className="logo-icon">⚕</div>
+                        <div className="logo-icon"><i className="fas fa-hospital-symbol"></i></div>
                         <h1>Medical Center</h1>
                     </div>
                     <div className="user-info">
