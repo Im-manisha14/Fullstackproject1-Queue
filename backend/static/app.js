@@ -540,7 +540,9 @@ const PatientDashboard = ({ user }) => {
                                                 </div>
                                                 <div className="progress-text">
                                                     <span>In Queue</span>
-                                                    <span>Your Turn</span>
+                                                    <span className={dashboardData.estimated_wait <= 15 ? "text-success font-bold" : ""}>
+                                                        {dashboardData.estimated_wait <= 15 ? <i className="fas fa-check-circle"></i> : null} Your Turn
+                                                    </span>
                                                 </div>
                                             </div>
                                         )}

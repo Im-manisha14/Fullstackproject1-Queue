@@ -5,7 +5,21 @@
 [![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2F%20SQLite-F44336)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
 [![Authentication](https://img.shields.io/badge/Auth-JWT%20Role--based-4CAF50)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
 
-A comprehensive **Queue-Free Healthcare Management System** that digitizes hospital queues, streamlines patient appointments, and manages healthcare workflows with real-time updates. Built with modern web technologies and healthcare industry best practices.
+**Queue-Free Healthcare Appointment System** — eliminates waiting queues in hospitals and clinics by digitizing appointments, providing real-time queue updates, and ensuring secure role-based access for Patients, Doctors, and Pharmacy staff.
+
+---
+
+## 📸 System Previews
+
+| **Secure Login** | **Patient Dashboard** |
+|:---:|:---:|
+| ![Login Page](./screenshots/login.png) | ![Patient Dashboard](./screenshots/patient-dashboard.png) |
+| *Role-based secure entry with "Calm Blue" theme* | *Live queue tracking & appointment booking* |
+
+| **Doctor Console** | **Live Queue Status** |
+|:---:|:---:|
+| ![Doctor Dashboard](./screenshots/doctor.png) | ![Real-time Queue](./screenshots/queue.png) |
+| *Manage patients & issue prescriptions instantly* | *Dynamic progress bar & "Now Serving" updates* |
 
 ---
 
