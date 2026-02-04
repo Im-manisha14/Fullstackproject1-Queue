@@ -1,334 +1,385 @@
-# Q-Free Health - Queue-Free Healthcare Appointment System
+# Queue-Free Healthcare Appointment System
 
-A comprehensive healthcare management platform built with React frontend, Flask backend, and PostgreSQL database. This system enables queue-free appointment booking, real-time queue management, digital prescriptions, and pharmacy integration.
+A complete full-stack web application for healthcare appointment management with real-time queue tracking, built with React, Flask, and PostgreSQL.
 
 ## 🏥 System Overview
 
-**Q-Free Health** transforms traditional healthcare appointment systems by providing:
-- **Queue-Free Booking**: Smart appointment scheduling with real-time slot validation
-- **Live Queue Management**: Real-time queue tracking with wait time predictions
-- **Digital Prescriptions**: Seamless prescription workflow from doctor to pharmacy
-- **Role-Based Access**: Separate dashboards for patients, doctors, and pharmacists
-- **Professional Design**: Clean, accessible UI following healthcare industry standards
-
-## 🏗️ Architecture
-
-```
-Frontend (React + HTML/CSS/JS) ↔ Backend (Flask REST API) ↔ Database (PostgreSQL)
-```
-
-- **Frontend**: React SPA with role-based dashboards
-- **Backend**: Flask REST API with JWT authentication
-- **Database**: PostgreSQL with normalized schema
-- **Deployment**: Direct Flask and HTML/CSS/JS serving
-
-## 📋 Features by Role
-
-### 👤 Patient Module
-- Secure registration and authentication
-- Department and doctor search
-- Real-time appointment booking
-- Live queue status with wait time estimates
-- Digital prescription viewing
-- Appointment history and management
-
-### 👨‍⚕️ Doctor Module
-- Daily OPD schedule management
-- Real-time patient queue with token system
-- Digital prescription creation
-- Patient consultation workflow
-- Analytics dashboard (patients seen, average time)
-- Emergency patient prioritization
-
-### 💊 Pharmacy Module
-- Digital prescription queue management
-- Real-time inventory tracking
-- Low stock alerts and notifications
-- Medicine dispensing workflow
-- Prescription status updates
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **React 18** - Component-based UI framework
-- **HTML5 & CSS3** - Semantic markup and responsive design
-- **JavaScript ES6+** - Modern JavaScript features
-- **Babel** - JavaScript transpilation
-
-### Backend
-- **Flask 2.3** - Python web framework
-- **Flask-SQLAlchemy** - Database ORM
-- **Flask-JWT-Extended** - JWT authentication
-- **Flask-CORS** - Cross-origin resource sharing
-- **PostgreSQL** - Relational database
-- **psycopg2** - PostgreSQL adapter
-
-### DevOps & Deployment
-- **Python Flask** - Backend API and web serving
-- **HTML/CSS/JS** - Frontend with custom styling
-- **Nginx** - Reverse proxy and static file serving
-- **PostgreSQL 15** - Production database
+This system eliminates traditional queues in healthcare facilities by providing:
+- **Real-time appointment booking** with instant queue position updates
+- **Role-based dashboards** for Patients, Doctors, and Pharmacies
+- **Live queue tracking** with WebSocket notifications
+- **Digital prescription management** from consultation to dispensing
+- **JWT-based authentication** with secure role-based access control
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+ with pip
-- PostgreSQL 12+ (or SQLite for development)
-- PostgreSQL (if running locally)
-- Python 3.9+ (for local development)
 
-### Option 1: Docker Deployment (Recommended)
+1. **Python 3.8+** - [Download Python](https://python.org/downloads/)
+2. **Node.js 16+** - [Download Node.js](https://nodejs.org/)
+3. **PostgreSQL** - [Download PostgreSQL](https://postgresql.org/download/)
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd Fullstackproject-QueueFreeAppoinment
-   ```
+### One-Click Launch
 
-2. **Start all services**
-   ```bash
-   docker-compose up -d
-   ```
+The easiest way to start the entire system:
 
-3. **Access the application**
-   - Frontend: http://localhost
-   - Backend API: http://localhost:5000
-   - Database: localhost:5432
-
-### Option 2: Local Development
-
-1. **Database Setup**
-   ```bash
-   # Install PostgreSQL and create database
-   createdb queue
-   psql -d queue -f database/schema.sql
-   ```
-
-2. **Backend Setup**
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   python app.py
-   ```
-
-3. **Frontend Setup**
-   ```bash
-   cd frontend
-   # Serve with any HTTP server or open index.html directly
-   python -m http.server 3000
-   ```
-
-## 🔐 Default Login Credentials
-
-### Test Accounts
-```
-Patient:
-Email: patient@qfree.com
-Password: password123
-
-Doctor:
-Email: dr.smith@qfree.com
-Password: password123
-
-Pharmacy:
-Email: pharmacy@qfree.com
-Password: password123
+```bash
+python run_system.py
 ```
 
-## 📊 Database Schema
+This script will:
+- ✅ Check all dependencies
+- 📦 Install all required packages
+- 🚀 Start both backend and frontend servers
+- 🌐 Open the application in your browser
+- 📊 Display all system information
+
+### Manual Setup (Alternative)
+
+If you prefer to set up manually:
+
+#### 1. Database Setup
+
+Create PostgreSQL database:
+```sql
+CREATE DATABASE healthcare_db;
+CREATE USER postgres WITH PASSWORD 'postgres';
+GRANT ALL PRIVILEGES ON DATABASE healthcare_db TO postgres;
+```
+
+#### 2. Backend Setup
+
+```bash
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+
+Backend will run on: http://localhost:5000
+
+#### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Frontend will run on: http://localhost:3000
+
+## 🎯 Features
+
+### Patient Features
+- **Account Registration & Login** with secure JWT authentication
+- **Browse Departments** and available doctors
+- **Book Appointments** with preferred time slots
+- **Real-time Queue Tracking** - see your position and estimated wait time
+- **Live Notifications** when it's your turn
+- **Prescription Tracking** - monitor prescription status from doctor to pharmacy
+
+### Doctor Features
+- **Daily Queue Management** - view all scheduled appointments
+- **Patient Consultation** - call next patient with one click
+- **Digital Prescriptions** - create and send prescriptions instantly
+- **Real-time Updates** - automatic queue position updates
+- **Appointment History** - track completed consultations
+
+### Pharmacy Features
+- **Prescription Queue** - receive prescriptions from doctors instantly
+- **Medicine Inventory** - track stock levels and expiry dates
+- **Dispensing Workflow** - manage prescription preparation and pickup
+- **Low Stock Alerts** - automatic reorder notifications
+- **Pickup Token System** - organized pickup process
+
+## 🏗️ Technical Architecture
+
+### Backend (Flask + PostgreSQL)
+- **Flask Web Framework** with REST API endpoints
+- **PostgreSQL Database** with normalized relational schema
+- **JWT Authentication** with role-based access control
+- **Flask-SocketIO** for real-time WebSocket communication
+- **SQLAlchemy ORM** for database operations
+
+### Frontend (React + Tailwind)
+- **React 18** with functional components and hooks
+- **React Router** for client-side routing
+- **Tailwind CSS** for responsive design
+- **Socket.IO Client** for real-time updates
+- **Axios** for HTTP API requests
+
+### Key Technologies
+```
+Backend:
+- Flask 2.3+
+- PostgreSQL 13+
+- SQLAlchemy 2.0+
+- Flask-JWT-Extended
+- Flask-SocketIO
+- Flask-CORS
+
+Frontend:
+- React 18.2+
+- React Router DOM 6+
+- Tailwind CSS 3+
+- Socket.IO Client 4+
+- Axios 1.6+
+- Lucide React (icons)
+```
+
+## 🗄️ Database Schema
 
 ### Core Tables
-- **users** - User authentication and profiles
-- **departments** - Medical departments
-- **doctors** - Doctor profiles and availability
-- **patients** - Patient profiles and medical history
-- **appointments** - Appointment bookings with token system
-- **queue_status** - Real-time queue management
-- **prescriptions** - Digital prescription data
-- **pharmacy_inventory** - Medicine stock management
-- **audit_logs** - System activity tracking
 
-### Key Features
-- **Normalized Design**: Proper foreign key relationships
-- **ACID Compliance**: Transaction-safe operations
-- **Indexing**: Optimized queries for performance
-- **JSON Storage**: Flexible prescription and medicine data
-- **Audit Trail**: Complete system activity logging
+**Users**
+- Patient, Doctor, and Pharmacy accounts
+- Role-based access control
+- Secure password hashing
 
-## 🔧 API Endpoints
+**Departments**
+- Medical specializations
+- Department-specific information
+
+**Doctor Profiles**
+- Doctor qualifications and schedules
+- Consultation fees and availability
+
+**Appointments**
+- Complete appointment lifecycle
+- Queue management and status tracking
+- Priority-based scheduling
+
+**Prescriptions**
+- Digital prescription management
+- Real-time status updates
+- Pharmacy workflow integration
+
+**Medicines**
+- Inventory management
+- Stock tracking and alerts
+- Pricing and supplier information
+
+## 🔐 Authentication & Security
+
+- **JWT Tokens** with 24-hour expiration
+- **Password Hashing** using Werkzeug security
+- **Role-based Routes** with authentication decorators
+- **CORS Protection** for cross-origin requests
+- **Input Validation** on all API endpoints
+
+## 🌐 API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/register` - New user registration
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
 
-### Appointments
-- `GET /api/appointments/my` - User's appointments
-- `POST /api/appointments` - Book new appointment
-- `POST /api/queue/update` - Update queue status
+### Patient APIs
+- `GET /api/patient/departments` - List all departments
+- `GET /api/patient/doctors` - List available doctors
+- `POST /api/patient/book-appointment` - Book appointment
+- `GET /api/patient/appointments` - Get patient appointments
+- `GET /api/patient/prescriptions` - Get patient prescriptions
 
-### Medical Data
-- `GET /api/departments` - List departments
-- `GET /api/doctors` - List doctors by department
-- `POST /api/prescriptions` - Create prescription
-- `GET /api/pharmacy/prescriptions` - Pharmacy queue
-- `GET /api/pharmacy/inventory` - Medicine inventory
+### Doctor APIs
+- `GET /api/doctor/appointments` - Get doctor's appointments
+- `POST /api/doctor/call-patient` - Call next patient
+- `POST /api/doctor/complete-consultation` - Complete consultation
+- `POST /api/doctor/create-prescription` - Create prescription
 
-## 🎨 Design System
+### Pharmacy APIs
+- `GET /api/pharmacy/prescriptions` - Get prescription queue
+- `PUT /api/pharmacy/update-prescription` - Update prescription status
+- `GET /api/pharmacy/medicines` - Get medicine inventory
+- `GET /api/pharmacy/low-stock` - Get low stock alerts
 
-### Color Palette
-- **Primary Blue**: #2563eb (buttons, links, accents)
-- **Dark Blue**: #1e3a8a (headings, important text)
-- **Light Blue**: #f0f9ff (backgrounds, highlights)
-- **Gray Scale**: #f8fafc to #1f2937 (text, borders)
-- **Status Colors**: Green (success), Yellow (warning), Red (error)
+## 🔄 Real-time Features
 
-### Typography
-- **Font Family**: Inter, Segoe UI, Roboto, system fonts
-- **Weights**: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
-- **Responsive**: Scales appropriately on mobile devices
+### WebSocket Events
 
-## 🔒 Security Features
+**Queue Updates:**
+- `queue_updated` - Queue position changes
+- `appointment_called` - Patient called for consultation
+- `prescription_ready` - Prescription ready for pickup
 
-### Authentication & Authorization
-- JWT token-based authentication
-- Role-based access control (RBAC)
-- Password hashing with bcrypt
-- Session management
+**System Notifications:**
+- `new_prescription` - New prescription received
+- `queue_position_changed` - Real-time position updates
+- `appointment_completed` - Consultation completed
 
-### Data Protection
-- Input validation and sanitization
-- SQL injection prevention
-- XSS protection
-- CORS configuration
-- Audit logging for compliance
+## 🧪 Test Accounts
 
-## 📱 Responsive Design
+The system includes pre-configured test accounts:
 
-The system is fully responsive and works on:
-- **Desktop**: Full dashboard experience
-- **Tablet**: Optimized layout with touch support
-- **Mobile**: Compact interface with essential features
-- **Accessibility**: WCAG 2.1 compliant design
+**Patient Account:**
+- Email: `patient@test.com`
+- Password: `password123`
 
-## 🧪 Testing
+**Doctor Account:**
+- Email: `doctor@test.com`
+- Password: `password123`
 
-### Manual Testing Workflow
-1. **User Registration**: Create accounts for each role
-2. **Patient Flow**: Book appointment → Check queue → View prescription
-3. **Doctor Flow**: View queue → Start consultation → Create prescription
-4. **Pharmacy Flow**: Process prescription → Update inventory
+**Pharmacy Account:**
+- Email: `pharmacy@test.com`
+- Password: `password123`
 
-### API Testing
-```bash
-# Test login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"patient@qfree.com","password":"password123"}'
+## 📱 User Interface
 
-# Test appointment booking (with JWT token)
-curl -X POST http://localhost:5000/api/appointments \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"doctor_id":1,"appointment_date":"2026-02-03","appointment_time":"10:00","symptoms":"Routine checkup"}'
+### Responsive Design
+- **Mobile-First** approach with Tailwind CSS
+- **Dark/Light Mode** support
+- **Accessible** UI components with proper ARIA labels
+- **Real-time Animations** for queue updates
+
+### Dashboard Features
+- **Role-specific Interfaces** optimized for each user type
+- **Real-time Status Updates** without page refresh
+- **Intuitive Navigation** with clear visual hierarchy
+- **Interactive Components** for all system actions
+
+## 🛠️ Development
+
+### Project Structure
 ```
-
-## 📈 Performance Considerations
-
-### Database Optimization
-- Indexed columns for frequent queries
-- Connection pooling
-- Query optimization
-- Pagination for large datasets
-
-### Frontend Performance
-- Component lazy loading
-- Efficient state management
-- Optimized re-renders
-- Image optimization
-
-### Caching Strategy
-- Static asset caching
-- API response caching
-- Database query caching
-- Browser storage for user sessions
-
-## 🔧 Configuration
+/
+├── backend/                 # Flask backend
+│   ├── app.py              # Main application
+│   ├── requirements.txt    # Python dependencies
+│   └── static/             # Static files
+├── frontend/               # React frontend
+│   ├── src/
+│   │   ├── components/     # Reusable components
+│   │   ├── pages/          # Dashboard pages
+│   │   ├── contexts/       # React contexts
+│   │   └── utils/          # API and utility functions
+│   ├── public/            # Public assets
+│   └── package.json       # Node dependencies
+└── run_system.py          # System launcher
+```
 
 ### Environment Variables
-```bash
-# Backend Configuration
-FLASK_ENV=production
-DATABASE_URL=postgresql://postgres:Manisha14@localhost/queue
-JWT_SECRET_KEY=healthcare-queue-secret-key-2026
 
-# Database Configuration
-POSTGRES_DB=queue
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=Manisha14
+Create `.env` files for configuration:
+
+**Backend (.env):**
+```
+DATABASE_URL=postgresql://postgres:postgres@localhost/healthcare_db
+JWT_SECRET_KEY=your-secret-key
+SECRET_KEY=your-socket-secret
 ```
 
-### Feature Flags
-- Real-time updates (WebSocket support)
-- Email notifications
-- SMS reminders
-- Analytics tracking
-- Audit logging level
+**Frontend (.env):**
+```
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_SOCKET_URL=http://localhost:5000
+```
 
 ## 🚀 Deployment
 
-### Production Checklist
-- [ ] Update JWT secret key
-- [ ] Configure HTTPS certificates
-- [ ] Set up database backups
-- [ ] Configure monitoring
-- [ ] Set up log aggregation
-- [ ] Update CORS origins
-- [ ] Configure rate limiting
+### Production Setup
 
-### Scaling Considerations
-- **Horizontal Scaling**: Multiple backend instances
-- **Database**: PostgreSQL read replicas
-- **Caching**: Redis for session storage
-- **CDN**: Static asset delivery
-- **Load Balancer**: Traffic distribution
+1. **Database Migration**
+   ```bash
+   python backend/init_postgresql.py
+   ```
 
-## 📞 Support & Troubleshooting
+2. **Build Frontend**
+   ```bash
+   cd frontend
+   npm run build
+   ```
 
-### Common Issues
-1. **Database Connection**: Verify PostgreSQL is running and credentials are correct
-2. **CORS Errors**: Check API URL in frontend configuration
-3. **JWT Errors**: Verify token expiration and secret key
-4. **Queue Not Updating**: Check real-time update intervals
+3. **Configure Production Settings**
+   - Set secure JWT secret keys
+   - Configure PostgreSQL connection
+   - Enable HTTPS for production
 
-### Debug Mode
-Enable debug logging by setting `FLASK_ENV=development` in backend configuration.
+### Docker Deployment
 
-### Logs Location
-- **Backend**: Application logs in console
-- **Database**: PostgreSQL logs
-- **Nginx**: Access and error logs in container
+Create `docker-compose.yml`:
+```yaml
+version: '3.8'
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: healthcare_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db/healthcare_db
+    
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+```
+
+## 📊 System Monitoring
+
+### Health Checks
+- `GET /api/health` - System health status
+- Database connectivity monitoring
+- Service availability tracking
+
+### Logging
+- Request/response logging
+- Error tracking and reporting
+- Performance monitoring
 
 ## 🤝 Contributing
 
-### Development Setup
 1. Fork the repository
-2. Create a feature branch
-3. Follow coding standards
-4. Add tests for new features
-5. Submit pull request
-
-### Code Style
-- **Python**: PEP 8 compliance
-- **JavaScript**: ES6+ standards
-- **CSS**: BEM methodology
-- **SQL**: Proper formatting and comments
+2. Create feature branch (`git checkout -b feature/new-feature`)
+3. Commit changes (`git commit -am 'Add new feature'`)
+4. Push to branch (`git push origin feature/new-feature`)
+5. Create Pull Request
 
 ## 📄 License
 
-This project is developed for educational and healthcare improvement purposes. All code is open source under MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+### Common Issues
+
+**Database Connection Error:**
+- Ensure PostgreSQL is running
+- Verify database credentials
+- Check if database exists
+
+**Port Already in Use:**
+- Frontend (3000): `npx kill-port 3000`
+- Backend (5000): `npx kill-port 5000`
+
+**WebSocket Connection Failed:**
+- Check CORS configuration
+- Verify Socket.IO versions match
+- Ensure backend WebSocket server is running
+
+### Getting Help
+
+1. Check the console for error messages
+2. Verify all dependencies are installed
+3. Ensure database is properly configured
+4. Review the API endpoint documentation
 
 ---
 
-**Q-Free Health** - Transforming Healthcare Through Technology
+## 🎉 Success!
 
-For questions or support, contact the development team or create an issue in the repository.
+If everything is working correctly, you should see:
+- ✅ Backend API responding at http://localhost:5000
+- ✅ Frontend application at http://localhost:3000  
+- ✅ Real-time WebSocket connections active
+- ✅ Database operations working
+- ✅ Authentication system functional
+- ✅ All three role dashboards operational
+
+**The Queue-Free Healthcare System is now ready for use!**

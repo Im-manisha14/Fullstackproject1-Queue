@@ -158,315 +158,200 @@ const Alert = ({ type, message, onClose }) => (
 );
 
 // Login Component
-const Login = ({ onLogin }) => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [formData, setFormData] = useState({
-        username: '', // Kept for internal consistency if needed, but unused for auth now
-        password: '',
-        email: '',
-        full_name: '',
-        phone: '',
-        role: 'patient',
-        age: '', // Added Age field
-        department_id: '',
-        specialization: '',
-        experience_years: '',
-        consultation_fee: ''
-    });
-    const [departments, setDepartments] = useState([]);
+// Login Form Component (Professional UI)
+const LoginForm = ({ onLogin, onSwitchToRegister }) => {
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
-    const [alert, setAlert] = useState(null);
-
-    useEffect(() => {
-        const fetchDepartments = async () => {
-            try {
-                const response = await apiService.getDepartments();
-                setDepartments(response.departments);
-            } catch (error) {
-                console.error('Failed to fetch departments:', error);
-            }
-        };
-        fetchDepartments();
-    }, []);
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setAlert(null);
+        setError('');
 
         try {
-            if (isLogin) {
-                // Fix: Send email instead of username
-                const response = await apiService.login({
-                    email: formData.email,
-                    password: formData.password
-                });
-
-                localStorage.setItem('token', response.access_token);
-                localStorage.setItem('user', JSON.stringify(response.user));
-                onLogin(response.user);
-            } else {
-                // Calculate date_of_birth from age
-                const registrationData = { ...formData };
-                if (formData.role === 'patient' && formData.age) {
-                    const currentYear = new Date().getFullYear();
-                    const birthYear = currentYear - parseInt(formData.age);
-                    registrationData.date_of_birth = `${birthYear}-01-01`;
-                }
-
-                const response = await apiService.register(registrationData);
-                setAlert({ type: 'success', message: response.message });
-
-                if (formData.role === 'patient') {
-                    setTimeout(() => {
-                        setIsLogin(true);
-                        setFormData(prev => ({ ...prev, password: '' }));
-                    }, 2000);
-                }
-            }
-        } catch (error) {
-            setAlert({ type: 'error', message: error.message });
+            const response = await apiService.login(credentials);
+            localStorage.setItem('auth_token', response.access_token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            onLogin(response.user);
+        } catch (err) {
+            setError(err.message || 'Login failed');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <div className="hospital-branding">
-                    <div className="hospital-logo">⚕️</div>
-                    <h1 className="hospital-name">Medical Center</h1>
-                    <p className="hospital-tagline">Advanced Healthcare Management</p>
+        <div className="login-wrapper">
+            <div className="auth-card">
+                <div className="card-header">
+                    <div className="header-left">
+                        <h1><i className="fas fa-user-md"></i> Welcome Professional</h1>
+                        <p>Access your secure medical dashboard</p>
+                    </div>
+                    <div className="header-right">
+                        <span>New to our system?</span>
+                        <a onClick={onSwitchToRegister} className="register-link">Register Now</a>
+                    </div>
                 </div>
 
-                <h2 className="form-title" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                    {isLogin ? 'Sign In' : 'Create Account'}
-                </h2>
-
-                {alert && (
-                    <Alert
-                        type={alert.type}
-                        message={alert.message}
-                        onClose={() => setAlert(null)}
-                    />
-                )}
-
-                <form onSubmit={handleSubmit}>
-                    {/* Login View: Email & Password */}
-                    {isLogin && (
-                        <>
-                            <div className="form-group">
-                                <label className="form-label">Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    className="form-input"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter your email"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    className="form-input"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter password"
-                                />
-                            </div>
-                        </>
+                <div className="form-container">
+                    {error && (
+                        <div className="error-banner">
+                            <i className="fas fa-exclamation-circle"></i>
+                            <span>{error}</span>
+                        </div>
                     )}
 
-                    {/* Register View: Name, Email, Phone, Role, Age, Password */}
-                    {!isLogin && (
-                        <>
-                            <div className="form-group">
-                                <label className="form-label">Full Name</label>
-                                <input
-                                    type="text"
-                                    name="full_name"
-                                    className="form-input"
-                                    value={formData.full_name}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter full name"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Email</label>
+                    <form onSubmit={handleSubmit}>
+                        <div className="input-group">
+                            <label className="input-label">Email Address</label>
+                            <div className="custom-input-wrapper">
+                                <i className="fas fa-envelope input-icon"></i>
                                 <input
                                     type="email"
-                                    name="email"
-                                    className="form-input"
-                                    value={formData.email}
-                                    onChange={handleChange}
+                                    className="custom-input"
+                                    value={credentials.email}
+                                    onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                                     required
-                                    placeholder="Enter email"
+                                    placeholder="name@hospital.com"
                                 />
                             </div>
+                        </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    className="form-input"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    placeholder="Enter phone number"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Role</label>
-                                <select
-                                    name="role"
-                                    className="form-select"
-                                    value={formData.role}
-                                    onChange={handleChange}
-                                    required
-                                >
-                                    <option value="patient">Patient</option>
-                                    <option value="doctor">Doctor</option>
-                                    <option value="pharmacy">Pharmacy Staff</option>
-                                </select>
-                            </div>
-
-                            {formData.role === 'patient' && (
-                                <div className="form-group">
-                                    <label className="form-label">Age</label>
-                                    <input
-                                        type="number"
-                                        name="age"
-                                        className="form-input"
-                                        value={formData.age}
-                                        onChange={handleChange}
-                                        required
-                                        min="0"
-                                        max="120"
-                                        placeholder="Enter age"
-                                    />
-                                </div>
-                            )}
-
-                            {formData.role === 'doctor' && (
-                                <>
-                                    <div className="form-group">
-                                        <label className="form-label">Department</label>
-                                        <select
-                                            name="department_id"
-                                            className="form-select"
-                                            value={formData.department_id}
-                                            onChange={handleChange}
-                                            required
-                                        >
-                                            <option value="">Select Department</option>
-                                            {departments.map(dept => (
-                                                <option key={dept.id} value={dept.id}>
-                                                    {dept.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Specialization</label>
-                                        <input
-                                            type="text"
-                                            name="specialization"
-                                            className="form-input"
-                                            value={formData.specialization}
-                                            onChange={handleChange}
-                                            placeholder="Your specialization"
-                                        />
-                                    </div>
-
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label className="form-label">Experience (years)</label>
-                                            <input
-                                                type="number"
-                                                name="experience_years"
-                                                className="form-input"
-                                                value={formData.experience_years}
-                                                onChange={handleChange}
-                                                min="0"
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">Consultation Fee</label>
-                                            <input
-                                                type="number"
-                                                name="consultation_fee"
-                                                className="form-input"
-                                                value={formData.consultation_fee}
-                                                onChange={handleChange}
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
+                        <div className="input-group">
+                            <label className="input-label">Secure Password</label>
+                            <div className="custom-input-wrapper">
+                                <i className="fas fa-lock input-icon"></i>
                                 <input
                                     type="password"
-                                    name="password"
-                                    className="form-input"
-                                    value={formData.password}
-                                    onChange={handleChange}
+                                    className="custom-input"
+                                    value={credentials.password}
+                                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                                     required
-                                    placeholder="Enter password"
+                                    placeholder="••••••••••••"
                                 />
                             </div>
-                        </>
-                    )}
+                        </div>
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={loading}
-                        style={{ marginTop: '1rem' }}
-                    >
-                        {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'CREATE ACCOUNT')}
-                    </button>
-
-                    {/* Only show 'Need an account?' on Login page */}
-                    {isLogin && (
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => {
-                                setIsLogin(false);
-                                setAlert(null);
-                                setFormData(prev => ({ ...prev, password: '' }));
-                            }}
-                        >
-                            Need an account?
+                        <button type="submit" className="btn-submit" disabled={loading}>
+                            {loading ? 'VERIFYING...' : 'SECURE SIGN IN'}
                         </button>
-                    )}
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     );
+};
+
+// Register Form Component
+const RegisterForm = ({ onSwitchToLogin }) => {
+    const [formData, setFormData] = useState({
+        full_name: '', email: '', password: '', role: 'patient', phone: '', age: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            const dataToSubmit = { ...formData };
+            if (formData.role === 'patient' && formData.age) {
+                const birthYear = new Date().getFullYear() - parseInt(formData.age);
+                dataToSubmit.date_of_birth = `${birthYear}-01-01`;
+            }
+
+            await apiService.register(dataToSubmit);
+            setSuccess('Registration successful! Redirecting to login...');
+            setTimeout(onSwitchToLogin, 2000);
+        } catch (err) {
+            setError(err.message || 'Registration failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="login-wrapper">
+            <div className="auth-card">
+                <div className="card-header">
+                    <div className="header-left">
+                        <h1>Create Account</h1>
+                        <p>Join the healthcare platform</p>
+                    </div>
+                    <div className="header-right">
+                        <span>Already have an account?</span>
+                        <a onClick={onSwitchToLogin} className="register-link">Sign In</a>
+                    </div>
+                </div>
+
+                <div className="form-container">
+                    {error && <div className="error-banner">{error}</div>}
+                    {success && <div className="error-banner" style={{ background: '#ecfdf5', color: '#047857' }}>{success}</div>}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="input-group">
+                            <label className="input-label">Full Name</label>
+                            <div className="custom-input-wrapper">
+                                <input type="text" className="custom-input" style={{ paddingLeft: '16px' }}
+                                    value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} required />
+                            </div>
+                        </div>
+                        <div className="input-group">
+                            <label className="input-label">Email</label>
+                            <div className="custom-input-wrapper">
+                                <input type="email" className="custom-input" style={{ paddingLeft: '16px' }}
+                                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                            </div>
+                        </div>
+                        <div className="input-group">
+                            <label className="input-label">Password</label>
+                            <div className="custom-input-wrapper">
+                                <input type="password" className="custom-input" style={{ paddingLeft: '16px' }}
+                                    value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
+                            </div>
+                        </div>
+                        <div className="input-group">
+                            <label className="input-label">Role</label>
+                            <div className="custom-input-wrapper">
+                                <select className="custom-input" style={{ paddingLeft: '16px' }}
+                                    value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                    <option value="patient">Patient</option>
+                                    <option value="doctor">Doctor</option>
+                                    <option value="pharmacy">Pharmacy</option>
+                                </select>
+                            </div>
+                        </div>
+                        {formData.role === 'patient' && (
+                            <div className="input-group">
+                                <label className="input-label">Age</label>
+                                <div className="custom-input-wrapper">
+                                    <input type="number" className="custom-input" style={{ paddingLeft: '16px' }}
+                                        value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} required />
+                                </div>
+                            </div>
+                        )}
+
+                        <button type="submit" className="btn-submit" disabled={loading}>
+                            {loading ? 'CREATING...' : 'REGISTER ACCOUNT'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Main Auth Container
+const Login = ({ onLogin }) => {
+    const [view, setView] = useState('login');
+    return view === 'login'
+        ? <LoginForm onLogin={onLogin} onSwitchToRegister={() => setView('register')} />
+        : <RegisterForm onSwitchToLogin={() => setView('login')} />;
 };
 
 // Patient Dashboard

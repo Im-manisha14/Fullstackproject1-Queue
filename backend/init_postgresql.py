@@ -22,7 +22,7 @@ def init_database():
             # Drop existing tables and create new ones
             db.drop_all()
             db.create_all()
-            print("✅ Database tables created successfully")
+            print("Database tables created successfully")
             
             # Create Departments
             departments = [
@@ -39,7 +39,7 @@ def init_database():
             for dept in departments:
                 db.session.add(dept)
             db.session.commit()
-            print("✅ Departments created")
+            print("Departments created")
             
             # Create Users
             users = [
@@ -96,7 +96,7 @@ def init_database():
             for user in users:
                 db.session.add(user)
             db.session.commit()
-            print("✅ Users created")
+            print("Users created")
             
             # Create Doctor Profiles
             doctor_profiles = [
@@ -119,7 +119,7 @@ def init_database():
             for profile in doctor_profiles:
                 db.session.add(profile)
             db.session.commit()
-            print("✅ Doctor profiles created")
+            print("Doctor profiles created")
             
             # Create Pharmacy Inventory
             medicines = [
@@ -157,7 +157,7 @@ def init_database():
             for medicine in medicines:
                 db.session.add(medicine)
             db.session.commit()
-            print("✅ Pharmacy inventory created")
+            print("Pharmacy inventory created")
             
             # Create sample appointments for today
             today = date.today()
@@ -183,7 +183,7 @@ def init_database():
             for appointment in appointments:
                 db.session.add(appointment)
             db.session.commit()
-            print("✅ Sample appointments created")
+            print("Sample appointments created")
             
             # Create queue entries
             queue_entries = [
@@ -196,7 +196,7 @@ def init_database():
             for entry in queue_entries:
                 db.session.add(entry)
             db.session.commit()
-            print("✅ Queue entries created")
+            print("Queue entries created")
             
             # Create sample prescription for completed appointment
             # Note: app.py Prescription model uses JSON for prescription_data, not separate diagnosis/notes fields in the way init_db expected
@@ -221,18 +221,18 @@ def init_database():
             db.session.commit()
             
 
-            print("✅ Sample prescription created")
+            print("Sample prescription created")
             
-            print("\n🎉 Database initialization completed successfully!")
-            print("\n📋 Test Accounts Created:")
-            print("👨‍⚕️ Admin: admin / admin123")
-            print("🩺 Doctors: dr_smith, dr_johnson, dr_williams / password123")
-            print("🧑‍🤝‍🧑 Patients: patient1, patient2, patient3 / password123") 
-            print("💊 Pharmacy: pharmacy1, pharmacy2 / password123")
-            print(f"\n🌐 Access your system at: http://localhost:5000")
+            print("\nDatabase initialization completed successfully!")
+            print("\nTest Accounts Created:")
+            print("Admin: admin / admin123")
+            print("Doctors: dr_smith, dr_johnson, dr_williams / password123")
+            print("Patients: patient1, patient2, patient3 / password123") 
+            print("Pharmacy: pharmacy1, pharmacy2 / password123")
+            print(f"\nAccess your system at: http://localhost:5000")
             
         except Exception as e:
-            print(f"❌ Error during database initialization: {e}")
+            print(f"Error during database initialization: {e}")
             db.session.rollback()
 
 if __name__ == '__main__':
