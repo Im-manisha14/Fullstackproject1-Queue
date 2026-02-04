@@ -6,14 +6,10 @@ import toast from 'react-hot-toast';
 import { 
   Calendar, 
   Clock, 
-  User, 
-  MapPin, 
   Plus, 
-  RefreshCw, 
   Activity, 
   Stethoscope,
-  FileText,
-  Bell
+  FileText
 } from 'lucide-react';
 
 const PatientDashboard = () => {

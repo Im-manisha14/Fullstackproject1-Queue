@@ -19,7 +19,6 @@ const PharmacyDashboard = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [medicines, setMedicines] = useState([]);
   const [lowStock, setLowStock] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -30,7 +29,7 @@ const PharmacyDashboard = () => {
     return () => {
       socketService.off('new_prescription');
     };
-  }, [statusFilter]);
+  }, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setupSocketListeners = () => {
     socketService.on('new_prescription', (data) => {
@@ -40,7 +39,6 @@ const PharmacyDashboard = () => {
   };
 
   const loadInitialData = async () => {
-    setLoading(true);
     try {
       await Promise.all([
         loadPrescriptions(),
@@ -49,8 +47,6 @@ const PharmacyDashboard = () => {
       ]);
     } catch (error) {
       toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
     }
   };
 

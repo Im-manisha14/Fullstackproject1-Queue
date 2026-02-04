@@ -7,7 +7,7 @@ const API_BASE = 'http://localhost:5000/api';
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
-        month: 'short',
+        month: 'short', 
         day: 'numeric'
     });
 };
@@ -33,11 +33,11 @@ const apiService = {
 
         const response = await fetch(`${API_BASE}${endpoint}`, config);
         const data = await response.json();
-
+        
         if (!response.ok) {
             throw new Error(data.message || 'Request failed');
         }
-
+        
         return data;
     },
 
@@ -158,200 +158,272 @@ const Alert = ({ type, message, onClose }) => (
 );
 
 // Login Component
-// Login Form Component (Professional UI)
-const LoginForm = ({ onLogin, onSwitchToRegister }) => {
-    const [credentials, setCredentials] = useState({ email: '', password: '' });
+const Login = ({ onLogin }) => {
+    const [isLogin, setIsLogin] = useState(true);
+    const [formData, setFormData] = useState({
+        username: '',
+        password: '',
+        email: '',
+        full_name: '',
+        phone: '',
+        role: 'patient',
+        department_id: '',
+        specialization: '',
+        experience_years: '',
+        consultation_fee: ''
+    });
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [alert, setAlert] = useState(null);
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const response = await apiService.getDepartments();
+                setDepartments(response.departments);
+            } catch (error) {
+                console.error('Failed to fetch departments:', error);
+            }
+        };
+        fetchDepartments();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setAlert(null);
 
         try {
-            const response = await apiService.login(credentials);
-            localStorage.setItem('auth_token', response.access_token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            onLogin(response.user);
-        } catch (err) {
-            setError(err.message || 'Login failed');
+            if (isLogin) {
+                const response = await apiService.login({
+                    username: formData.username,
+                    password: formData.password
+                });
+                
+                localStorage.setItem('token', response.access_token);
+                localStorage.setItem('user', JSON.stringify(response.user));
+                onLogin(response.user);
+            } else {
+                const response = await apiService.register(formData);
+                setAlert({ type: 'success', message: response.message });
+                
+                if (formData.role === 'patient') {
+                    setTimeout(() => {
+                        setIsLogin(true);
+                        setFormData(prev => ({ ...prev, password: '' }));
+                    }, 2000);
+                }
+            }
+        } catch (error) {
+            setAlert({ type: 'error', message: error.message });
         } finally {
             setLoading(false);
         }
     };
 
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
     return (
-        <div className="login-wrapper">
-            <div className="auth-card">
-                <div className="card-header">
-                    <div className="header-left">
-                        <h1><i className="fas fa-user-md"></i> Welcome Professional</h1>
-                        <p>Access your secure medical dashboard</p>
-                    </div>
-                    <div className="header-right">
-                        <span>New to our system?</span>
-                        <a onClick={onSwitchToRegister} className="register-link">Register Now</a>
-                    </div>
+        <div className="login-container">
+            <div className="login-left">
+                <div className="hospital-branding">
+                    <div className="hospital-logo">⚕</div>
+                    <h1 className="hospital-name">Medical Center</h1>
+                    <p className="hospital-tagline">Advanced Healthcare Management</p>
                 </div>
 
                 <div className="form-container">
-                    {error && (
-                        <div className="error-banner">
-                            <i className="fas fa-exclamation-circle"></i>
-                            <span>{error}</span>
-                        </div>
+                    <h2 className="form-title">
+                        {isLogin ? 'Sign In' : 'Create Account'}
+                    </h2>
+
+                    {alert && (
+                        <Alert 
+                            type={alert.type} 
+                            message={alert.message} 
+                            onClose={() => setAlert(null)} 
+                        />
                     )}
 
                     <form onSubmit={handleSubmit}>
-                        <div className="input-group">
-                            <label className="input-label">Email Address</label>
-                            <div className="custom-input-wrapper">
-                                <i className="fas fa-envelope input-icon"></i>
-                                <input
-                                    type="email"
-                                    className="custom-input"
-                                    value={credentials.email}
-                                    onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                                    required
-                                    placeholder="name@hospital.com"
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label className="form-label">Username</label>
+                            <input
+                                type="text"
+                                name="username"
+                                className="form-input"
+                                value={formData.username}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter username"
+                            />
                         </div>
 
-                        <div className="input-group">
-                            <label className="input-label">Secure Password</label>
-                            <div className="custom-input-wrapper">
-                                <i className="fas fa-lock input-icon"></i>
-                                <input
-                                    type="password"
-                                    className="custom-input"
-                                    value={credentials.password}
-                                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                                    required
-                                    placeholder="••••••••••••"
-                                />
-                            </div>
+                        <div className="form-group">
+                            <label className="form-label">Password</label>
+                            <input
+                                type="password"
+                                name="password"
+                                className="form-input"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter password"
+                            />
                         </div>
 
-                        <button type="submit" className="btn-submit" disabled={loading}>
-                            {loading ? 'VERIFYING...' : 'SECURE SIGN IN'}
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Register Form Component
-const RegisterForm = ({ onSwitchToLogin }) => {
-    const [formData, setFormData] = useState({
-        full_name: '', email: '', password: '', role: 'patient', phone: '', age: ''
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-
-        try {
-            const dataToSubmit = { ...formData };
-            if (formData.role === 'patient' && formData.age) {
-                const birthYear = new Date().getFullYear() - parseInt(formData.age);
-                dataToSubmit.date_of_birth = `${birthYear}-01-01`;
-            }
-
-            await apiService.register(dataToSubmit);
-            setSuccess('Registration successful! Redirecting to login...');
-            setTimeout(onSwitchToLogin, 2000);
-        } catch (err) {
-            setError(err.message || 'Registration failed');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="login-wrapper">
-            <div className="auth-card">
-                <div className="card-header">
-                    <div className="header-left">
-                        <h1>Create Account</h1>
-                        <p>Join the healthcare platform</p>
-                    </div>
-                    <div className="header-right">
-                        <span>Already have an account?</span>
-                        <a onClick={onSwitchToLogin} className="register-link">Sign In</a>
-                    </div>
-                </div>
-
-                <div className="form-container">
-                    {error && <div className="error-banner">{error}</div>}
-                    {success && <div className="error-banner" style={{ background: '#ecfdf5', color: '#047857' }}>{success}</div>}
-
-                    <form onSubmit={handleSubmit}>
-                        <div className="input-group">
-                            <label className="input-label">Full Name</label>
-                            <div className="custom-input-wrapper">
-                                <input type="text" className="custom-input" style={{ paddingLeft: '16px' }}
-                                    value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} required />
-                            </div>
-                        </div>
-                        <div className="input-group">
-                            <label className="input-label">Email</label>
-                            <div className="custom-input-wrapper">
-                                <input type="email" className="custom-input" style={{ paddingLeft: '16px' }}
-                                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
-                            </div>
-                        </div>
-                        <div className="input-group">
-                            <label className="input-label">Password</label>
-                            <div className="custom-input-wrapper">
-                                <input type="password" className="custom-input" style={{ paddingLeft: '16px' }}
-                                    value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                            </div>
-                        </div>
-                        <div className="input-group">
-                            <label className="input-label">Role</label>
-                            <div className="custom-input-wrapper">
-                                <select className="custom-input" style={{ paddingLeft: '16px' }}
-                                    value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                    <option value="patient">Patient</option>
-                                    <option value="doctor">Doctor</option>
-                                    <option value="pharmacy">Pharmacy</option>
-                                </select>
-                            </div>
-                        </div>
-                        {formData.role === 'patient' && (
-                            <div className="input-group">
-                                <label className="input-label">Age</label>
-                                <div className="custom-input-wrapper">
-                                    <input type="number" className="custom-input" style={{ paddingLeft: '16px' }}
-                                        value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} required />
+                        {!isLogin && (
+                            <>
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className="form-input"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="Enter email"
+                                    />
                                 </div>
-                            </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Full Name</label>
+                                    <input
+                                        type="text"
+                                        name="full_name"
+                                        className="form-input"
+                                        value={formData.full_name}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="Enter full name"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Phone</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        className="form-input"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="Enter phone number"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Role</label>
+                                    <select
+                                        name="role"
+                                        className="form-select"
+                                        value={formData.role}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="patient">Patient</option>
+                                        <option value="doctor">Doctor</option>
+                                        <option value="pharmacy">Pharmacy Staff</option>
+                                    </select>
+                                </div>
+
+                                {formData.role === 'doctor' && (
+                                    <>
+                                        <div className="form-group">
+                                            <label className="form-label">Department</label>
+                                            <select
+                                                name="department_id"
+                                                className="form-select"
+                                                value={formData.department_id}
+                                                onChange={handleChange}
+                                                required
+                                            >
+                                                <option value="">Select Department</option>
+                                                {departments.map(dept => (
+                                                    <option key={dept.id} value={dept.id}>
+                                                        {dept.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Specialization</label>
+                                            <input
+                                                type="text"
+                                                name="specialization"
+                                                className="form-input"
+                                                value={formData.specialization}
+                                                onChange={handleChange}
+                                                placeholder="Your specialization"
+                                            />
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label className="form-label">Experience (years)</label>
+                                                <input
+                                                    type="number"
+                                                    name="experience_years"
+                                                    className="form-input"
+                                                    value={formData.experience_years}
+                                                    onChange={handleChange}
+                                                    min="0"
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="form-label">Consultation Fee</label>
+                                                <input
+                                                    type="number"
+                                                    name="consultation_fee"
+                                                    className="form-input"
+                                                    value={formData.consultation_fee}
+                                                    onChange={handleChange}
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </>
                         )}
 
-                        <button type="submit" className="btn-submit" disabled={loading}>
-                            {loading ? 'CREATING...' : 'REGISTER ACCOUNT'}
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary"
+                            disabled={loading}
+                        >
+                            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                        </button>
+
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => {
+                                setIsLogin(!isLogin);
+                                setAlert(null);
+                                setFormData(prev => ({ ...prev, password: '' }));
+                            }}
+                        >
+                            {isLogin ? 'Need an account?' : 'Already have an account?'}
                         </button>
                     </form>
                 </div>
             </div>
+
+            <div className="login-right">
+                <div style={{ color: 'white', textAlign: 'center', padding: '40px' }}>
+                </div>
+            </div>
         </div>
     );
-};
-
-// Main Auth Container
-const Login = ({ onLogin }) => {
-    const [view, setView] = useState('login');
-    return view === 'login'
-        ? <LoginForm onLogin={onLogin} onSwitchToRegister={() => setView('register')} />
-        : <RegisterForm onSwitchToLogin={() => setView('login')} />;
 };
 
 // Patient Dashboard
@@ -412,7 +484,7 @@ const PatientDashboard = ({ user }) => {
                         <h2 className="card-title">Quick Actions</h2>
                     </div>
                     <div className="card-content">
-                        <button
+                        <button 
                             className="btn btn-primary"
                             onClick={() => setShowBooking(true)}
                         >
@@ -421,7 +493,7 @@ const PatientDashboard = ({ user }) => {
                     </div>
                 </div>
             ) : (
-                <AppointmentBooking
+                <AppointmentBooking 
                     onCancel={() => setShowBooking(false)}
                     onSuccess={() => {
                         setShowBooking(false);
@@ -824,9 +896,9 @@ const DoctorDashboard = ({ user }) => {
                                             <td>{appointment.patient_name}</td>
                                             <td>{appointment.symptoms}</td>
                                             <td>
-                                                <StatusBadge
-                                                    status={appointment.status}
-                                                    priority={appointment.priority}
+                                                <StatusBadge 
+                                                    status={appointment.status} 
+                                                    priority={appointment.priority} 
                                                 />
                                             </td>
                                             <td>
@@ -834,9 +906,9 @@ const DoctorDashboard = ({ user }) => {
                                                     className="btn btn-sm btn-primary"
                                                     onClick={() => handleAdvanceQueue(appointment.id)}
                                                 >
-                                                    {appointment.status === 'booked' ? 'Call Next' :
-                                                        appointment.status === 'in_queue' ? 'Start Consultation' :
-                                                            'Complete'}
+                                                    {appointment.status === 'booked' ? 'Call Next' : 
+                                                     appointment.status === 'in_queue' ? 'Start Consultation' :
+                                                     'Complete'}
                                                 </button>
                                                 {appointment.status === 'consulting' && (
                                                     <button
@@ -947,7 +1019,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             instructions: 'Take as prescribed',
             duration: 7
         };
-
+        
         setFormData(prev => ({
             ...prev,
             medications: [...prev.medications, medication]
@@ -966,7 +1038,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
     const updateMedication = (index, field, value) => {
         setFormData(prev => ({
             ...prev,
-            medications: prev.medications.map((med, i) =>
+            medications: prev.medications.map((med, i) => 
                 i === index ? { ...med, [field]: value } : med
             )
         }));
@@ -1024,7 +1096,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
             }}>
                 <h2 style={{ marginBottom: '20px' }}>Create Prescription</h2>
                 <p style={{ marginBottom: '20px', color: '#666' }}>
-                    Patient: <strong>{appointment.patient_name}</strong> |
+                    Patient: <strong>{appointment.patient_name}</strong> | 
                     Token: <strong>#{appointment.token_number}</strong>
                 </p>
 
@@ -1064,7 +1136,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                             }}
                             placeholder="Type medicine name..."
                         />
-
+                        
                         {medicines.length > 0 && (
                             <div style={{
                                 border: '1px solid #ddd',
@@ -1125,7 +1197,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 Remove
                                             </button>
                                         </div>
-
+                                        
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div>
                                                 <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Quantity</label>
@@ -1150,7 +1222,7 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                                                 />
                                             </div>
                                         </div>
-
+                                        
                                         <div style={{ marginTop: '10px' }}>
                                             <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Instructions</label>
                                             <input
@@ -1269,9 +1341,9 @@ const PharmacyDashboard = ({ user }) => {
                                             Dispense
                                         </button>
                                     </div>
-
+                                    
                                     <p style={{ marginBottom: '10px' }}><strong>Diagnosis:</strong> {prescription.diagnosis}</p>
-
+                                    
                                     <div>
                                         <strong>Medications:</strong>
                                         <ul className="medication-list">
@@ -1281,8 +1353,8 @@ const PharmacyDashboard = ({ user }) => {
                                                         {medication.name} - {medication.strength}
                                                     </div>
                                                     <div className="medication-details">
-                                                        Quantity: {medication.quantity} |
-                                                        Instructions: {medication.instructions} |
+                                                        Quantity: {medication.quantity} | 
+                                                        Instructions: {medication.instructions} | 
                                                         Stock Available: {medication.available_stock}
                                                     </div>
                                                 </li>
@@ -1476,7 +1548,7 @@ const App = () => {
         // Check for stored user session
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-
+        
         if (token && storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
@@ -1544,7 +1616,4 @@ const App = () => {
 };
 
 // Render the app
-// Render the app
-const container = document.getElementById('root') || document.getElementById('app'); // Handle both conventions
-const root = ReactDOM.createRoot(container);
-root.render(<App />);
+ReactDOM.render(<App />, document.getElementById('root'));
