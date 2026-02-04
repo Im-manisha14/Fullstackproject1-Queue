@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Medical Teal Theme matching the reference image */
+            --primary-color: #0d9488;
+            /* Strong Teal */
+            --primary-light: #2dd4bf;
+            /* Bright Teal */
+            --primary-dark: #115e59;
+            /* Deep Teal */
+            --accent-green: #10b981;
+            /* Success Green */
+            --bg-neutral: #f1f5f9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Login Page Specific Styling */
+        .login-page-wrapper {
+            display: flex;
+            min-height: 100vh;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* The Teal Wave Background on the Left/Top */
+        .login-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            clip-path: ellipse(150% 100% at 50% 0%);
+            z-index: 0;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            display: flex;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 900px;
+            overflow: hidden;
+            min-height: 550px;
+        }
+
+        /* Left Side of Card - Illustration/Branding */
+        .auth-card-visual {
+            width: 45%;
+            background: linear-gradient(rgba(13, 148, 136, 0.9), rgba(17, 94, 89, 0.95));
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .auth-card-visual::before {
+            /* Subtle pattern overlay */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* Right Side of Card - Form */
+        .auth-card-form {
+            width: 55%;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .brand-logo-large {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .brand-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 1rem;
+        }
+
+        .login-header h2 {
+            color: var(--primary-dark);
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .form-group label {
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary-color);
+            background: white;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 700;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Dashboard Styles update for Theme Consistency */
+        .dashboard-header {
+            background: var(--primary-color);
+            /* Theme color header */
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+        }
+
+        .dashboard-header h1 {
+            color: white;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .user-info span {
+            color: white;
+        }
+
+        .stat-card {
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .card h3 {
+            color: var(--primary-dark);
+        }
+
+        .error-message {
+            color: #ef4444;
+            background: #fef2f2;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            border: 1px solid #fee2e2;
+        }
+
+        .success-message {
+            color: #065f46;
+            background: #d1fae5;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #a7f3d0;
+        }
+
+        @media (max-width: 768px) {
+            .auth-card {
+                flex-direction: column;
+                max-width: 400px;
+                min-height: 0;
+            }
+
+            .auth-card-visual {
+                display: none;
+            }
+
+            /* Hide visual on mobile for simple login */
+            .auth-card-form {
+                width: 100%;
+                padding: 2rem;
+            }
+        }
+
+        /* Loading Spinner Color */
+        .loading-spinner {
+            border-top-color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Starting Healthcare System...</p>
+        </div>
+    </div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <script>
+        const { useState, useEffect, useMemo } = React;
+        const { createRoot } = ReactDOM;
+
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // --- COMPONENTS ---
+
+        const Nav = ({ user, onLogout }) => (
+            React.createElement('div', { className: 'dashboard-header' },
+                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
+                    React.createElement('div', {
+                        style: {
+                            width: '40px',
+                            height: '40px',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)'
+                        }
+                    }, React.createElement('i', { className: 'fas fa-hospital-user' })),
+                    React.createElement('h1', null, 'Hospital Information System')
+                ),
+                React.createElement('div', { className: 'user-info' },
+                    React.createElement('div', { style: { textAlign: 'right', marginRight: '1rem' } },
+                        React.createElement('div', { style: { fontWeight: '700', color: 'white', fontSize: '0.95rem' } }, user.full_name),
+                        React.createElement('div', {
+                            style: {
+                                fontSize: '0.75rem',
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                textTransform: 'uppercase',
+                                fontWeight: '600',
+                                letterSpacing: '0.05em'
+                            }
+                        }, user.role)
+                    ),
+                    React.createElement('button', {
+                        onClick: onLogout,
+                        style: {
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: '600',
+                            transition: 'all 0.2s ease'
+                        },
+                        onMouseOver: e => e.target.style.background = 'rgba(255, 255, 255, 0.3)',
+                        onMouseOut: e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'
+                    }, React.createElement('i', { className: 'fas fa-sign-out-alt', style: { marginRight: '0.5rem' } }), 'Logout')
+                )
+            )
+        );
+
+        const PatientDashboard = ({ user, onLogout }) => {
+            const [doctors, setDoctors] = useState([]);
+            const [appointments, setAppointments] = useState([]);
+            const [prescriptions, setPrescriptions] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [bookingDoc, setBookingDoc] = useState(null);
+            const [symptoms, setSymptoms] = useState('');
+
+            const fetchData = async () => {
+                const token = localStorage.getItem('auth_token');
+                const headers = { 'Authorization': `Bearer ${token}` };
+                try {
+                    const [docsRes, aptsRes, pxRes] = await Promise.all([
+                        fetch(`${API_BASE_URL}/doctors`, { headers }),
+                        fetch(`${API_BASE_URL}/patient/appointments`, { headers }),
+                        fetch(`${API_BASE_URL}/patient/prescriptions`, { headers })
+                    ]);
+                    if (docsRes.status === 401 || docsRes.status === 422 ||
+                        aptsRes.status === 401 || aptsRes.status === 422) {
+                        console.warn('Session invalid, logging out...');
+                        onLogout();
+                        return;
+                    }
+                    const [docsData, aptsData, pxData] = await Promise.all([
+                        docsRes.json(), aptsRes.json(), pxRes.json()
+                    ]);
+                    setDoctors(Array.isArray(docsData.doctors) ? docsData.doctors : []);
+                    setAppointments(Array.isArray(aptsData) ? aptsData : []);
+                    setPrescriptions(Array.isArray(pxData) ? pxData : []);
+                } catch (e) {
+                    console.error('Fetch error:', e);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => { fetchData(); }, []);
+
+            const handleBook = async (e) => {
+                e.preventDefault();
+                const token = localStorage.getItem('auth_token');
+                try {
+                    const res = await fetch(`${API_BASE_URL}/appointments`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            doctor_id: bookingDoc.id,
+                            appointment_date: new Date().toISOString().split('T')[0],
+                            appointment_time: '10:00', // Simplified for demo
+                            symptoms
+                        })
+                    });
+                    if (res.ok) {
+                        setBookingDoc(null);
+                        setSymptoms('');
+                        fetchData();
+                    }
+                } catch (e) { console.error(e); }
+            };
+
+            if (loading) return React.createElement('p', null, 'Loading Patient Data...');
+
+            return React.createElement('div', { className: 'dashboard' },
+                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' } },
+                    // Left Column: Doctors and Appointments
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'card', style: { marginBottom: '2rem' } },
+                            React.createElement('h3', null, 'Available Doctors'),
+                            React.createElement('div', { className: 'doc-list' },
+                                Array.isArray(doctors) && doctors.map(doc => React.createElement('div', {
+                                    key: doc.id,
+                                    style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+                                },
+                                    React.createElement('div', null,
+                                        React.createElement('div', { style: { fontWeight: '600' } }, `Dr. ${doc.name}`),
+                                        React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, `${doc.specialization} (${doc.department})`)
+                                    ),
+                                    React.createElement('button', {
+                                        className: 'btn btn-primary',
+                                        onClick: () => setBookingDoc(doc)
+                                    }, 'Book')
+                                ))
+                            )
+                        ),
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', null, 'My Appointments'),
+                            Array.isArray(appointments) && appointments.map(apt => React.createElement('div', {
+                                key: apt.id,
+                                className: 'stat-card',
+                                style: {
+                                    borderLeft: `5px solid ${apt.status === 'completed' ? '#cbd5e1' : 'var(--primary-color)'}`,
+                                    marginBottom: '1rem'
+                                }
+                            },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between' } },
+                                    React.createElement('div', null,
+                                        React.createElement('div', { style: { fontWeight: '600' } }, apt.doctor_name),
+                                        React.createElement('div', null, `${apt.appointment_date} @ ${apt.appointment_time}`)
+                                    ),
+                                    React.createElement('div', { style: { textAlign: 'right' } },
+                                        React.createElement('div', { style: { fontSize: '1.2rem', fontWeight: 'bold', color: '#20b2aa' } }, `#${apt.token_number}`),
+                                        React.createElement('div', { style: { fontSize: '0.7rem', textTransform: 'uppercase' } }, apt.status)
+                                    )
+                                )
+                            ))
+                        )
+                    ),
+                    // Right Column: Prescriptions
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', null, 'Digital Prescriptions'),
+                            Array.isArray(prescriptions) && prescriptions.map(px => React.createElement('div', {
+                                key: px.id,
+                                style: { padding: '1rem', borderBottom: '1px solid #eee' }
+                            },
+                                React.createElement('div', { style: { fontWeight: '600' } }, px.doctor_name),
+                                React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, px.created_at),
+                                React.createElement('div', { style: { marginTop: '0.5rem', fontSize: '0.9rem' } },
+                                    Array.isArray(px.medicines) ? px.medicines.map(m => m.name).join(', ') : 'Check notes'
+                                )
+                            ))
+                        )
+                    )
+                ),
+                // Booking Modal
+                bookingDoc && React.createElement('div', {
+                    style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }
+                },
+                    React.createElement('div', { className: 'card', style: { width: '400px' } },
+                        React.createElement('h3', null, `Book with Dr. ${bookingDoc.name}`),
+                        React.createElement('form', { onSubmit: handleBook },
+                            React.createElement('div', { className: 'form-group' },
+                                React.createElement('input', {
+                                    placeholder: 'Describe your symptoms',
+                                    value: symptoms,
+                                    onChange: e => setSymptoms(e.target.value),
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { style: { display: 'flex', gap: '1rem' } },
+                                React.createElement('button', { type: 'submit', className: 'btn btn-primary' }, 'Confirm Booking'),
+                                React.createElement('button', {
+                                    type: 'button',
+                                    className: 'btn btn-secondary',
+                                    onClick: () => setBookingDoc(null)
+                                }, 'Cancel')
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const DoctorDashboard = ({ user }) => {
+            const [appointments, setAppointments] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [consulting, setConsulting] = useState(null);
+            const [diagnosis, setDiagnosis] = useState('');
+            const [meds, setMeds] = useState('');
+
+            const fetchData = async () => {
+                const token = localStorage.getItem('auth_token');
+                try {
+                    const res = await fetch(`${API_BASE_URL}/doctor/appointments?status=booked`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    setAppointments(data || []);
+                } catch (e) { console.error(e); } finally { setLoading(false); }
+            };
+
+            useEffect(() => { fetchData(); }, []);
+
+            const handleComplete = async (e) => {
+                e.preventDefault();
+                const token = localStorage.getItem('auth_token');
+                try {
+                    // Create Prescription
+                    await fetch(`${API_BASE_URL}/prescriptions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            appointment_id: consulting.id,
+                            medicines: meds.split(',').map(m => ({ name: m.trim() })),
+                            notes: diagnosis
+                        })
+                    });
+                    // Mark appointment completed
+                    await fetch(`${API_BASE_URL}/appointments/${consulting.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ status: 'completed' })
+                    });
+                    setConsulting(null);
+                    setDiagnosis('');
+                    setMeds('');
+                    fetchData();
+                } catch (e) { console.error(e); }
+            };
+
+            if (loading) return React.createElement('p', null, 'Loading Doctor Data...');
+
+            return React.createElement('div', { className: 'dashboard' },
+                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' } },
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h3', null, 'Today\'s Queue'),
+                        appointments.map(apt => React.createElement('div', {
+                            key: apt.id,
+                            style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+                        },
+                            React.createElement('div', null,
+                                React.createElement('div', { style: { fontWeight: '600' } }, apt.patient_name),
+                                React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, `Token #${apt.token_number} - ${apt.symptoms}`)
+                            ),
+                            React.createElement('button', {
+                                className: 'btn btn-primary',
+                                onClick: () => setConsulting(apt)
+                            }, 'Consult')
+                        ))
+                    ),
+                    consulting && React.createElement('div', { className: 'card' },
+                        React.createElement('h3', null, `Consultation: ${consulting.patient_name}`),
+                        React.createElement('form', { onSubmit: handleComplete },
+                            React.createElement('div', { className: 'form-group' },
+                                React.createElement('label', null, 'Diagnosis'),
+                                React.createElement('input', { value: diagnosis, onChange: e => setDiagnosis(e.target.value), required: true })
+                            ),
+                            React.createElement('div', { className: 'form-group' },
+                                React.createElement('label', null, 'Medicines (comma separated)'),
+                                React.createElement('input', { value: meds, onChange: e => setMeds(e.target.value), placeholder: 'Paracetamol, Amoxicillin', required: true })
+                            ),
+                            React.createElement('button', { type: 'submit', className: 'btn btn-primary' }, 'Submit Prescription')
+                        )
+                    )
+                )
+            );
+        };
+
+        const PharmacyDashboard = ({ user }) => {
+            const [prescriptions, setPrescriptions] = useState([]);
+            const [inventory, setInventory] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = async () => {
+                const token = localStorage.getItem('auth_token');
+                const headers = { 'Authorization': `Bearer ${token}` };
+                try {
+                    const [pxRes, invRes] = await Promise.all([
+                        fetch(`${API_BASE_URL}/pharmacy/prescriptions`, { headers }),
+                        fetch(`${API_BASE_URL}/pharmacy/inventory`, { headers })
+                    ]);
+                    const [pxData, invData] = await Promise.all([pxRes.json(), invRes.json()]);
+                    setPrescriptions(pxData || []);
+                    setInventory(invData || []);
+                } catch (e) { console.error(e); } finally { setLoading(false); }
+            };
+
+            useEffect(() => { fetchData(); }, []);
+
+            const handleDispense = async (id) => {
+                const token = localStorage.getItem('auth_token');
+                try {
+                    await fetch(`${API_BASE_URL}/pharmacy/prescriptions/${id}/status`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ status: 'dispensed' })
+                    });
+                    fetchData();
+                } catch (e) { console.error(e); }
+            };
+
+            if (loading) return React.createElement('p', null, 'Loading Pharmacy Data...');
+
+            return React.createElement('div', { className: 'dashboard' },
+                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' } },
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h3', null, 'Pending Prescriptions'),
+                        prescriptions.map(px => React.createElement('div', {
+                            key: px.id,
+                            style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+                        },
+                            React.createElement('div', null,
+                                React.createElement('div', { style: { fontWeight: '600' } }, px.patient_name),
+                                React.createElement('div', { style: { fontSize: '0.9rem' } },
+                                    px.medicines.map(m => m.name).join(', ')
+                                )
+                            ),
+                            React.createElement('button', {
+                                className: 'btn btn-primary',
+                                onClick: () => handleDispense(px.id)
+                            }, 'Dispense')
+                        ))
+                    ),
+                    React.createElement('div', { className: 'card' },
+                        React.createElement('h3', null, 'Inventory'),
+                        inventory.map(item => React.createElement('div', {
+                            key: item.id,
+                            style: { display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }
+                        },
+                            React.createElement('span', null, item.medicine_name),
+                            React.createElement('span', { style: { fontWeight: '600', color: item.low_stock ? 'red' : 'inherit' } }, `${item.quantity_in_stock} Units`)
+                        ))
+                    )
+                )
+            );
+        };
+
+        const LoginForm = ({ onLogin }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [fullName, setFullName] = useState('');
+            const [role, setRole] = useState('patient');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState('');
+            const [isRegistering, setIsRegistering] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+                setSuccess('');
+                try {
+                    const endpoint = isRegistering ? '/auth/register' : '/auth/login';
+                    const body = isRegistering ? { email, password, full_name: fullName, role } : { email, password };
+
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        if (isRegistering) {
+                            setSuccess('Account created successfully! Please sign in.');
+                            setIsRegistering(false);
+                            setEmail(''); setPassword(''); setFullName('');
+                        } else {
+                            localStorage.setItem('auth_token', data.access_token);
+                            localStorage.setItem('user', JSON.stringify(data.user));
+                            onLogin(data.user);
+                        }
+                    } else {
+                        setError(data.error || 'Operation failed. Please try again.');
+                    }
+                } catch (err) {
+                    setError('Unable to connect to the healthcare server.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return React.createElement('div', { className: 'login-page-wrapper' },
+                React.createElement('div', { className: 'login-background' }),
+                React.createElement('div', { className: 'login-container' },
+                    React.createElement('div', { className: 'auth-card' },
+                        // Left side - Medical illustration and branding
+                        React.createElement('div', { className: 'auth-card-visual' },
+                            React.createElement('div', { className: 'brand-logo-large' },
+                                React.createElement('i', { className: 'fas fa-hospital-user' })
+                            ),
+                            React.createElement('div', { className: 'brand-text' }, 'Hospital Information System'),
+                            React.createElement('p', { 
+                                style: { 
+                                    fontSize: '1rem', 
+                                    opacity: '0.9', 
+                                    textAlign: 'center', 
+                                    lineHeight: '1.5',
+                                    position: 'relative',
+                                    zIndex: 2 
+                                } 
+                            }, 'Streamlined healthcare management with real-time queue tracking and digital prescriptions'),
+                            React.createElement('div', { 
+                                style: { 
+                                    marginTop: '2rem',
+                                    padding: '1.5rem',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '12px',
+                                    position: 'relative',
+                                    zIndex: 2
+                                } 
+                            },
+                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
+                                    React.createElement('i', { className: 'fas fa-stethoscope', style: { fontSize: '1.2rem' } }),
+                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Queue-Free Experience')
+                                ),
+                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
+                                    React.createElement('i', { className: 'fas fa-prescription', style: { fontSize: '1.2rem' } }),
+                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Digital Prescriptions')
+                                ),
+                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
+                                    React.createElement('i', { className: 'fas fa-clock', style: { fontSize: '1.2rem' } }),
+                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Real-time Updates')
+                                )
+                            )
+                        ),
+                        
+                        // Right side - Login form
+                        React.createElement('div', { className: 'auth-card-form' },
+                            React.createElement('div', { className: 'login-header' },
+                                React.createElement('h2', null, isRegistering ? 'Create Account' : 'Hospital Information System'),
+                                React.createElement('p', { 
+                                    style: { 
+                                        color: '#64748b', 
+                                        marginTop: '0.5rem', 
+                                        fontSize: '0.9rem' 
+                                    } 
+                                }, isRegistering ? 'Join our healthcare network today' : 'Access your secure medical dashboard')
+                            ),
+
+                            error && React.createElement('div', { className: 'error-message' },
+                                React.createElement('i', { className: 'fas fa-exclamation-circle', style: { marginRight: '0.5rem' } }),
+                                React.createElement('span', null, error)
+                            ),
+                            success && React.createElement('div', { className: 'success-message' },
+                                React.createElement('i', { className: 'fas fa-check-circle', style: { marginRight: '0.5rem' } }),
+                                React.createElement('span', null, success)
+                            ),
+
+                            React.createElement('form', { onSubmit: handleSubmit, autoComplete: 'off' },
+                                // Hidden decoys to absorb aggressive browser auto-fill
+                                React.createElement('input', { type: 'text', name: 'prevent_autofill_user', style: { display: 'none' }, tabIndex: -1 }),
+                                React.createElement('input', { type: 'password', name: 'prevent_autofill_pass', style: { display: 'none' }, tabIndex: -1 }),
+
+                                isRegistering && React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', { htmlFor: 'reg_full_name' }, 'Full Name'),
+                                    React.createElement('input', {
+                                        id: 'reg_full_name',
+                                        name: 'reg_full_name',
+                                        autocomplete: 'new-name',
+                                        placeholder: 'Dr. Jane Smith',
+                                        value: fullName,
+                                        onChange: e => setFullName(e.target.value),
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', { htmlFor: 'hms_primary_contact' }, 'Email Address'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        id: 'hms_primary_contact',
+                                        name: 'hms_primary_contact',
+                                        autocomplete: 'off',
+                                        'data-lpignore': 'true',
+                                        placeholder: 'name@hospital.com',
+                                        value: email,
+                                        onChange: e => setEmail(e.target.value),
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', { htmlFor: 'hms_secure_entry' }, 'Password'),
+                                    React.createElement('input', {
+                                        type: 'password',
+                                        id: 'hms_secure_entry',
+                                        name: 'hms_secure_entry',
+                                        autocomplete: 'off',
+                                        placeholder: 'Enter your password',
+                                        value: password,
+                                        onChange: e => setPassword(e.target.value),
+                                        required: true
+                                    })
+                                ),
+                                isRegistering && React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', null, 'Professional Role'),
+                                    React.createElement('select', { value: role, onChange: e => setRole(e.target.value) },
+                                        React.createElement('option', { value: 'patient' }, 'Patient'),
+                                        React.createElement('option', { value: 'doctor' }, 'Doctor'),
+                                        React.createElement('option', { value: 'pharmacy' }, 'Pharmacy Staff')
+                                    )
+                                ),
+                                React.createElement('button', { type: 'submit', className: 'btn-primary', disabled: loading },
+                                    loading ? 'Processing...' : (isRegistering ? 'CREATE ACCOUNT' : 'LOGIN')
+                                )
+                            ),
+                            React.createElement('div', { 
+                                style: { 
+                                    textAlign: 'center', 
+                                    marginTop: '2rem', 
+                                    paddingTop: '1rem', 
+                                    borderTop: '1px solid #e2e8f0' 
+                                } 
+                            },
+                                React.createElement('span', { style: { color: '#64748b', fontSize: '0.9rem' } }, 
+                                    isRegistering ? 'Already have an account? ' : 'New to our system? '
+                                ),
+                                React.createElement('span', {
+                                    style: { 
+                                        color: 'var(--primary-color)', 
+                                        cursor: 'pointer', 
+                                        fontWeight: '600',
+                                        fontSize: '0.9rem'
+                                    },
+                                    onClick: () => {
+                                        setIsRegistering(!isRegistering);
+                                        setError('');
+                                        setSuccess('');
+                                    }
+                                }, isRegistering ? 'Sign In' : 'Register Now')
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const token = localStorage.getItem('auth_token');
+                const userData = localStorage.getItem('user');
+                if (token && userData) setUser(JSON.parse(userData));
+                setLoading(false);
+            }, []);
+
+            if (loading) return null;
+
+            if (!user) return React.createElement(LoginForm, { onLogin: setUser });
+
+            return React.createElement('div', null,
+                React.createElement(Nav, { user, onLogout: () => { localStorage.clear(); setUser(null); } }),
+                user.role === 'patient' && React.createElement(PatientDashboard, { user, onLogout: () => { localStorage.clear(); setUser(null); } }),
+                user.role === 'doctor' && React.createElement(DoctorDashboard, { user }),
+                user.role === 'pharmacy' && React.createElement(PharmacyDashboard, { user }),
+                user.role === 'admin' && React.createElement('div', { className: 'dashboard card' }, 'Admin features are in backend/admin API')
+            );
+        };
+
+        createRoot(document.getElementById('root')).render(React.createElement(App));
+    </script>
+</body>
+
+</html>
