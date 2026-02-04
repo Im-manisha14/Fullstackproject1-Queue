@@ -444,54 +444,103 @@ const PatientDashboard = ({ user }) => {
 
             {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
-            {/* 1. Statistics Overview */}
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-calendar-check"></i></div>
-                    <div className="stat-content">
-                        <div className="stat-number">{dashboardData?.appointments?.length || 0}</div>
-                        <div className="stat-label">Total Visits</div>
+            {/* 1. Welcome Card (Top) */}
+            <div className="card mb-6">
+                <div className="card-content flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-primary mb-1">Welcome, {user.full_name}</h1>
+                        <p className="text-secondary">Manage your appointments and view live status.</p>
                     </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-hourglass-half"></i></div>
-                    <div className="stat-content">
-                        <div className="stat-number">
-                            {dashboardData?.appointments?.filter(apt => apt.status === 'in_queue').length || 0}
-                        </div>
-                        <div className="stat-label">Active Queue</div>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-prescription-bottle-alt"></i></div>
-                    <div className="stat-content">
-                        <div className="stat-number">{dashboardData?.prescriptions?.length || 0}</div>
-                        <div className="stat-label">Prescriptions</div>
+                    <div className="text-right">
+                        <div className="text-sm text-secondary uppercase tracking-wide font-bold">Your Appointments</div>
+                        <div className="text-3xl font-bold">{dashboardData?.appointments?.length || 0}</div>
                     </div>
                 </div>
             </div>
 
-            {/* 2. Primary Action: Booking */}
-            {!showBooking ? (
-                <div className="card card-accent-primary">
-                    <div className="card-header">
-                        <h2 className="card-title">Quick Actions</h2>
-                    </div>
-                    <div className="card-content flex items-center gap-4">
-                        <p className="text-secondary flex-1 m-0">
-                            Need to see a doctor? Schedule your visit now.
-                        </p>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => setShowBooking(true)}
-                            style={{ maxWidth: '250px' }}
-                        >
-                            <i className="fas fa-plus-circle"></i> Book New Appointment
-                        </button>
+            {/* 2. Queue Status (IMPORTANT - Highlight Card) */}
+            {dashboardData?.active_appointment ? (
+                <div className="card mb-6" style={{ borderLeft: '6px solid var(--primary)', background: 'var(--primary-light)' }}>
+                    <div className="card-content">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-blue-900">
+                                <i className="fas fa-bullhorn mr-2"></i> Live Queue Status
+                            </h2>
+                            <StatusBadge status={dashboardData.active_appointment.status} />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="text-secondary text-sm font-bold uppercase">Your Token</div>
+                                <div className="text-4xl font-bold text-primary mt-2">#{dashboardData.active_appointment.token_number}</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="text-secondary text-sm font-bold uppercase">Estimated Wait</div>
+                                <div className="text-4xl font-bold text-gray-800 mt-2">{dashboardData.estimated_wait}m</div>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <div className="text-secondary text-sm font-bold uppercase">Queue Position</div>
+                                <div className="text-4xl font-bold text-gray-800 mt-2">
+                                    {Math.ceil(dashboardData.estimated_wait / 15)}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Progress Bar with Visual Cue */}
+                        <div className="mt-6 bg-white p-4 rounded-lg">
+                            <div className="flex justify-between text-sm text-secondary mb-2">
+                                <span>In Queue</span>
+                                <span className={dashboardData.estimated_wait <= 15 ? "text-success font-bold" : ""}>
+                                    {dashboardData.estimated_wait <= 15 ? <i className="fas fa-check-circle"></i> : null} Your Turn is Coming
+                                </span>
+                            </div>
+                            <div className="progress-container h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="progress-bar bg-primary h-full transition-all duration-1000"
+                                    style={{ width: `${Math.max(5, 100 - ((dashboardData.estimated_wait / 15) * 10))}%` }}
+                                ></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             ) : (
-                <div className="mb-4">
+                <div className="card mb-6 border-l-4 border-gray-300">
+                    <div className="card-content flex items-center gap-4 text-secondary">
+                        <i className="fas fa-info-circle text-2xl"></i>
+                        <div>
+                            <div className="font-bold">No Active Queue</div>
+                            <div className="text-sm">You are not currently in a queue. Book an appointment to join.</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. Actions (Book Appointment) */}
+            {!showBooking ? (
+                <div className="card mb-6">
+                    <div className="card-content flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-bold mb-1">Need a Doctor?</h2>
+                            <p className="text-secondary">Schedule a new visit or check your past prescriptions.</p>
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setShowBooking(true)}
+                            >
+                                <i className="fas fa-plus-circle"></i> Book Appointment
+                            </button>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => document.getElementById('prescriptions-section').scrollIntoView({ behavior: 'smooth' })}
+                            >
+                                <i className="fas fa-file-prescription"></i> View Prescriptions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="mb-6">
                     <AppointmentBooking
                         onCancel={() => setShowBooking(false)}
                         onSuccess={() => {
@@ -503,122 +552,63 @@ const PatientDashboard = ({ user }) => {
                 </div>
             )}
 
-            {/* 3. Queue Status (Priority if active) */}
-            {dashboardData?.appointments?.some(apt => (apt.status === 'in_queue' || apt.status === 'booked' || apt.status === 'consulting')) && (
-                <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">Your Queue Status</h2>
-                    </div>
-                    <div className="card-content">
-                        {dashboardData.appointments
-                            .filter(apt => (apt.status === 'in_queue' || apt.status === 'booked' || apt.status === 'consulting'))
-                            .map(appointment => (
-                                <div key={appointment.id} className="alert alert-info card-accent-info alert-flex">
-                                    <div className="alert-header">
-                                        <span className="alert-title">
-                                            <i className="fas fa-ticket-alt"></i> Token #{appointment.token_number}
-                                        </span>
-                                        <StatusBadge status={appointment.status} />
-                                    </div>
-                                    <div className="alert-details">
-                                        <span><i className="fas fa-user-md"></i> {appointment.doctor_name}</span>
-                                        <span><i className="fas fa-clinic-medical"></i> {appointment.department_name}</span>
-                                        {dashboardData.active_appointment && dashboardData.active_appointment.id === appointment.id && (
-                                            <div style={{ width: '100%', marginTop: '0.5rem' }}>
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="font-bold text-sm">Position: {dashboardData.estimated_wait / 15}</span>
-                                                    <span className="text-primary font-bold text-sm">
-                                                        <i className="fas fa-clock"></i> ~{dashboardData.estimated_wait} mins
-                                                    </span>
-                                                </div>
-                                                {/* Progress Bar: Inverse logic (closer to 0 is better) */}
-                                                <div className="progress-container">
-                                                    <div
-                                                        className="progress-bar"
-                                                        style={{ width: `${Math.max(5, 100 - ((dashboardData.estimated_wait / 15) * 10))}%` }}
-                                                    ></div>
-                                                </div>
-                                                <div className="progress-text">
-                                                    <span>In Queue</span>
-                                                    <span className={dashboardData.estimated_wait <= 15 ? "text-success font-bold" : ""}>
-                                                        {dashboardData.estimated_wait <= 15 ? <i className="fas fa-check-circle"></i> : null} Your Turn
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                    </div>
-                </div>
-            )}
-
-            {/* 4. History: Appointments & Prescriptions */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+            {/* 4. History & Prescriptions (Secondary Info) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="prescriptions-section">
                 {/* Recent Appointments */}
                 <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">Recent Appointments</h2>
+                    <div className="card-header border-b p-4">
+                        <h3 className="font-bold">Recent History</h3>
                     </div>
-                    <div className="card-content">
+                    <div className="card-content p-0">
                         {dashboardData?.appointments?.length ? (
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Doctor</th>
-                                            <th>Status</th>
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 text-sm text-secondary">
+                                    <tr>
+                                        <th className="p-3">Date</th>
+                                        <th className="p-3">Doctor</th>
+                                        <th className="p-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {dashboardData.appointments.slice(0, 5).map(apt => (
+                                        <tr key={apt.id} className="border-t border-gray-100">
+                                            <td className="p-3 font-medium">{formatDate(apt.date)}</td>
+                                            <td className="p-3">{apt.doctor}</td>
+                                            <td className="p-3"><StatusBadge status={apt.status} /></td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {dashboardData.appointments.slice(0, 5).map(appointment => (
-                                            <tr key={appointment.id}>
-                                                <td>
-                                                    <div style={{ fontWeight: '500' }}>{formatDate(appointment.date)}</div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatTime(appointment.time)}</div>
-                                                </td>
-                                                <td>
-                                                    <div>{appointment.doctor}</div>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{appointment.department}</div>
-                                                </td>
-                                                <td><StatusBadge status={appointment.status} /></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                    ))}
+                                </tbody>
+                            </table>
                         ) : (
-                            <p className="text-muted text-center p-4">No appointment history.</p>
+                            <div className="p-8 text-center text-muted">No appointments found.</div>
                         )}
                     </div>
                 </div>
 
                 {/* Prescriptions */}
                 <div className="card">
-                    <div className="card-header">
-                        <h2 className="card-title">My Prescriptions</h2>
+                    <div className="card-header border-b p-4">
+                        <h3 className="font-bold">My Prescriptions</h3>
                     </div>
-                    <div className="card-content">
+                    <div className="card-content max-h-64 overflow-y-auto custom-scrollbar">
                         {dashboardData?.prescriptions?.length ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {dashboardData.prescriptions.map(prescription => (
-                                    <div key={prescription.id} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                            <span style={{ fontWeight: '600', color: 'var(--primary)' }}>#{prescription.prescription_number}</span>
-                                            <StatusBadge status={prescription.status} />
+                            <div className="flex flex-col gap-3">
+                                {dashboardData.prescriptions.map(pres => (
+                                    <div key={pres.id} className="p-3 border rounded hover:bg-gray-50 transition-colors">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="font-bold text-primary">#{pres.prescription_number}</span>
+                                            <span className="text-xs text-secondary">{formatDate(pres.date)}</span>
                                         </div>
-                                        <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                            <strong>Diagnosis:</strong> {prescription.diagnosis}
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                            {formatDate(prescription.date)}
+                                        <div className="text-sm font-medium">{pres.diagnosis}</div>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <div className="text-xs text-secondary">{pres.medications.length} Medicines</div>
+                                            <StatusBadge status={pres.status} />
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-muted text-center p-4">No prescriptions yet.</p>
+                            <div className="p-8 text-center text-muted">No prescriptions yet.</div>
                         )}
                     </div>
                 </div>
@@ -936,79 +926,95 @@ const DoctorDashboard = ({ user }) => {
                 </div>
             </div>
 
-            {/* Current Queue */}
-            <div className="card" style={{ borderTop: '4px solid var(--primary)' }}>
-                <div className="card-header flex justify-between items-center">
-                    <h2 className="card-title">Live Queue</h2>
-                    {dashboardData?.current_queue?.length > 0 && (
+            {/* Doctor Layout: Left (Queue) + Right (Active Patient) */}
+            <div className="doctor-layout">
+                {/* LEFT COLUMN: Queue List */}
+                <div className="card h-full" style={{ margin: 0 }}>
+                    <div className="card-header flex justify-between items-center sticky top-0 bg-white z-10">
+                        <h2 className="card-title">Waiting Queue</h2>
                         <span className="state-badge status-in-queue">
-                            Active: {dashboardData.current_queue.length}
+                            {dashboardData?.current_queue?.filter(p => p.status !== 'consulting').length || 0} Waiting
                         </span>
-                    )}
+                    </div>
+                    <div className="queue-list-container">
+                        {dashboardData?.current_queue?.filter(p => p.status !== 'consulting').length > 0 ? (
+                            dashboardData.current_queue
+                                .filter(p => p.status !== 'consulting')
+                                .map(appointment => (
+                                    <div key={appointment.id} className="queue-card-item">
+                                        <div>
+                                            <div className="font-bold">Token #{appointment.token_number}</div>
+                                            <div className="text-sm text-secondary">{appointment.patient_name}</div>
+                                        </div>
+                                        <button
+                                            className="btn btn-sm btn-outline-primary"
+                                            onClick={() => handleAdvanceQueue(appointment.id)}
+                                            disabled={processingId === appointment.id}
+                                        >
+                                            {processingId === appointment.id ? <i className="fas fa-spinner fa-spin"></i> : "Call"}
+                                        </button>
+                                    </div>
+                                ))
+                        ) : (
+                            <div className="p-4 text-center text-muted">No patients waiting.</div>
+                        )}
+                    </div>
                 </div>
-                <div className="card-content">
-                    {dashboardData?.current_queue?.length > 0 ? (
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Token</th>
-                                        <th>Patient</th>
-                                        <th>Symptoms</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dashboardData.current_queue.map(appointment => (
-                                        <tr key={appointment.id} className={appointment.status === 'consulting' ? 'bg-blue-50' : ''}>
-                                            <td className="font-bold">#{appointment.token_number}</td>
-                                            <td>
-                                                <div className="font-bold">{appointment.patient_name}</div>
-                                                <div className="text-muted text-sm">{formatTime(appointment.time)}</div>
-                                            </td>
-                                            <td>{appointment.symptoms}</td>
-                                            <td>
-                                                <StatusBadge
-                                                    status={appointment.status}
-                                                    priority={appointment.priority}
-                                                />
-                                            </td>
-                                            <td>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        className="btn btn-sm btn-primary"
-                                                        onClick={() => handleAdvanceQueue(appointment.id)}
-                                                        disabled={processingId === appointment.id}
-                                                    >
-                                                        {processingId === appointment.id ? (
-                                                            <i className="fas fa-spinner fa-spin"></i>
-                                                        ) : (
-                                                            appointment.status === 'booked' ? 'Call Next' :
-                                                                appointment.status === 'in_queue' ? 'Start Consult' :
-                                                                    'Finish'
-                                                        )}
-                                                    </button>
-                                                    {appointment.status === 'consulting' && (
-                                                        <button
-                                                            className="btn btn-sm btn-success"
-                                                            onClick={() => setShowPrescription(appointment)}
-                                                        >
-                                                            <i className="fas fa-file-prescription"></i> Prescribe
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+
+                {/* RIGHT COLUMN: Active Patient Area */}
+                <div className="patient-action-area">
+                    <h2 className="text-xl font-bold mb-4 border-b pb-2">Current Consultation</h2>
+                    {dashboardData?.current_queue?.find(p => p.status === 'consulting') ? (
+                        (() => {
+                            const activePatient = dashboardData.current_queue.find(p => p.status === 'consulting');
+                            return (
+                                <div>
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <div className="text-4xl font-bold text-primary mb-2">
+                                                #{activePatient.token_number}
+                                            </div>
+                                            <div className="text-xl font-bold">{activePatient.patient_name}</div>
+                                            <div className="text-secondary mt-1">
+                                                <i className="fas fa-clock"></i> Checked in: {formatTime(activePatient.time)}
+                                            </div>
+                                        </div>
+                                        <StatusBadge status="consulting" />
+                                    </div>
+
+                                    <div className="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+                                        <label className="text-xs font-bold text-blue-800 uppercase tracking-wide">Reported Symptoms</label>
+                                        <p className="text-lg text-blue-900 mt-1">{activePatient.symptoms}</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            className="btn btn-success w-full py-3 text-lg"
+                                            onClick={() => setShowPrescription(activePatient)}
+                                        >
+                                            <i className="fas fa-file-prescription"></i> Write Prescription
+                                        </button>
+                                        <button
+                                            className="btn btn-primary w-full py-3 text-lg"
+                                            onClick={() => handleAdvanceQueue(activePatient.id)}
+                                            disabled={processingId === activePatient.id}
+                                        >
+                                            {processingId === activePatient.id ? (
+                                                <i className="fas fa-spinner fa-spin"></i>
+                                            ) : (
+                                                <span><i className="fas fa-check"></i> Complete Visit</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()
                     ) : (
-                        <EmptyState
-                            icon="fa-mug-hot"
-                            message="No patients in the active queue."
-                        />
+                        <div className="text-center py-12 text-muted">
+                            <div className="text-6xl mb-4 text-gray-200"><i className="fas fa-user-md"></i></div>
+                            <h3 className="text-xl font-medium mb-2">Ready for Next Patient</h3>
+                            <p>Select a patient from the queue 'Call' button to start consultation.</p>
+                        </div>
                     )}
                 </div>
             </div>

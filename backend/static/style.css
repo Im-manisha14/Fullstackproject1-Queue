@@ -919,3 +919,72 @@ textarea {
         padding: 0 var(--spacing-md);
     }
 }
+
+/* Doctor Dashboard Layout */
+.doctor-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: var(--spacing-lg);
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .doctor-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.queue-list-container {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.queue-card-item {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-md);
+    border-radius: 8px;
+    margin-bottom: var(--spacing-sm);
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.queue-card-item:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--primary);
+}
+
+.queue-card-item.active {
+    border-left: 4px solid var(--primary);
+    background-color: var(--primary-light);
+}
+
+.patient-action-area {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+}
+
+/* Custom Scrollbar for Lists */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
