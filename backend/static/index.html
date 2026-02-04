@@ -10,21 +10,21 @@
 
     <style>
         :root {
-            /* Medical Teal Theme matching the reference image */
-            --primary-color: #0d9488;
-            /* Strong Teal */
-            --primary-light: #2dd4bf;
-            /* Bright Teal */
-            --primary-dark: #115e59;
-            /* Deep Teal */
-            --accent-green: #10b981;
-            /* Success Green */
-            --bg-neutral: #f1f5f9;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Professional Healthcare Color Palette */
+            --primary-color: #1E88E5;        /* Medical Blue */
+            --secondary-color: #26A69A;      /* Teal */
+            --background-color: #F5F7FA;     /* Light Gray */
+            --card-bg: #FFFFFF;              /* White */
+            --success-color: #43A047;        /* Green */
+            --warning-color: #FB8C00;        /* Orange */
+            --danger-color: #E53935;         /* Red */
+            --text-main: #263238;            /* Dark Gray */
+            --text-muted: #607D8B;           /* Medium Gray */
+            --text-light: #90A4AE;           /* Light Gray Text */
+            --border-color: #E1E5E9;         /* Border */
+            --hover-bg: #F8F9FA;             /* Hover Background */
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --transition-smooth: all 0.2s ease;
         }
 
         * {
@@ -35,214 +35,310 @@
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
+            background: var(--background-color);
             color: var(--text-main);
             min-height: 100vh;
-            overflow-x: hidden;
+            margin: 0;
+            line-height: 1.6;
         }
 
-        /* Login Page Specific Styling */
-        .login-page-wrapper {
-            display: flex;
-            min-height: 100vh;
-            background: #ffffff;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* The Teal Wave Background on the Left/Top */
-        .login-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 50%;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-            clip-path: ellipse(150% 100% at 50% 0%);
-            z-index: 0;
-        }
-
+        /* Professional Login Design */
         .login-container {
-            position: relative;
-            z-index: 10;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100vh;
             padding: 2rem;
         }
 
         .auth-card {
-            display: flex;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
             width: 100%;
-            max-width: 900px;
+            max-width: 400px;
             overflow: hidden;
-            min-height: 550px;
         }
 
-        /* Left Side of Card - Illustration/Branding */
-        .auth-card-visual {
-            width: 45%;
-            background: linear-gradient(rgba(13, 148, 136, 0.9), rgba(17, 94, 89, 0.95));
+        /* Professional Dashboard Header */
+        .dashboard-header {
+            background: var(--primary-color);
             color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--card-shadow);
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 3rem;
-            text-align: center;
-            position: relative;
         }
 
-        .auth-card-visual::before {
-            /* Subtle pattern overlay */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
-        }
-
-        /* Right Side of Card - Form */
-        .auth-card-form {
-            width: 55%;
-            padding: 3rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .brand-logo-large {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .brand-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .login-header {
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 1rem;
-        }
-
-        .login-header h2 {
-            color: var(--primary-dark);
-            font-size: 1.8rem;
-            font-weight: 800;
-        }
-
-        .form-group label {
-            color: #475569;
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 1.25rem;
             font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            display: block;
         }
 
-        input,
-        select {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        .user-details {
+            text-align: right;
+            font-size: 0.875rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            opacity: 0.8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Professional Dashboard Layout */
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--background-color);
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Role-Specific Styling */
+        .patient-dashboard .dashboard-header {
+            background: var(--primary-color);
+        }
+
+        .doctor-dashboard .dashboard-header {
+            background: var(--text-main);
+        }
+
+        .pharmacy-dashboard .dashboard-header {
+            background: var(--secondary-color);
+        }
+
+        /* Professional Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
             margin-bottom: 1.5rem;
-            transition: all 0.2s;
-            background: #f8fafc;
+            border: 1px solid var(--border-color);
         }
 
-        input:focus,
-        select:focus {
-            border-color: var(--primary-color);
-            background: white;
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+        .card h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text-main);
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        /* Professional Buttons */
+        .btn {
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-transform: none;
+            letter-spacing: 0;
         }
 
         .btn-primary {
             background: var(--primary-color);
             color: white;
-            font-weight: 700;
-            padding: 1rem;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
-            box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.3);
-            transform: translateY(-2px);
+            background: #1976D2;
+            transform: translateY(-1px);
         }
 
-        /* Dashboard Styles update for Theme Consistency */
-        .dashboard-header {
-            background: var(--primary-color);
-            /* Theme color header */
-            color: white;
-            border: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            padding: 1rem 2rem;
-        }
-
-        .dashboard-header h1 {
+        .btn-secondary {
+            background: var(--text-muted);
             color: white;
         }
 
-        .user-info {
-            background: rgba(255, 255, 255, 0.2);
+        .btn-secondary:hover {
+            background: #546E7A;
+        }
+
+        .btn-success {
+            background: var(--success-color);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .user-info span {
+        .btn-success:hover {
+            background: #388E3C;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
             color: white;
         }
 
-        .stat-card {
-            border-left: 5px solid var(--primary-color);
+        .btn-warning:hover {
+            background: #F57C00;
         }
 
-        .card h3 {
-            color: var(--primary-dark);
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
         }
 
-        .error-message {
-            color: #ef4444;
-            background: #fef2f2;
+        .btn-danger:hover {
+            background: #D32F2F;
+        }
+
+        /* Professional Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
             padding: 0.75rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-            border: 1px solid #fee2e2;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: var(--card-bg);
+            color: var(--text-main);
+            transition: var(--transition-smooth);
         }
 
-        .success-message {
-            color: #065f46;
-            background: #d1fae5;
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border: 1px solid #a7f3d0;
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        /* Status Indicators */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-booked {
+            background: rgba(30, 136, 229, 0.1);
+            color: var(--primary-color);
+        }
+
+        .status-completed {
+            background: rgba(67, 160, 71, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-pending {
+            background: rgba(251, 140, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-dispensed {
+            background: rgba(67, 160, 71, 0.1);
+            color: var(--success-color);
+        }
+
+        /* Queue Token */
+        .queue-token {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            background: rgba(30, 136, 229, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        /* Professional Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .professional-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+        }
+
+        .professional-table th {
+            background: var(--background-color);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .professional-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        .professional-table tr:hover {
+            background: var(--hover-bg);
+        }
+
+        /* Responsive Grid */
+        .dashboard-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+            
+            .doctor-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .pharmacy-grid {
+                grid-template-columns: 2fr 1fr;
+            }
         }
 
         @media (max-width: 768px) {
@@ -477,39 +573,28 @@
         // --- COMPONENTS ---
 
         const Nav = ({ user, onLogout }) => (
-            React.createElement('div', { className: 'dashboard-header' },
-                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '1rem' } },
-                    React.createElement('div', {
-                        style: {
-                            width: '40px',
-                            height: '40px',
-                            background: 'var(--primary-color)',
-                            borderRadius: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white'
-                        }
-                    }, React.createElement('i', { className: 'fas fa-hospital-user' })),
-                    React.createElement('h1', null, 'Queue-Free Healthcare')
+            React.createElement('div', { className: `dashboard-header ${user.role}-dashboard` },
+                React.createElement('div', { className: 'header-logo' },
+                    React.createElement('div', { className: 'logo-icon' },
+                        React.createElement('i', { className: 'fas fa-hospital-user' })
+                    ),
+                    React.createElement('h1', null, 
+                        user.role === 'patient' ? 'Patient Portal' :
+                        user.role === 'doctor' ? 'Doctor Dashboard' :
+                        user.role === 'pharmacy' ? 'Pharmacy Management' :
+                        'Healthcare System'
+                    )
                 ),
                 React.createElement('div', { className: 'user-info' },
-                    React.createElement('div', { style: { textAlign: 'right' } },
-                        React.createElement('div', { style: { fontWeight: '700', color: 'var(--text-main)', fontSize: '0.95rem' } }, user.full_name),
-                        React.createElement('div', {
-                            style: {
-                                fontSize: '0.75rem',
-                                color: 'var(--primary-color)',
-                                textTransform: 'uppercase',
-                                fontWeight: '700',
-                                letterSpacing: '0.05em'
-                            }
-                        }, user.role)
+                    React.createElement('div', { className: 'user-details' },
+                        React.createElement('div', { className: 'user-name' }, user.full_name),
+                        React.createElement('div', { className: 'user-role' }, user.role)
                     ),
                     React.createElement('button', {
                         onClick: onLogout,
-                        className: 'logout-btn'
-                    }, React.createElement('i', { className: 'fas fa-right-from-bracket' }), ' Logout')
+                        className: 'btn btn-danger',
+                        style: { padding: '0.5rem 1rem', fontSize: '0.75rem' }
+                    }, 'Logout')
                 )
             )
         );
@@ -531,9 +616,7 @@
                         fetch(`${API_BASE_URL}/patient/appointments`, { headers }),
                         fetch(`${API_BASE_URL}/patient/prescriptions`, { headers })
                     ]);
-                    if (docsRes.status === 401 || docsRes.status === 422 ||
-                        aptsRes.status === 401 || aptsRes.status === 422) {
-                        console.warn('Session invalid, logging out...');
+                    if (docsRes.status === 401 || docsRes.status === 422) {
                         onLogout();
                         return;
                     }
@@ -544,7 +627,7 @@
                     setAppointments(Array.isArray(aptsData) ? aptsData : []);
                     setPrescriptions(Array.isArray(pxData) ? pxData : []);
                 } catch (e) {
-                    console.error('Fetch error:', e);
+                    console.error('Error:', e);
                 } finally {
                     setLoading(false);
                 }
@@ -565,7 +648,7 @@
                         body: JSON.stringify({
                             doctor_id: bookingDoc.id,
                             appointment_date: new Date().toISOString().split('T')[0],
-                            appointment_time: '10:00', // Simplified for demo
+                            appointment_time: '10:00',
                             symptoms
                         })
                     });
@@ -577,92 +660,155 @@
                 } catch (e) { console.error(e); }
             };
 
-            if (loading) return React.createElement('p', null, 'Loading Patient Data...');
+            if (loading) return React.createElement('div', { className: 'dashboard' }, 
+                React.createElement('p', { style: { textAlign: 'center', padding: '2rem' } }, 'Loading your information...')
+            );
 
-            return React.createElement('div', { className: 'dashboard' },
-                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' } },
-                    // Left Column: Doctors and Appointments
+            return React.createElement('div', { className: 'dashboard patient-dashboard' },
+                React.createElement('div', { className: 'dashboard-grid' },
+                    // Main Content
                     React.createElement('div', null,
-                        React.createElement('div', { className: 'card', style: { marginBottom: '2rem' } },
-                            React.createElement('h3', null, 'Available Doctors'),
-                            React.createElement('div', { className: 'doc-list' },
-                                Array.isArray(doctors) && doctors.map(doc => React.createElement('div', {
+                        // Book Appointment Card
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', null, 'Book New Appointment'),
+                            React.createElement('p', { style: { color: 'var(--text-muted)', marginBottom: '1.5rem' } }, 
+                                'Schedule your appointment with our healthcare professionals'
+                            ),
+                            React.createElement('div', { style: { display: 'grid', gap: '1rem' } },
+                                doctors.slice(0, 3).map(doc => React.createElement('div', {
                                     key: doc.id,
-                                    style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+                                    style: { 
+                                        padding: '1rem', 
+                                        border: '1px solid var(--border-color)', 
+                                        borderRadius: '6px',
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        alignItems: 'center',
+                                        background: 'var(--hover-bg)'
+                                    }
                                 },
                                     React.createElement('div', null,
-                                        React.createElement('div', { style: { fontWeight: '600' } }, `Dr. ${doc.name}`),
-                                        React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, `${doc.specialization} (${doc.department})`)
+                                        React.createElement('div', { style: { fontWeight: '600', marginBottom: '4px' } }, `Dr. ${doc.name}`),
+                                        React.createElement('div', { style: { fontSize: '0.875rem', color: 'var(--text-muted)' } }, 
+                                            `${doc.specialization} - ${doc.department}`
+                                        )
                                     ),
                                     React.createElement('button', {
                                         className: 'btn btn-primary',
                                         onClick: () => setBookingDoc(doc)
-                                    }, 'Book')
+                                    }, 'Book Appointment')
                                 ))
                             )
                         ),
+                        
+                        // My Appointments
                         React.createElement('div', { className: 'card' },
-                            React.createElement('h3', null, 'My Appointments'),
-                            Array.isArray(appointments) && appointments.map(apt => React.createElement('div', {
-                                key: apt.id,
-                                className: 'stat-card',
-                                style: {
-                                    borderLeft: `5px solid ${apt.status === 'completed' ? '#cbd5e1' : 'var(--primary-color)'}`,
-                                    marginBottom: '1rem'
-                                }
-                            },
-                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between' } },
-                                    React.createElement('div', null,
-                                        React.createElement('div', { style: { fontWeight: '600' } }, apt.doctor_name),
-                                        React.createElement('div', null, `${apt.appointment_date} @ ${apt.appointment_time}`)
-                                    ),
-                                    React.createElement('div', { style: { textAlign: 'right' } },
-                                        React.createElement('div', { style: { fontSize: '1.2rem', fontWeight: 'bold', color: '#20b2aa' } }, `#${apt.token_number}`),
-                                        React.createElement('div', { style: { fontSize: '0.7rem', textTransform: 'uppercase' } }, apt.status)
+                            React.createElement('h3', null, 'Your Appointments'),
+                            appointments.length === 0 ? 
+                                React.createElement('p', { style: { color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' } }, 
+                                    'No appointments scheduled'
+                                ) :
+                                React.createElement('div', { className: 'table-container' },
+                                    React.createElement('table', { className: 'professional-table' },
+                                        React.createElement('thead', null,
+                                            React.createElement('tr', null,
+                                                React.createElement('th', null, 'Doctor'),
+                                                React.createElement('th', null, 'Date & Time'),
+                                                React.createElement('th', null, 'Token'),
+                                                React.createElement('th', null, 'Status')
+                                            )
+                                        ),
+                                        React.createElement('tbody', null,
+                                            appointments.map(apt => React.createElement('tr', { key: apt.id },
+                                                React.createElement('td', null, apt.doctor_name),
+                                                React.createElement('td', null, `${apt.appointment_date} at ${apt.appointment_time}`),
+                                                React.createElement('td', null, 
+                                                    React.createElement('span', { className: 'queue-token' }, `#${apt.token_number}`)
+                                                ),
+                                                React.createElement('td', null,
+                                                    React.createElement('span', { 
+                                                        className: `status-badge status-${apt.status}` 
+                                                    }, apt.status)
+                                                )
+                                            ))
+                                        )
                                     )
                                 )
-                            ))
                         )
                     ),
-                    // Right Column: Prescriptions
+                    
+                    // Sidebar
                     React.createElement('div', null,
                         React.createElement('div', { className: 'card' },
-                            React.createElement('h3', null, 'Digital Prescriptions'),
-                            Array.isArray(prescriptions) && prescriptions.map(px => React.createElement('div', {
-                                key: px.id,
-                                style: { padding: '1rem', borderBottom: '1px solid #eee' }
-                            },
-                                React.createElement('div', { style: { fontWeight: '600' } }, px.doctor_name),
-                                React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, px.created_at),
-                                React.createElement('div', { style: { marginTop: '0.5rem', fontSize: '0.9rem' } },
-                                    Array.isArray(px.medicines) ? px.medicines.map(m => m.name).join(', ') : 'Check notes'
-                                )
-                            ))
+                            React.createElement('h3', null, 'Your Prescriptions'),
+                            prescriptions.length === 0 ? 
+                                React.createElement('p', { style: { color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' } }, 
+                                    'No prescriptions available'
+                                ) :
+                                prescriptions.slice(0, 5).map(px => React.createElement('div', {
+                                    key: px.id,
+                                    style: { 
+                                        padding: '1rem 0', 
+                                        borderBottom: '1px solid var(--border-color)',
+                                        '&:lastChild': { borderBottom: 'none' }
+                                    }
+                                },
+                                    React.createElement('div', { style: { fontWeight: '600', marginBottom: '4px' } }, px.doctor_name),
+                                    React.createElement('div', { style: { fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' } }, px.created_at),
+                                    React.createElement('div', { style: { fontSize: '0.875rem' } },
+                                        Array.isArray(px.medicines) ? px.medicines.map(m => m.name).join(', ') : 'View prescription details'
+                                    )
+                                ))
                         )
                     )
                 ),
+                
                 // Booking Modal
                 bookingDoc && React.createElement('div', {
-                    style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }
+                    style: { 
+                        position: 'fixed', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        background: 'rgba(0,0,0,0.5)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        zIndex: 1000,
+                        padding: '1rem'
+                    }
                 },
-                    React.createElement('div', { className: 'card', style: { width: '400px' } },
-                        React.createElement('h3', null, `Book with Dr. ${bookingDoc.name}`),
+                    React.createElement('div', { 
+                        className: 'card', 
+                        style: { 
+                            width: '100%', 
+                            maxWidth: '400px',
+                            margin: 0
+                        } 
+                    },
+                        React.createElement('h3', { style: { marginBottom: '1.5rem' } }, `Book with Dr. ${bookingDoc.name}`),
                         React.createElement('form', { onSubmit: handleBook },
                             React.createElement('div', { className: 'form-group' },
-                                React.createElement('input', {
-                                    placeholder: 'Describe your symptoms',
+                                React.createElement('label', null, 'Describe your symptoms'),
+                                React.createElement('textarea', {
+                                    placeholder: 'Please describe your symptoms or reason for visit...',
                                     value: symptoms,
                                     onChange: e => setSymptoms(e.target.value),
-                                    required: true
+                                    required: true,
+                                    rows: 3
                                 })
                             ),
-                            React.createElement('div', { style: { display: 'flex', gap: '1rem' } },
-                                React.createElement('button', { type: 'submit', className: 'btn btn-primary' }, 'Confirm Booking'),
+                            React.createElement('div', { style: { display: 'flex', gap: '1rem', justifyContent: 'flex-end' } },
                                 React.createElement('button', {
                                     type: 'button',
                                     className: 'btn btn-secondary',
                                     onClick: () => setBookingDoc(null)
-                                }, 'Cancel')
+                                }, 'Cancel'),
+                                React.createElement('button', { 
+                                    type: 'submit', 
+                                    className: 'btn btn-primary' 
+                                }, 'Confirm Booking')
                             )
                         )
                     )
@@ -694,7 +840,6 @@
                 e.preventDefault();
                 const token = localStorage.getItem('auth_token');
                 try {
-                    // Create Prescription
                     await fetch(`${API_BASE_URL}/prescriptions`, {
                         method: 'POST',
                         headers: {
@@ -707,7 +852,6 @@
                             notes: diagnosis
                         })
                     });
-                    // Mark appointment completed
                     await fetch(`${API_BASE_URL}/appointments/${consulting.id}`, {
                         method: 'PUT',
                         headers: {
@@ -723,38 +867,177 @@
                 } catch (e) { console.error(e); }
             };
 
-            if (loading) return React.createElement('p', null, 'Loading Doctor Data...');
+            if (loading) return React.createElement('div', { className: 'dashboard' },
+                React.createElement('p', { style: { textAlign: 'center', padding: '2rem' } }, 'Loading appointment queue...')
+            );
 
-            return React.createElement('div', { className: 'dashboard' },
-                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' } },
-                    React.createElement('div', { className: 'card' },
-                        React.createElement('h3', null, 'Today\'s Queue'),
-                        appointments.map(apt => React.createElement('div', {
-                            key: apt.id,
-                            style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
-                        },
-                            React.createElement('div', null,
-                                React.createElement('div', { style: { fontWeight: '600' } }, apt.patient_name),
-                                React.createElement('div', { style: { fontSize: '0.8rem', color: '#666' } }, `Token #${apt.token_number} - ${apt.symptoms}`)
+            return React.createElement('div', { className: 'dashboard doctor-dashboard' },
+                React.createElement('div', { className: 'dashboard-grid doctor-grid' },
+                    // Queue Management
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' } },
+                                React.createElement('h3', { style: { margin: 0 } }, 'Patient Queue'),
+                                React.createElement('div', { 
+                                    style: { 
+                                        background: 'var(--primary-color)', 
+                                        color: 'white', 
+                                        padding: '0.5rem 1rem', 
+                                        borderRadius: '20px', 
+                                        fontSize: '0.875rem',
+                                        fontWeight: '600'
+                                    } 
+                                }, `${appointments.length} Patients`)
                             ),
-                            React.createElement('button', {
-                                className: 'btn btn-primary',
-                                onClick: () => setConsulting(apt)
-                            }, 'Consult')
-                        ))
+                            appointments.length === 0 ? 
+                                React.createElement('div', { 
+                                    style: { 
+                                        textAlign: 'center', 
+                                        padding: '3rem', 
+                                        color: 'var(--text-muted)' 
+                                    } 
+                                },
+                                    React.createElement('i', { 
+                                        className: 'fas fa-clipboard-check', 
+                                        style: { fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 } 
+                                    }),
+                                    React.createElement('p', null, 'No patients in queue today')
+                                ) :
+                                React.createElement('div', { className: 'table-container' },
+                                    React.createElement('table', { className: 'professional-table' },
+                                        React.createElement('thead', null,
+                                            React.createElement('tr', null,
+                                                React.createElement('th', null, 'Token'),
+                                                React.createElement('th', null, 'Patient'),
+                                                React.createElement('th', null, 'Symptoms'),
+                                                React.createElement('th', null, 'Time'),
+                                                React.createElement('th', null, 'Action')
+                                            )
+                                        ),
+                                        React.createElement('tbody', null,
+                                            appointments.map((apt, index) => React.createElement('tr', { 
+                                                key: apt.id,
+                                                style: index === 0 ? { background: 'rgba(67, 160, 71, 0.05)' } : {}
+                                            },
+                                                React.createElement('td', null,
+                                                    React.createElement('span', { 
+                                                        className: 'queue-token',
+                                                        style: index === 0 ? { background: 'var(--success-color)', color: 'white' } : {}
+                                                    }, `#${apt.token_number}`)
+                                                ),
+                                                React.createElement('td', null,
+                                                    React.createElement('div', { style: { fontWeight: '600' } }, apt.patient_name),
+                                                    index === 0 && React.createElement('div', { 
+                                                        style: { 
+                                                            fontSize: '0.75rem', 
+                                                            color: 'var(--success-color)', 
+                                                            fontWeight: '600',
+                                                            textTransform: 'uppercase'
+                                                        } 
+                                                    }, 'NEXT PATIENT')
+                                                ),
+                                                React.createElement('td', null, 
+                                                    React.createElement('div', { 
+                                                        style: { 
+                                                            maxWidth: '200px', 
+                                                            overflow: 'hidden', 
+                                                            textOverflow: 'ellipsis' 
+                                                        } 
+                                                    }, apt.symptoms)
+                                                ),
+                                                React.createElement('td', null, apt.appointment_time),
+                                                React.createElement('td', null,
+                                                    React.createElement('button', {
+                                                        className: index === 0 ? 'btn btn-success' : 'btn btn-primary',
+                                                        onClick: () => setConsulting(apt),
+                                                        style: { fontSize: '0.8rem', padding: '0.5rem 1rem' }
+                                                    }, index === 0 ? 'Start Consultation' : 'View Details')
+                                                )
+                                            ))
+                                        )
+                                    )
+                                )
+                        )
                     ),
-                    consulting && React.createElement('div', { className: 'card' },
-                        React.createElement('h3', null, `Consultation: ${consulting.patient_name}`),
-                        React.createElement('form', { onSubmit: handleComplete },
-                            React.createElement('div', { className: 'form-group' },
-                                React.createElement('label', null, 'Diagnosis'),
-                                React.createElement('input', { value: diagnosis, onChange: e => setDiagnosis(e.target.value), required: true })
+                    
+                    // Consultation Panel
+                    React.createElement('div', null,
+                        consulting ? React.createElement('div', { className: 'card' },
+                            React.createElement('h3', { style: { marginBottom: '1.5rem' } }, 'Patient Consultation'),
+                            React.createElement('div', { 
+                                style: { 
+                                    background: 'var(--hover-bg)', 
+                                    padding: '1rem', 
+                                    borderRadius: '6px', 
+                                    marginBottom: '1.5rem' 
+                                } 
+                            },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' } },
+                                    React.createElement('span', { style: { fontWeight: '600' } }, consulting.patient_name),
+                                    React.createElement('span', { className: 'queue-token' }, `Token #${consulting.token_number}`)
+                                ),
+                                React.createElement('div', { style: { fontSize: '0.875rem', color: 'var(--text-muted)' } },
+                                    React.createElement('strong', null, 'Symptoms: '), consulting.symptoms
+                                )
                             ),
-                            React.createElement('div', { className: 'form-group' },
-                                React.createElement('label', null, 'Medicines (comma separated)'),
-                                React.createElement('input', { value: meds, onChange: e => setMeds(e.target.value), placeholder: 'Paracetamol, Amoxicillin', required: true })
-                            ),
-                            React.createElement('button', { type: 'submit', className: 'btn btn-primary' }, 'Submit Prescription')
+                            React.createElement('form', { onSubmit: handleComplete },
+                                React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', null, 'Diagnosis'),
+                                    React.createElement('textarea', { 
+                                        value: diagnosis, 
+                                        onChange: e => setDiagnosis(e.target.value), 
+                                        required: true,
+                                        rows: 3,
+                                        placeholder: 'Enter your medical diagnosis...'
+                                    })
+                                ),
+                                React.createElement('div', { className: 'form-group' },
+                                    React.createElement('label', null, 'Prescribed Medicines'),
+                                    React.createElement('input', { 
+                                        value: meds, 
+                                        onChange: e => setMeds(e.target.value), 
+                                        placeholder: 'Paracetamol 500mg, Amoxicillin 250mg', 
+                                        required: true 
+                                    }),
+                                    React.createElement('div', { 
+                                        style: { 
+                                            fontSize: '0.75rem', 
+                                            color: 'var(--text-muted)', 
+                                            marginTop: '0.25rem' 
+                                        } 
+                                    }, 'Separate multiple medicines with commas')
+                                ),
+                                React.createElement('div', { style: { display: 'flex', gap: '1rem', justifyContent: 'flex-end' } },
+                                    React.createElement('button', {
+                                        type: 'button',
+                                        className: 'btn btn-secondary',
+                                        onClick: () => {
+                                            setConsulting(null);
+                                            setDiagnosis('');
+                                            setMeds('');
+                                        }
+                                    }, 'Cancel'),
+                                    React.createElement('button', { 
+                                        type: 'submit', 
+                                        className: 'btn btn-success' 
+                                    }, 'Complete & Prescribe')
+                                )
+                            )
+                        ) : React.createElement('div', { className: 'card' },
+                            React.createElement('div', { 
+                                style: { 
+                                    textAlign: 'center', 
+                                    padding: '3rem', 
+                                    color: 'var(--text-muted)' 
+                                } 
+                            },
+                                React.createElement('i', { 
+                                    className: 'fas fa-user-doctor', 
+                                    style: { fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 } 
+                                }),
+                                React.createElement('h4', null, 'Ready for Consultation'),
+                                React.createElement('p', null, 'Select a patient from the queue to begin consultation')
+                            )
                         )
                     )
                 )
@@ -797,37 +1080,165 @@
                 } catch (e) { console.error(e); }
             };
 
-            if (loading) return React.createElement('p', null, 'Loading Pharmacy Data...');
+            if (loading) return React.createElement('div', { className: 'dashboard' },
+                React.createElement('p', { style: { textAlign: 'center', padding: '2rem' } }, 'Loading pharmacy data...')
+            );
 
-            return React.createElement('div', { className: 'dashboard' },
-                React.createElement('div', { className: 'grid', style: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' } },
-                    React.createElement('div', { className: 'card' },
-                        React.createElement('h3', null, 'Pending Prescriptions'),
-                        prescriptions.map(px => React.createElement('div', {
-                            key: px.id,
-                            style: { padding: '1rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
-                        },
-                            React.createElement('div', null,
-                                React.createElement('div', { style: { fontWeight: '600' } }, px.patient_name),
-                                React.createElement('div', { style: { fontSize: '0.9rem' } },
-                                    px.medicines.map(m => m.name).join(', ')
-                                )
+            return React.createElement('div', { className: 'dashboard pharmacy-dashboard' },
+                React.createElement('div', { className: 'dashboard-grid pharmacy-grid' },
+                    // Prescription Management
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' } },
+                                React.createElement('h3', { style: { margin: 0 } }, 'Prescription Queue'),
+                                React.createElement('div', { 
+                                    style: { 
+                                        background: 'var(--secondary-color)', 
+                                        color: 'white', 
+                                        padding: '0.5rem 1rem', 
+                                        borderRadius: '20px', 
+                                        fontSize: '0.875rem',
+                                        fontWeight: '600'
+                                    } 
+                                }, `${prescriptions.length} Pending`)
                             ),
-                            React.createElement('button', {
-                                className: 'btn btn-primary',
-                                onClick: () => handleDispense(px.id)
-                            }, 'Dispense')
-                        ))
+                            prescriptions.length === 0 ? 
+                                React.createElement('div', { 
+                                    style: { 
+                                        textAlign: 'center', 
+                                        padding: '3rem', 
+                                        color: 'var(--text-muted)' 
+                                    } 
+                                },
+                                    React.createElement('i', { 
+                                        className: 'fas fa-prescription-bottle', 
+                                        style: { fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 } 
+                                    }),
+                                    React.createElement('p', null, 'No pending prescriptions')
+                                ) :
+                                React.createElement('div', { className: 'table-container' },
+                                    React.createElement('table', { className: 'professional-table' },
+                                        React.createElement('thead', null,
+                                            React.createElement('tr', null,
+                                                React.createElement('th', null, 'Token'),
+                                                React.createElement('th', null, 'Patient'),
+                                                React.createElement('th', null, 'Medicines'),
+                                                React.createElement('th', null, 'Doctor'),
+                                                React.createElement('th', null, 'Status'),
+                                                React.createElement('th', null, 'Action')
+                                            )
+                                        ),
+                                        React.createElement('tbody', null,
+                                            prescriptions.map(px => React.createElement('tr', { key: px.id },
+                                                React.createElement('td', null,
+                                                    React.createElement('span', { className: 'queue-token' }, `#${px.id}`)
+                                                ),
+                                                React.createElement('td', null,
+                                                    React.createElement('div', { style: { fontWeight: '600' } }, px.patient_name)
+                                                ),
+                                                React.createElement('td', null,
+                                                    React.createElement('div', { 
+                                                        style: { 
+                                                            maxWidth: '250px',
+                                                            fontSize: '0.875rem'
+                                                        } 
+                                                    }, px.medicines.map(m => m.name).join(', '))
+                                                ),
+                                                React.createElement('td', null, px.doctor_name || 'Not specified'),
+                                                React.createElement('td', null,
+                                                    React.createElement('span', { 
+                                                        className: `status-badge status-${px.status || 'pending'}` 
+                                                    }, px.status || 'pending')
+                                                ),
+                                                React.createElement('td', null,
+                                                    React.createElement('button', {
+                                                        className: 'btn btn-success',
+                                                        onClick: () => handleDispense(px.id),
+                                                        style: { fontSize: '0.8rem', padding: '0.5rem 1rem' }
+                                                    }, 'Dispense')
+                                                )
+                                            ))
+                                        )
+                                    )
+                                )
+                        )
                     ),
-                    React.createElement('div', { className: 'card' },
-                        React.createElement('h3', null, 'Inventory'),
-                        inventory.map(item => React.createElement('div', {
-                            key: item.id,
-                            style: { display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }
-                        },
-                            React.createElement('span', null, item.medicine_name),
-                            React.createElement('span', { style: { fontWeight: '600', color: item.low_stock ? 'red' : 'inherit' } }, `${item.quantity_in_stock} Units`)
-                        ))
+                    
+                    // Inventory Management
+                    React.createElement('div', null,
+                        React.createElement('div', { className: 'card' },
+                            React.createElement('h3', { style: { marginBottom: '1.5rem' } }, 'Medicine Inventory'),
+                            inventory.length === 0 ? 
+                                React.createElement('div', { 
+                                    style: { 
+                                        textAlign: 'center', 
+                                        padding: '2rem', 
+                                        color: 'var(--text-muted)' 
+                                    } 
+                                },
+                                    React.createElement('p', null, 'No inventory data available')
+                                ) :
+                                React.createElement('div', { style: { maxHeight: '500px', overflowY: 'auto' } },
+                                    inventory.map(item => React.createElement('div', {
+                                        key: item.id,
+                                        style: { 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center',
+                                            padding: '0.75rem 0',
+                                            borderBottom: '1px solid var(--border-color)'
+                                        }
+                                    },
+                                        React.createElement('div', null,
+                                            React.createElement('div', { style: { fontWeight: '600', marginBottom: '2px' } }, item.medicine_name),
+                                            React.createElement('div', { 
+                                                style: { 
+                                                    fontSize: '0.75rem', 
+                                                    color: 'var(--text-muted)' 
+                                                } 
+                                            }, `SKU: ${item.id}`)
+                                        ),
+                                        React.createElement('div', { style: { textAlign: 'right' } },
+                                            React.createElement('div', { 
+                                                style: { 
+                                                    fontWeight: '600',
+                                                    color: item.low_stock ? 'var(--danger-color)' : 
+                                                           item.quantity_in_stock < 50 ? 'var(--warning-color)' : 
+                                                           'var(--success-color)'
+                                                } 
+                                            }, `${item.quantity_in_stock} units`),
+                                            item.low_stock && React.createElement('div', { 
+                                                style: { 
+                                                    fontSize: '0.75rem', 
+                                                    color: 'var(--danger-color)',
+                                                    fontWeight: '600'
+                                                } 
+                                            }, 'LOW STOCK')
+                                        )
+                                    ))
+                                ),
+                            
+                            // Inventory Summary
+                            inventory.length > 0 && React.createElement('div', { 
+                                style: { 
+                                    marginTop: '1.5rem', 
+                                    padding: '1rem', 
+                                    background: 'var(--hover-bg)', 
+                                    borderRadius: '6px' 
+                                } 
+                            },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' } },
+                                    React.createElement('span', null, 'Total Medicines:'),
+                                    React.createElement('strong', null, inventory.length)
+                                ),
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginTop: '0.5rem' } },
+                                    React.createElement('span', null, 'Low Stock Items:'),
+                                    React.createElement('strong', { 
+                                        style: { color: 'var(--danger-color)' } 
+                                    }, inventory.filter(item => item.low_stock).length)
+                                )
+                            )
+                        )
                     )
                 )
             );
@@ -885,90 +1296,73 @@
                         React.createElement('div', { className: 'auth-logo' },
                             React.createElement('i', { className: 'fas fa-hospital-user' })
                         ),
-                        React.createElement('h2', null, isRegistering ? 'Create Account' : 'Welcome Professional'),
-                        React.createElement('p', null, isRegistering ? 'Join our healthcare network today' : 'Access your secure medical dashboard')
+                        React.createElement('h2', null, isRegistering ? 'Create Healthcare Account' : 'Healthcare Professional Access'),
+                        React.createElement('p', null, isRegistering ? 'Join our healthcare network' : 'Secure access to your medical dashboard')
                     ),
 
                     error && React.createElement('div', { className: 'error' },
-                        React.createElement('i', { className: 'fas fa-circle-exclamation' }),
+                        React.createElement('i', { className: 'fas fa-exclamation-triangle' }),
                         React.createElement('span', null, error)
                     ),
                     success && React.createElement('div', { className: 'success' },
-                        React.createElement('i', { className: 'fas fa-circle-check' }),
+                        React.createElement('i', { className: 'fas fa-check-circle' }),
                         React.createElement('span', null, success)
                     ),
 
                     React.createElement('form', { onSubmit: handleSubmit, autoComplete: 'off' },
-                        // Hidden decoys to absorb aggressive browser auto-fill
-                        React.createElement('input', { type: 'text', name: 'prevent_autofill_user', style: { display: 'none' }, tabIndex: -1 }),
-                        React.createElement('input', { type: 'password', name: 'prevent_autofill_pass', style: { display: 'none' }, tabIndex: -1 }),
-
                         isRegistering && React.createElement('div', { className: 'form-group' },
                             React.createElement('label', { htmlFor: 'reg_full_name' }, 'Full Name'),
-                            React.createElement('div', { className: 'input-icon-wrapper' },
-                                React.createElement('i', { className: 'fas fa-user-doctor' }),
-                                React.createElement('input', {
-                                    id: 'reg_full_name',
-                                    name: 'reg_full_name',
-                                    autocomplete: 'new-name',
-                                    placeholder: 'Dr. Jane Smith',
-                                    value: fullName,
-                                    onChange: e => setFullName(e.target.value),
-                                    required: true
-                                })
-                            )
+                            React.createElement('input', {
+                                id: 'reg_full_name',
+                                name: 'reg_full_name',
+                                autocomplete: 'new-name',
+                                placeholder: 'Dr. Jane Smith',
+                                value: fullName,
+                                onChange: e => setFullName(e.target.value),
+                                required: true
+                            })
                         ),
                         React.createElement('div', { className: 'form-group' },
                             React.createElement('label', { htmlFor: 'hms_primary_contact' }, 'Email Address'),
-                            React.createElement('div', { className: 'input-icon-wrapper' },
-                                React.createElement('i', { className: 'fas fa-envelope' }),
-                                React.createElement('input', {
-                                    type: 'text', // Changed from email to text to break heuristics
-                                    id: 'hms_primary_contact',
-                                    name: 'hms_primary_contact',
-                                    autocomplete: 'off',
-                                    'data-lpignore': 'true',
-                                    placeholder: 'name@hospital.com',
-                                    value: email,
-                                    onChange: e => setEmail(e.target.value),
-                                    required: true
-                                })
-                            )
+                            React.createElement('input', {
+                                type: 'email',
+                                id: 'hms_primary_contact',
+                                name: 'hms_primary_contact',
+                                autocomplete: 'off',
+                                placeholder: 'name@healthcare.com',
+                                value: email,
+                                onChange: e => setEmail(e.target.value),
+                                required: true
+                            })
                         ),
                         React.createElement('div', { className: 'form-group' },
-                            React.createElement('label', { htmlFor: 'hms_secure_entry' }, 'Secure Password'),
-                            React.createElement('div', { className: 'input-icon-wrapper' },
-                                React.createElement('i', { className: 'fas fa-lock' }),
-                                React.createElement('input', {
-                                    type: 'password',
-                                    id: 'hms_secure_entry',
-                                    name: 'hms_secure_entry',
-                                    autocomplete: 'off',
-                                    placeholder: '••••••••',
-                                    value: password,
-                                    onChange: e => setPassword(e.target.value),
-                                    required: true
-                                })
-                            )
+                            React.createElement('label', { htmlFor: 'hms_secure_entry' }, 'Password'),
+                            React.createElement('input', {
+                                type: 'password',
+                                id: 'hms_secure_entry',
+                                name: 'hms_secure_entry',
+                                autocomplete: 'off',
+                                placeholder: 'Enter secure password',
+                                value: password,
+                                onChange: e => setPassword(e.target.value),
+                                required: true
+                            })
                         ),
                         isRegistering && React.createElement('div', { className: 'form-group' },
                             React.createElement('label', null, 'Professional Role'),
-                            React.createElement('div', { className: 'input-icon-wrapper' },
-                                React.createElement('i', { className: 'fas fa-stethoscope' }),
-                                React.createElement('select', { value: role, onChange: e => setRole(e.target.value) },
-                                    React.createElement('option', { value: 'patient' }, 'Patient / Client'),
-                                    React.createElement('option', { value: 'doctor' }, 'Medical Doctor'),
-                                    React.createElement('option', { value: 'pharmacy' }, 'Pharmacy Staff')
-                                )
+                            React.createElement('select', { value: role, onChange: e => setRole(e.target.value) },
+                                React.createElement('option', { value: 'patient' }, 'Patient'),
+                                React.createElement('option', { value: 'doctor' }, 'Medical Doctor'),
+                                React.createElement('option', { value: 'pharmacy' }, 'Pharmacy Staff')
                             )
                         ),
-                        React.createElement('button', { type: 'submit', className: 'btn btn-primary', disabled: loading },
-                            loading ? React.createElement('i', { className: 'fas fa-spinner fa-spin' }) : null,
-                            loading ? ' Processing...' : (isRegistering ? 'Register Account' : 'Secure Sign In')
+                        React.createElement('button', { type: 'submit', className: 'btn btn-primary', disabled: loading, style: { width: '100%' } },
+                            loading && React.createElement('i', { className: 'fas fa-spinner fa-spin', style: { marginRight: '0.5rem' } }),
+                            loading ? 'Processing...' : (isRegistering ? 'Create Account' : 'Sign In')
                         )
                     ),
                     React.createElement('div', { className: 'auth-footer' },
-                        React.createElement('span', null, isRegistering ? 'Already have an account?' : 'New to our system?'),
+                        React.createElement('span', null, isRegistering ? 'Already have an account? ' : 'Need an account? '),
                         React.createElement('span', {
                             className: 'auth-link',
                             onClick: () => {
@@ -976,7 +1370,7 @@
                                 setError('');
                                 setSuccess('');
                             }
-                        }, isRegistering ? 'Sign In' : 'Register Now')
+                        }, isRegistering ? 'Sign In' : 'Register Here')
                     )
                 )
             );
