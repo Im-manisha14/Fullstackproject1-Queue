@@ -1,15 +1,17 @@
-# Queue-Free Healthcare Appointment System
+# 🏥 Queue-Free Healthcare Management System
 
-A complete full-stack web application for healthcare appointment management with real-time queue tracking, built with React, Flask, and PostgreSQL.
+[![Healthcare](https://img.shields.io/badge/Healthcare-Digital%20Queue-1E88E5)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
+[![Technology](https://img.shields.io/badge/Stack-React%20%2B%20Flask-26A69A)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2F%20SQLite-F44336)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
+[![Authentication](https://img.shields.io/badge/Auth-JWT%20Role--based-4CAF50)](https://github.com/Im-manisha14/Fullstackproject1-Queue)
 
-## 🏥 System Overview
+A comprehensive **Queue-Free Healthcare Management System** that digitizes hospital queues, streamlines patient appointments, and manages healthcare workflows with real-time updates. Built with modern web technologies and healthcare industry best practices.
 
-This system eliminates traditional queues in healthcare facilities by providing:
-- **Real-time appointment booking** with instant queue position updates
-- **Role-based dashboards** for Patients, Doctors, and Pharmacies
-- **Live queue tracking** with WebSocket notifications
-- **Digital prescription management** from consultation to dispensing
-- **JWT-based authentication** with secure role-based access control
+---
+
+## 🎯 **System Overview**
+
+This system transforms traditional healthcare queues into a digital, efficient, and patient-friendly experience. Similar to solutions like Queueasy and QClinic, but specifically designed for healthcare environments with role-based access control.
 
 ## 🚀 Quick Start
 

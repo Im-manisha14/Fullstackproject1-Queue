@@ -6,6 +6,7 @@ import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import LoadingSpinner from './components/LoadingSpinner';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   return (
@@ -33,14 +34,26 @@ const AppContent = () => {
     return <Login />;
   }
 
-  // Render appropriate dashboard based on user role
+  // Render appropriate dashboard based on user role with protection
   switch (user.role) {
     case 'patient':
-      return <PatientDashboard />;
+      return (
+        <ProtectedRoute allowedRoles={['patient']}>
+          <PatientDashboard />
+        </ProtectedRoute>
+      );
     case 'doctor':
-      return <DoctorDashboard />;
+      return (
+        <ProtectedRoute allowedRoles={['doctor']}>
+          <DoctorDashboard />
+        </ProtectedRoute>
+      );
     case 'pharmacy':
-      return <PharmacyDashboard />;
+      return (
+        <ProtectedRoute allowedRoles={['pharmacy']}>
+          <PharmacyDashboard />
+        </ProtectedRoute>
+      );
     default:
       return (
         <div className="error-container">

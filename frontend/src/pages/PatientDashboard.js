@@ -9,7 +9,9 @@ import {
   Plus, 
   Activity, 
   Stethoscope,
-  FileText
+  FileText,
+  User,
+  LogOut
 } from 'lucide-react';
 
 const PatientDashboard = () => {
@@ -610,7 +612,18 @@ const PatientDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
+    <div className="dashboard">
+      {/* Role Header */}
+      <div className="role-header">
+        <div className="role-header-content">
+          <User className="role-icon" />
+          <div>
+            <h1>Patient Dashboard</h1>
+            <p>Welcome back, {user?.name || user?.username}! Manage your appointments and health records</p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -620,7 +633,7 @@ const PatientDashboard = () => {
                 <i className="fas fa-hospital-user text-white text-lg"></i>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-teal-600">Hospital Information System</h1>
+                <h1 className="text-xl font-bold text-teal-600">Queue-Free Healthcare System</h1>
                 <p className="text-xs text-gray-600">Patient Portal</p>
               </div>
             </div>

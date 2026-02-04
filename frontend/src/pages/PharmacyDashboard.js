@@ -10,7 +10,9 @@ import {
   Clock, 
   CheckCircle, 
   Activity,
-  Search
+  Search,
+  Pill,
+  LogOut
 } from 'lucide-react';
 
 const PharmacyDashboard = () => {
@@ -383,7 +385,18 @@ const PharmacyDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
+    <div className="dashboard">
+      {/* Role Header */}
+      <div className="role-header">
+        <div className="role-header-content">
+          <Pill className="role-icon" />
+          <div>
+            <h1>Pharmacy Dashboard</h1>
+            <p>Welcome {user?.name || user?.username}! Manage prescriptions and inventory</p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -393,7 +406,7 @@ const PharmacyDashboard = () => {
                 <i className="fas fa-hospital-user text-white text-lg"></i>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-teal-600">Hospital Information System</h1>
+                <h1 className="text-xl font-bold text-teal-600">Queue-Free Healthcare System</h1>
                 <p className="text-xs text-gray-600">Pharmacy Portal</p>
               </div>
             </div>

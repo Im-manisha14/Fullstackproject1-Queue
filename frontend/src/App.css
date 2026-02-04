@@ -1,3 +1,18 @@
+/* Healthcare Professional Color Palette */
+:root {
+  --primary-blue: #1E88E5;
+  --secondary-teal: #26A69A;
+  --background-light: #F5F7FA;
+  --text-primary: #263238;
+  --text-secondary: #546E7A;
+  --success-green: #4CAF50;
+  --warning-orange: #FF9800;
+  --error-red: #F44336;
+  --white: #FFFFFF;
+  --light-gray: #ECEFF1;
+  --border-gray: #E0E4E7;
+}
+
 /* Global Styles */
 * {
   margin: 0;
@@ -6,10 +21,10 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--background-light);
   min-height: 100vh;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .App {
@@ -36,8 +51,8 @@ body {
 
 /* Login Header */
 .login-header {
-  background: linear-gradient(135deg, #4CAF50, #2196F3);
-  color: white;
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-teal));
+  color: var(--white);
   padding: 40px;
   text-align: center;
 }
@@ -45,11 +60,13 @@ body {
 .hospital-icon {
   font-size: 4rem;
   margin-bottom: 20px;
+  opacity: 0.9;
 }
 
 .login-header h1 {
   font-size: 2.5rem;
   margin-bottom: 10px;
+  font-weight: 600;
 }
 
 .login-header p {
@@ -60,13 +77,20 @@ body {
 /* Features Section */
 .features {
   padding: 30px;
-  background: #f8f9fa;
+  background: var(--white);
 }
 
 .feature {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.feature:hover {
+  background-color: var(--light-gray);
 }
 
 .feature-icon {
@@ -74,32 +98,36 @@ body {
   margin-right: 15px;
   width: 60px;
   text-align: center;
+  color: var(--primary-blue);
 }
 
 .feature h3 {
   font-size: 1.1rem;
   margin-bottom: 5px;
-  color: #333;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .feature p {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 /* Login Form Section */
 .login-form-section {
   padding: 40px;
+  background: var(--white);
 }
 
 .login-form-section h2 {
   font-size: 1.8rem;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .login-form-section > p {
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 30px;
 }
 
@@ -107,34 +135,38 @@ body {
 .demo-tabs h3 {
   font-size: 1rem;
   margin-bottom: 15px;
-  color: #555;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .tabs {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .tab {
-  padding: 10px 20px;
-  border: 2px solid #e0e0e0;
-  background: white;
+  padding: 12px 24px;
+  border: 2px solid var(--border-gray);
+  background: var(--white);
   border-radius: 25px;
   cursor: pointer;
-  transition: all 0.3s;
-  font-weight: 500;
+  transition: all 0.3s ease;
+  font-weight: 600;
   text-transform: capitalize;
+  color: var(--text-primary);
 }
 
 .tab:hover {
-  border-color: #4CAF50;
+  border-color: var(--primary-blue);
+  background: rgba(30, 136, 229, 0.05);
 }
 
 .tab.active {
-  background: #4CAF50;
-  color: white;
-  border-color: #4CAF50;
+  background: var(--primary-blue);
+  color: var(--white);
+  border-color: var(--primary-blue);
 }
 
 /* Form Styles */
@@ -151,8 +183,8 @@ body {
 }
 
 .form-group label {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -160,33 +192,73 @@ body {
 .form-group select,
 .form-group textarea {
   padding: 15px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-gray);
   border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
+  background: var(--white);
+  color: var(--text-primary);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
 }
 
+/* Role Header Component */
+.role-header {
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-teal));
+  color: var(--white);
+  padding: 20px 30px;
+  margin-bottom: 30px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.role-header-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.role-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.role-header h1 {
+  font-size: 2rem;
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.role-header p {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+/* Buttons */
 .login-button,
 .primary-button,
 .book-button,
 .call-next-button,
 .complete-consultation-button {
-  background: linear-gradient(135deg, #4CAF50, #2196F3);
-  color: white;
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-teal));
+  color: var(--white);
   border: none;
   padding: 15px 30px;
   border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .login-button:hover,
@@ -195,6 +267,7 @@ body {
 .call-next-button:hover,
 .complete-consultation-button:hover {
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(30, 136, 229, 0.3);
 }
 
 .login-button:disabled,
@@ -207,26 +280,88 @@ body {
   transform: none;
 }
 
+/* Success Button Variant */
+.success-button {
+  background: linear-gradient(135deg, var(--success-green), #388E3C);
+}
+
+/* Warning Button Variant */
+.warning-button {
+  background: linear-gradient(135deg, var(--warning-orange), #F57C00);
+}
+
+/* Error Button Variant */
+.error-button {
+  background: linear-gradient(135deg, var(--error-red), #D32F2F);
+}
+
 .error-message {
   background: #ffebee;
-  color: #c62828;
+  color: var(--error-red);
   padding: 15px;
   border-radius: 10px;
   margin-bottom: 20px;
-  border-left: 4px solid #c62828;
+  border-left: 4px solid var(--error-red);
+  font-weight: 500;
+}
+
+/* Success Message */
+.success-message {
+  background: #e8f5e8;
+  color: var(--success-green);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border-left: 4px solid var(--success-green);
+  font-weight: 500;
+}
+
+/* Toast Notification Styles */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.toast {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-left: 4px solid var(--primary-blue);
+  min-width: 300px;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+  border-left-color: var(--success-green);
+}
+
+.toast.error {
+  border-left-color: var(--error-red);
+}
+
+.toast.warning {
+  border-left-color: var(--warning-orange);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 /* Dashboard Layout */
 .dashboard {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: var(--background-light);
 }
 
 .dashboard-header {
-  background: white;
+  background: var(--white);
   padding: 20px 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -240,27 +375,32 @@ body {
 
 .header-left .hospital-icon {
   font-size: 2.5rem;
+  color: var(--primary-blue);
 }
 
 .header-left h1 {
   font-size: 1.8rem;
   margin-bottom: 5px;
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .header-left p {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .logout-button {
-  background: #f44336;
-  color: white;
+  background: var(--error-red);
+  color: var(--white);
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .logout-button:hover {

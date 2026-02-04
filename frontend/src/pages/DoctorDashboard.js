@@ -7,7 +7,9 @@ import {
   Users, 
   Calendar,
   Play,
-  CheckCircle
+  CheckCircle,
+  Stethoscope,
+  LogOut
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
@@ -425,7 +427,18 @@ const DoctorDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
+    <div className="dashboard">
+      {/* Role Header */}
+      <div className="role-header">
+        <div className="role-header-content">
+          <Stethoscope className="role-icon" />
+          <div>
+            <h1>Doctor Dashboard</h1>
+            <p>Welcome Dr. {user?.name || user?.username}! Manage your patient queue and consultations</p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -435,7 +448,7 @@ const DoctorDashboard = () => {
                 <i className="fas fa-hospital-user text-white text-lg"></i>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-teal-600">Hospital Information System</h1>
+                <h1 className="text-xl font-bold text-teal-600">Queue-Free Healthcare System</h1>
                 <p className="text-xs text-gray-600">Doctor Portal</p>
               </div>
             </div>
