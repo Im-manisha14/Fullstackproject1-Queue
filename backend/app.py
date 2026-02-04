@@ -1276,10 +1276,10 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     
-    print("🏥 Healthcare Queue-Free System Starting...")
-    print(f"📊 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print("🚀 Server running at http://localhost:5000")
-    print("📋 Health check: http://localhost:5000/api/health")
+    print("Healthcare Queue-Free System Starting...")
+    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print("Server running at http://localhost:5000")
+    print("Health check: http://localhost:5000/api/health")
     print("=" * 50)
     
     # Start with debug mode to ensure code reloading

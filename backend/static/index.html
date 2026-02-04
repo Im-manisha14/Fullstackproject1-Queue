@@ -267,6 +267,193 @@
         .loading-spinner {
             border-top-color: var(--primary-color);
         }
+
+        /* Complete Login Form Styling */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .auth-header {
+            text-align: center;
+            padding: 2rem 2rem 1rem;
+            border-bottom: 2px solid var(--bg-neutral);
+        }
+
+        .auth-logo {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .auth-header h2 {
+            color: var(--primary-dark);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .auth-card form {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-icon-wrapper {
+            position: relative;
+        }
+
+        .input-icon-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            z-index: 1;
+        }
+
+        .input-icon-wrapper input,
+        .input-icon-wrapper select {
+            padding-left: 3rem;
+        }
+
+        .btn {
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-secondary {
+            background: var(--bg-neutral);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .error {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ef4444;
+            background: #fef2f2;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 0 2rem 1rem;
+            border: 1px solid #fee2e2;
+        }
+
+        .success {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green);
+            background: #d1fae5;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 0 2rem 1rem;
+            border: 1px solid #a7f3d0;
+        }
+
+        .auth-footer {
+            text-align: center;
+            padding: 1rem 2rem 2rem;
+            border-top: 1px solid var(--bg-neutral);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .auth-link {
+            color: var(--primary-color);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        .auth-link:hover {
+            color: var(--primary-dark);
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Dashboard Styling */
+        .dashboard {
+            padding: 2rem;
+            background: var(--bg-neutral);
+            min-height: calc(100vh - 80px);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            gap: 2rem;
+        }
+
     </style>
 </head>
 
@@ -296,46 +483,33 @@
                         style: {
                             width: '40px',
                             height: '40px',
-                            background: 'rgba(255, 255, 255, 0.2)',
+                            background: 'var(--primary-color)',
                             borderRadius: '10px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)'
+                            color: 'white'
                         }
                     }, React.createElement('i', { className: 'fas fa-hospital-user' })),
-                    React.createElement('h1', null, 'Hospital Information System')
+                    React.createElement('h1', null, 'Queue-Free Healthcare')
                 ),
                 React.createElement('div', { className: 'user-info' },
-                    React.createElement('div', { style: { textAlign: 'right', marginRight: '1rem' } },
-                        React.createElement('div', { style: { fontWeight: '700', color: 'white', fontSize: '0.95rem' } }, user.full_name),
+                    React.createElement('div', { style: { textAlign: 'right' } },
+                        React.createElement('div', { style: { fontWeight: '700', color: 'var(--text-main)', fontSize: '0.95rem' } }, user.full_name),
                         React.createElement('div', {
                             style: {
                                 fontSize: '0.75rem',
-                                color: 'rgba(255, 255, 255, 0.8)',
+                                color: 'var(--primary-color)',
                                 textTransform: 'uppercase',
-                                fontWeight: '600',
+                                fontWeight: '700',
                                 letterSpacing: '0.05em'
                             }
                         }, user.role)
                     ),
                     React.createElement('button', {
                         onClick: onLogout,
-                        style: {
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: '600',
-                            transition: 'all 0.2s ease'
-                        },
-                        onMouseOver: e => e.target.style.background = 'rgba(255, 255, 255, 0.3)',
-                        onMouseOut: e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'
-                    }, React.createElement('i', { className: 'fas fa-sign-out-alt', style: { marginRight: '0.5rem' } }), 'Logout')
+                        className: 'logout-btn'
+                    }, React.createElement('i', { className: 'fas fa-right-from-bracket' }), ' Logout')
                 )
             )
         );
@@ -705,155 +879,104 @@
                 }
             };
 
-            return React.createElement('div', { className: 'login-page-wrapper' },
-                React.createElement('div', { className: 'login-background' }),
-                React.createElement('div', { className: 'login-container' },
-                    React.createElement('div', { className: 'auth-card' },
-                        // Left side - Medical illustration and branding
-                        React.createElement('div', { className: 'auth-card-visual' },
-                            React.createElement('div', { className: 'brand-logo-large' },
-                                React.createElement('i', { className: 'fas fa-hospital-user' })
-                            ),
-                            React.createElement('div', { className: 'brand-text' }, 'Hospital Information System'),
-                            React.createElement('p', { 
-                                style: { 
-                                    fontSize: '1rem', 
-                                    opacity: '0.9', 
-                                    textAlign: 'center', 
-                                    lineHeight: '1.5',
-                                    position: 'relative',
-                                    zIndex: 2 
-                                } 
-                            }, 'Streamlined healthcare management with real-time queue tracking and digital prescriptions'),
-                            React.createElement('div', { 
-                                style: { 
-                                    marginTop: '2rem',
-                                    padding: '1.5rem',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '12px',
-                                    position: 'relative',
-                                    zIndex: 2
-                                } 
-                            },
-                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
-                                    React.createElement('i', { className: 'fas fa-stethoscope', style: { fontSize: '1.2rem' } }),
-                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Queue-Free Experience')
-                                ),
-                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' } },
-                                    React.createElement('i', { className: 'fas fa-prescription', style: { fontSize: '1.2rem' } }),
-                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Digital Prescriptions')
-                                ),
-                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '0.5rem' } },
-                                    React.createElement('i', { className: 'fas fa-clock', style: { fontSize: '1.2rem' } }),
-                                    React.createElement('span', { style: { fontWeight: '600' } }, 'Real-time Updates')
+            return React.createElement('div', { className: 'login-container' },
+                React.createElement('div', { className: 'auth-card' },
+                    React.createElement('div', { className: 'auth-header' },
+                        React.createElement('div', { className: 'auth-logo' },
+                            React.createElement('i', { className: 'fas fa-hospital-user' })
+                        ),
+                        React.createElement('h2', null, isRegistering ? 'Create Account' : 'Welcome Professional'),
+                        React.createElement('p', null, isRegistering ? 'Join our healthcare network today' : 'Access your secure medical dashboard')
+                    ),
+
+                    error && React.createElement('div', { className: 'error' },
+                        React.createElement('i', { className: 'fas fa-circle-exclamation' }),
+                        React.createElement('span', null, error)
+                    ),
+                    success && React.createElement('div', { className: 'success' },
+                        React.createElement('i', { className: 'fas fa-circle-check' }),
+                        React.createElement('span', null, success)
+                    ),
+
+                    React.createElement('form', { onSubmit: handleSubmit, autoComplete: 'off' },
+                        // Hidden decoys to absorb aggressive browser auto-fill
+                        React.createElement('input', { type: 'text', name: 'prevent_autofill_user', style: { display: 'none' }, tabIndex: -1 }),
+                        React.createElement('input', { type: 'password', name: 'prevent_autofill_pass', style: { display: 'none' }, tabIndex: -1 }),
+
+                        isRegistering && React.createElement('div', { className: 'form-group' },
+                            React.createElement('label', { htmlFor: 'reg_full_name' }, 'Full Name'),
+                            React.createElement('div', { className: 'input-icon-wrapper' },
+                                React.createElement('i', { className: 'fas fa-user-doctor' }),
+                                React.createElement('input', {
+                                    id: 'reg_full_name',
+                                    name: 'reg_full_name',
+                                    autocomplete: 'new-name',
+                                    placeholder: 'Dr. Jane Smith',
+                                    value: fullName,
+                                    onChange: e => setFullName(e.target.value),
+                                    required: true
+                                })
+                            )
+                        ),
+                        React.createElement('div', { className: 'form-group' },
+                            React.createElement('label', { htmlFor: 'hms_primary_contact' }, 'Email Address'),
+                            React.createElement('div', { className: 'input-icon-wrapper' },
+                                React.createElement('i', { className: 'fas fa-envelope' }),
+                                React.createElement('input', {
+                                    type: 'text', // Changed from email to text to break heuristics
+                                    id: 'hms_primary_contact',
+                                    name: 'hms_primary_contact',
+                                    autocomplete: 'off',
+                                    'data-lpignore': 'true',
+                                    placeholder: 'name@hospital.com',
+                                    value: email,
+                                    onChange: e => setEmail(e.target.value),
+                                    required: true
+                                })
+                            )
+                        ),
+                        React.createElement('div', { className: 'form-group' },
+                            React.createElement('label', { htmlFor: 'hms_secure_entry' }, 'Secure Password'),
+                            React.createElement('div', { className: 'input-icon-wrapper' },
+                                React.createElement('i', { className: 'fas fa-lock' }),
+                                React.createElement('input', {
+                                    type: 'password',
+                                    id: 'hms_secure_entry',
+                                    name: 'hms_secure_entry',
+                                    autocomplete: 'off',
+                                    placeholder: '••••••••',
+                                    value: password,
+                                    onChange: e => setPassword(e.target.value),
+                                    required: true
+                                })
+                            )
+                        ),
+                        isRegistering && React.createElement('div', { className: 'form-group' },
+                            React.createElement('label', null, 'Professional Role'),
+                            React.createElement('div', { className: 'input-icon-wrapper' },
+                                React.createElement('i', { className: 'fas fa-stethoscope' }),
+                                React.createElement('select', { value: role, onChange: e => setRole(e.target.value) },
+                                    React.createElement('option', { value: 'patient' }, 'Patient / Client'),
+                                    React.createElement('option', { value: 'doctor' }, 'Medical Doctor'),
+                                    React.createElement('option', { value: 'pharmacy' }, 'Pharmacy Staff')
                                 )
                             )
                         ),
-                        
-                        // Right side - Login form
-                        React.createElement('div', { className: 'auth-card-form' },
-                            React.createElement('div', { className: 'login-header' },
-                                React.createElement('h2', null, isRegistering ? 'Create Account' : 'Hospital Information System'),
-                                React.createElement('p', { 
-                                    style: { 
-                                        color: '#64748b', 
-                                        marginTop: '0.5rem', 
-                                        fontSize: '0.9rem' 
-                                    } 
-                                }, isRegistering ? 'Join our healthcare network today' : 'Access your secure medical dashboard')
-                            ),
-
-                            error && React.createElement('div', { className: 'error-message' },
-                                React.createElement('i', { className: 'fas fa-exclamation-circle', style: { marginRight: '0.5rem' } }),
-                                React.createElement('span', null, error)
-                            ),
-                            success && React.createElement('div', { className: 'success-message' },
-                                React.createElement('i', { className: 'fas fa-check-circle', style: { marginRight: '0.5rem' } }),
-                                React.createElement('span', null, success)
-                            ),
-
-                            React.createElement('form', { onSubmit: handleSubmit, autoComplete: 'off' },
-                                // Hidden decoys to absorb aggressive browser auto-fill
-                                React.createElement('input', { type: 'text', name: 'prevent_autofill_user', style: { display: 'none' }, tabIndex: -1 }),
-                                React.createElement('input', { type: 'password', name: 'prevent_autofill_pass', style: { display: 'none' }, tabIndex: -1 }),
-
-                                isRegistering && React.createElement('div', { className: 'form-group' },
-                                    React.createElement('label', { htmlFor: 'reg_full_name' }, 'Full Name'),
-                                    React.createElement('input', {
-                                        id: 'reg_full_name',
-                                        name: 'reg_full_name',
-                                        autocomplete: 'new-name',
-                                        placeholder: 'Dr. Jane Smith',
-                                        value: fullName,
-                                        onChange: e => setFullName(e.target.value),
-                                        required: true
-                                    })
-                                ),
-                                React.createElement('div', { className: 'form-group' },
-                                    React.createElement('label', { htmlFor: 'hms_primary_contact' }, 'Email Address'),
-                                    React.createElement('input', {
-                                        type: 'text',
-                                        id: 'hms_primary_contact',
-                                        name: 'hms_primary_contact',
-                                        autocomplete: 'off',
-                                        'data-lpignore': 'true',
-                                        placeholder: 'name@hospital.com',
-                                        value: email,
-                                        onChange: e => setEmail(e.target.value),
-                                        required: true
-                                    })
-                                ),
-                                React.createElement('div', { className: 'form-group' },
-                                    React.createElement('label', { htmlFor: 'hms_secure_entry' }, 'Password'),
-                                    React.createElement('input', {
-                                        type: 'password',
-                                        id: 'hms_secure_entry',
-                                        name: 'hms_secure_entry',
-                                        autocomplete: 'off',
-                                        placeholder: 'Enter your password',
-                                        value: password,
-                                        onChange: e => setPassword(e.target.value),
-                                        required: true
-                                    })
-                                ),
-                                isRegistering && React.createElement('div', { className: 'form-group' },
-                                    React.createElement('label', null, 'Professional Role'),
-                                    React.createElement('select', { value: role, onChange: e => setRole(e.target.value) },
-                                        React.createElement('option', { value: 'patient' }, 'Patient'),
-                                        React.createElement('option', { value: 'doctor' }, 'Doctor'),
-                                        React.createElement('option', { value: 'pharmacy' }, 'Pharmacy Staff')
-                                    )
-                                ),
-                                React.createElement('button', { type: 'submit', className: 'btn-primary', disabled: loading },
-                                    loading ? 'Processing...' : (isRegistering ? 'CREATE ACCOUNT' : 'LOGIN')
-                                )
-                            ),
-                            React.createElement('div', { 
-                                style: { 
-                                    textAlign: 'center', 
-                                    marginTop: '2rem', 
-                                    paddingTop: '1rem', 
-                                    borderTop: '1px solid #e2e8f0' 
-                                } 
-                            },
-                                React.createElement('span', { style: { color: '#64748b', fontSize: '0.9rem' } }, 
-                                    isRegistering ? 'Already have an account? ' : 'New to our system? '
-                                ),
-                                React.createElement('span', {
-                                    style: { 
-                                        color: 'var(--primary-color)', 
-                                        cursor: 'pointer', 
-                                        fontWeight: '600',
-                                        fontSize: '0.9rem'
-                                    },
-                                    onClick: () => {
-                                        setIsRegistering(!isRegistering);
-                                        setError('');
-                                        setSuccess('');
-                                    }
-                                }, isRegistering ? 'Sign In' : 'Register Now')
-                            )
+                        React.createElement('button', { type: 'submit', className: 'btn btn-primary', disabled: loading },
+                            loading ? React.createElement('i', { className: 'fas fa-spinner fa-spin' }) : null,
+                            loading ? ' Processing...' : (isRegistering ? 'Register Account' : 'Secure Sign In')
                         )
+                    ),
+                    React.createElement('div', { className: 'auth-footer' },
+                        React.createElement('span', null, isRegistering ? 'Already have an account?' : 'New to our system?'),
+                        React.createElement('span', {
+                            className: 'auth-link',
+                            onClick: () => {
+                                setIsRegistering(!isRegistering);
+                                setError('');
+                                setSuccess('');
+                            }
+                        }, isRegistering ? 'Sign In' : 'Register Now')
                     )
                 )
             );
