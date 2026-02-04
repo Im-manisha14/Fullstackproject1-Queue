@@ -1257,6 +1257,88 @@ def get_system_stats():
         return jsonify({'error': str(e)}), 500
 
 # =======================
+# DASHBOARD ROUTES
+# =======================
+
+@app.route('/api/dashboard/<role>', methods=['GET'])
+@jwt_required()
+def get_dashboard_data(role):
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        
+        if not user or user.role != role:
+            return jsonify({'error': 'Unauthorized'}), 401
+            
+        data = {}
+        
+        if role == 'patient':
+            # Get appointments
+            appointments = Appointment.query.filter_by(patient_id=current_user_id).order_by(Appointment.appointment_date.desc()).all()
+            prescriptions = Prescription.query.filter_by(patient_id=current_user_id).all()
+            
+            # Calculate Active Queue Status
+            active_apt = Appointment.query.filter_by(patient_id=current_user_id).filter(Appointment.status.in_(['booked', 'in_queue'])).first()
+            
+            current_serving = 0
+            estimated_wait = 0
+            
+            if active_apt:
+                # Find doctor's current token
+                doc_profile = DoctorProfile.query.filter_by(user_id=active_apt.doctor_id).first()
+                if doc_profile:
+                    current_serving = doc_profile.current_token
+                    
+                # Queue position calculation
+                ahead_count = Appointment.query.filter(
+                    Appointment.doctor_id == active_apt.doctor_id,
+                    Appointment.appointment_date == active_apt.appointment_date,
+                    Appointment.token_number < active_apt.token_number,
+                    Appointment.status.in_(['in_queue', 'consulting'])
+                ).count()
+                estimated_wait = ahead_count * 15 # 15 mins per patient
+                
+            data = {
+                'appointments': [a.to_dict() for a in appointments],
+                'prescriptions': [p.to_dict() for p in prescriptions],
+                'active_appointment': active_apt.to_dict() if active_apt else None,
+                'current_serving': current_serving,
+                'estimated_wait': estimated_wait
+            }
+            
+        elif role == 'doctor':
+             current_user_id = get_jwt_identity()
+             date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+             appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+             
+             appointments = Appointment.query.filter_by(
+                doctor_id=current_user_id,
+                appointment_date=appointment_date
+             ).order_by(Appointment.token_number).all()
+             
+             data = {
+                 'appointments': [a.to_dict() for a in appointments],
+                 'statistics': {
+                     'total_today': len(appointments),
+                     'completed': len([a for a in appointments if a.status == 'completed']),
+                     'pending': len([a for a in appointments if a.status in ['booked', 'in_queue']])
+                 }
+             }
+             
+        elif role == 'pharmacy':
+             pending = Prescription.query.filter_by(pharmacy_status='pending').all()
+             low_stock = Medicine.query.filter(Medicine.stock_quantity <= Medicine.reorder_level).count()
+             
+             data = {
+                 'pending_prescriptions': [p.to_dict() for p in pending],
+                 'low_stock_count': low_stock
+             }
+
+        return jsonify({'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# =======================
 # SERVE REACT APP
 # =======================
 

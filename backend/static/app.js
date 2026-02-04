@@ -249,9 +249,9 @@ const Login = ({ onLogin }) => {
                     <div className="brand-logo">
                         <i className="fas fa-hospital-symbol"></i>
                     </div>
-                    <h1 className="brand-title">Hospital Queue</h1>
+                    <h1 className="brand-title">Queue-Free Healthcare</h1>
                     <p className="brand-subtitle">
-                        {isLogin ? 'Welcome back, please login to continue' : 'Create a new account'}
+                        {isLogin ? 'Track your turn in real time. Login to continue.' : 'Book appointments & skip the wait.'}
                     </p>
                 </div>
 
@@ -473,12 +473,12 @@ const PatientDashboard = ({ user }) => {
 
             {/* 2. Primary Action: Booking */}
             {!showBooking ? (
-                <div className="card" style={{ borderLeft: '4px solid var(--primary)' }}>
+                <div className="card card-accent-primary">
                     <div className="card-header">
                         <h2 className="card-title">Quick Actions</h2>
                     </div>
-                    <div className="card-content" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <p style={{ margin: 0, color: 'var(--text-secondary)', flex: 1 }}>
+                    <div className="card-content flex items-center gap-4">
+                        <p className="text-secondary flex-1 m-0">
                             Need to see a doctor? Schedule your visit now.
                         </p>
                         <button
@@ -513,21 +513,21 @@ const PatientDashboard = ({ user }) => {
                         {dashboardData.appointments
                             .filter(apt => (apt.status === 'in_queue' || apt.status === 'booked' || apt.status === 'consulting'))
                             .map(appointment => (
-                                <div key={appointment.id} className="alert alert-info" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem', borderLeft: '4px solid var(--info)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                <div key={appointment.id} className="alert alert-info card-accent-info alert-flex">
+                                    <div className="alert-header">
+                                        <span className="alert-title">
                                             <i className="fas fa-ticket-alt"></i> Token #{appointment.token_number}
                                         </span>
                                         <StatusBadge status={appointment.status} />
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                                        <span><i className="fas fa-user-md"></i> {appointment.doctor}</span>
-                                        <span><i className="fas fa-clinic-medical"></i> {appointment.department}</span>
-                                        {appointment.queue_info && (
+                                    <div className="alert-details">
+                                        <span><i className="fas fa-user-md"></i> {appointment.doctor_name}</span>
+                                        <span><i className="fas fa-clinic-medical"></i> {appointment.department_name}</span>
+                                        {dashboardData.active_appointment && dashboardData.active_appointment.id === appointment.id && (
                                             <>
-                                                <span style={{ fontWeight: '600' }}>Position: {appointment.queue_info.position}</span>
-                                                <span style={{ color: 'var(--primary-dark)', fontWeight: '600' }}>
-                                                    <i className="fas fa-clock"></i> Est. Wait: {appointment.queue_info.estimated_wait} mins
+                                                <span className="font-bold">Position: {dashboardData.estimated_wait / 15}</span>
+                                                <span className="text-primary font-bold">
+                                                    <i className="fas fa-clock"></i> Est. Wait: {dashboardData.estimated_wait} mins
                                                 </span>
                                             </>
                                         )}
@@ -882,24 +882,30 @@ const DoctorDashboard = ({ user }) => {
 
             <div className="stats-grid">
                 <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-user-friends"></i></div>
+                    <div className="stat-icon"><i className="fas fa-ticket-alt"></i></div>
                     <div className="stat-content">
-                        <div className="stat-number">{dashboardData?.statistics?.total_today || 0}</div>
-                        <div className="stat-label">Total Today</div>
+                        <div className="stat-number">
+                            {dashboardData?.active_appointment ? `#${dashboardData.active_appointment.token_number}` : '-'}
+                        </div>
+                        <div className="stat-label">Your Token</div>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
+                    <div className="stat-icon"><i className="fas fa-user-check"></i></div>
                     <div className="stat-content">
-                        <div className="stat-number">{dashboardData?.statistics?.completed || 0}</div>
-                        <div className="stat-label">Completed</div>
+                        <div className="stat-number">
+                            {dashboardData?.current_serving ? `#${dashboardData.current_serving}` : '-'}
+                        </div>
+                        <div className="stat-label">Now Serving</div>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-icon"><i className="fas fa-procedures"></i></div>
+                    <div className="stat-icon"><i className="fas fa-hourglass-half"></i></div>
                     <div className="stat-content">
-                        <div className="stat-number">{dashboardData?.statistics?.in_progress || 0}</div>
-                        <div className="stat-label">Waiting</div>
+                        <div className="stat-number">
+                            {dashboardData?.estimated_wait ? `${dashboardData.estimated_wait}m` : '0m'}
+                        </div>
+                        <div className="stat-label">Est. Wait</div>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -1386,9 +1392,9 @@ const PharmacyDashboard = ({ user }) => {
 
                                     <div className="bg-gray-50 p-4 rounded">
                                         <div className="font-bold mb-2">Medications:</div>
-                                        <ul className="medication-list" style={{ listStyle: 'none', padding: 0 }}>
+                                        <ul className="medication-list">
                                             {prescription.medications.map((medication, index) => (
-                                                <li key={index} className="medication-item" style={{ marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                                                <li key={index} className="medication-item">
                                                     <div className="font-bold text-primary">
                                                         {medication.name} <span className="text-muted">({medication.strength})</span>
                                                     </div>
@@ -1543,7 +1549,7 @@ const AdminDashboard = ({ user }) => {
                                             <td>{user.username}</td>
                                             <td>{user.email}</td>
                                             <td>
-                                                <span className={`status status-${user.role}`}>
+                                                <span className={`state-badge status-${user.role}`}>
                                                     {user.role}
                                                 </span>
                                             </td>

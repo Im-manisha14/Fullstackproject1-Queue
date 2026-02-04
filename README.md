@@ -175,6 +175,9 @@ Frontend:
 - `POST /api/auth/login` - User login
 - `GET /api/auth/profile` - Get user profile
 
+### Dashboard APIs
+- `GET /api/dashboard/:role` - Get role-specific dashboard data (patient, doctor, pharmacy)
+
 ### Patient APIs
 - `GET /api/patient/departments` - List all departments
 - `GET /api/patient/doctors` - List available doctors

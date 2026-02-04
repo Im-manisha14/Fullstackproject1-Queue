@@ -831,6 +831,54 @@ textarea {
     background-color: var(--input-bg);
 }
 
+/* Card Accents & Helpers */
+.card-accent-primary {
+    border-left: 4px solid var(--primary);
+}
+
+.card-accent-info {
+    border-left: 4px solid var(--info);
+}
+
+.alert-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.alert-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+
+/* Medication List */
+.medication-list {
+    list-style: none;
+    padding: 0;
+}
+
+.medication-item {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.medication-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+
 
 @media (max-width: 768px) {
     .dashboard {
