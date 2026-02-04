@@ -226,24 +226,26 @@ The system includes pre-configured test accounts:
 
 ## 📱 User Interface
  
- ### Professional Design
- - **Medical Blue Theme** (`#1E88E5`) for a calm, professional healthcare environment
- - **Split-Screen Login** with animated branding and role selection
- - **Clean Typography** using Inter font for maximum readability
+ ## 📱 User Interface (v2.0 Overhaul)
  
- ### Dashboard Experience
- - **Patient Portal:** Streamlined flow from Booking to Queue tracking.
-   - *Key View:* Live Queue Status with estimated wait times
- - **Doctor Console:** Efficient queue management with "Call Next" actions.
-   - *Key View:* Real-time Patient Queue & Schedule
- - **Pharmacy Panel:** Inventory tracking and prescription dispensing.
-   - *Key View:* Pending Dispensations & Low Stock Alerts
+ ### Strict Design System
+ - **Primary Theme:** Calm Blue (`#2563EB`) - A professional, medical-grade color palette.
+ - **Spacing System:** Strictly enforced 8px grid (8px, 16px, 24px, 32px) for consistent layout rhythm.
+ - **Typography:** Modern sans-serif stack with clear hierarchy and readable contrast.
  
- ### Accessibility & Responsiveness
- - **Mobile-First** layout ensuring usability on all devices
- - **High Contrast** text for better readability
- - **Clear Status Indicators** (Badges) for appointment states
- - **Smooth Transitions** for a polished user feel
+ ### Key UI Components
+ 1. **Centered Login Portal:** 
+    - Modern card-based layout with split sections (Branding vs Form).
+    - Smooth usage of utility classes for responsiveness.
+ 2. **Interactive Dashboards:**
+    - **Empty States:** Custom illustrations and messages when lists are empty (replacing generic text).
+    - **Modals:** Polished overlay dialogs for actions like "Create Prescription" (no inline styles).
+    - **Status Badges:** Color-coded pills for clear status visibility (Booked, In Queue, Completed).
+ 
+ ### Accessibility & Polish
+ - **Mobile-First:** Fully responsive layouts using flexbox and grid.
+ - **Feedback:** Loading spinners and toast alerts for all async actions.
+ - **Clean Code:** 100% CSS class usage (no inline styles) for maintainability.
 
 ## 🛠️ Development
 

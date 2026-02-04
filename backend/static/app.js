@@ -157,6 +157,16 @@ const Alert = ({ type, message, onClose }) => (
     </div>
 );
 
+// Reusable Empty State Component
+const EmptyState = ({ icon, message }) => (
+    <div className="empty-state fade-in">
+        <div className="empty-state-icon">
+            <i className={`fas ${icon}`}></i>
+        </div>
+        <p>{message}</p>
+    </div>
+);
+
 // Login Component
 const Login = ({ onLogin }) => {
     const [isLogin, setIsLogin] = useState(true);
@@ -229,235 +239,159 @@ const Login = ({ onLogin }) => {
     };
 
     const toggleMode = () => {
-        setIsLogin(!isLogin);
-        setAlert(null);
-        setFormData(prev => ({ ...prev, password: '' }));
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     return (
-        <div className="login-container">
-            {/* LEFT SIDE - FORM */}
-            <div className="login-left">
-                <div className="login-form-wrapper simple-fade-in">
-                    <div className="login-header">
-                        <div className="brand-title">Hospital Management Service</div>
-                        <div className="brand-subtitle">
-                            {isLogin ? 'Welcome back! Please login to your account.' : 'Create an account to get started.'}
-                        </div>
+        <div className="login-page">
+            <div className="login-card fade-in">
+                <div className="login-header">
+                    <div className="brand-logo">
+                        <i className="fas fa-hospital-symbol"></i>
+                    </div>
+                    <h1 className="brand-title">Hospital Queue</h1>
+                    <p className="brand-subtitle">
+                        {isLogin ? 'Welcome back, please login to continue' : 'Create a new account'}
+                    </p>
+                </div>
+
+                {alert && (
+                    <div className={`alert alert-${alert.type === 'error' ? 'error' : 'success'} mb-4`}>
+                        {alert.message}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    {/* Username Field */}
+                    <div className="form-group">
+                        <label className="form-label">Username</label>
+                        <input
+                            type="text"
+                            name="username"
+                            className="form-input"
+                            value={formData.username}
+                            onChange={handleChange}
+                            required
+                            placeholder="username"
+                        />
                     </div>
 
-                    {alert && (
-                        <Alert
-                            type={alert.type}
-                            message={alert.message}
-                            onClose={() => setAlert(null)}
+                    {/* Password Field */}
+                    <div className="form-group">
+                        <label className="form-label">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            className="form-input"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            placeholder="••••••••"
                         />
+                    </div>
+
+                    {/* Extra Registration Fields */}
+                    {!isLogin && (
+                        <>
+                            <div className="form-group">
+                                <label className="form-label">Full Name</label>
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    className="form-input"
+                                    value={formData.full_name}
+                                    onChange={handleChange}
+                                    required={!isLogin}
+                                    placeholder="John Doe"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    className="form-input"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required={!isLogin}
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Role</label>
+                                <select
+                                    name="role"
+                                    className="form-select"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                >
+                                    <option value="patient">Patient</option>
+                                    <option value="doctor">Doctor</option>
+                                    <option value="pharmacy">Pharmacy Staff</option>
+                                </select>
+                            </div>
+
+                            {/* Doctor Specific Fields */}
+                            {formData.role === 'doctor' && (
+                                <div className="p-4 mb-4 bg-gray-50 rounded border border-gray-200">
+                                    <div className="form-group">
+                                        <label className="form-label">Specialization</label>
+                                        <input
+                                            type="text"
+                                            name="specialization"
+                                            className="form-input"
+                                            value={formData.specialization}
+                                            onChange={handleChange}
+                                            required={formData.role === 'doctor'}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Consultation Fee</label>
+                                        <input
+                                            type="number"
+                                            name="consultation_fee"
+                                            className="form-input"
+                                            value={formData.consultation_fee}
+                                            onChange={handleChange}
+                                            required={formData.role === 'doctor'}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="form-label">Username</label>
-                            <input
-                                type="text"
-                                name="username"
-                                className="form-input"
-                                value={formData.username}
-                                onChange={handleChange}
-                                required
-                                placeholder="Enter your username"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <input
-                                type="password"
-                                name="password"
-                                className="form-input"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                placeholder="Enter your password"
-                            />
-                        </div>
-
-                        {!isLogin && (
-                            <>
-                                <div className="form-group">
-                                    <label className="form-label">Email Address</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        className="form-input"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="email@example.com"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Full Name</label>
-                                    <input
-                                        type="text"
-                                        name="full_name"
-                                        className="form-input"
-                                        value={formData.full_name}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="John Doe"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        className="form-input"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">I am a...</label>
-                                    <select
-                                        name="role"
-                                        className="form-select"
-                                        value={formData.role}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="patient">Patient</option>
-                                        <option value="doctor">Doctor</option>
-                                        <option value="pharmacy">Pharmacy Staff</option>
-                                    </select>
-                                </div>
-
-                                {formData.role === 'doctor' && (
-                                    <>
-                                        <div className="form-group">
-                                            <label className="form-label">Department</label>
-                                            <select
-                                                name="department_id"
-                                                className="form-select"
-                                                value={formData.department_id}
-                                                onChange={handleChange}
-                                                required
-                                            >
-                                                <option value="">Select Department</option>
-                                                {departments.map(dept => (
-                                                    <option key={dept.id} value={dept.id}>
-                                                        {dept.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">Specialization</label>
-                                            <input
-                                                type="text"
-                                                name="specialization"
-                                                className="form-input"
-                                                value={formData.specialization}
-                                                onChange={handleChange}
-                                                placeholder="e.g. Cardiologist"
-                                            />
-                                        </div>
-
-                                        <div className="form-row">
-                                            <div className="form-group">
-                                                <label className="form-label">Experience (Years)</label>
-                                                <input
-                                                    type="number"
-                                                    name="experience_years"
-                                                    className="form-input"
-                                                    value={formData.experience_years}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label">Consultation Fee</label>
-                                                <input
-                                                    type="number"
-                                                    name="consultation_fee"
-                                                    className="form-input"
-                                                    value={formData.consultation_fee}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                    step="0.01"
-                                                />
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </>
+                    <button
+                        type="submit"
+                        className="btn btn-primary w-full mt-4"
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <span><i className="fas fa-spinner fa-spin"></i> Processing...</span>
+                        ) : (
+                            isLogin ? 'Login' : 'Sign Up'
                         )}
+                    </button>
 
-                        {isLogin && (
-                            <div className="form-options">
-                                <label className="remember-me">
-                                    <input type="checkbox" />
-                                    <span>Remember me</span>
-                                </label>
-                                <a href="#" className="forgot-password">Forgot Password?</a>
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                    <div className="loading-spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
-                                    Processing...
-                                </span>
-                            ) : (isLogin ? 'Login' : 'Create Account')}
-                        </button>
-
-                        <div className="create-account">
+                    <div className="text-center mt-6">
+                        <p className="text-sm text-secondary">
                             {isLogin ? "Don't have an account?" : "Already have an account?"}
-                            <a href="#" onClick={(e) => { e.preventDefault(); toggleMode(); }}>
-                                {isLogin ? 'Create Account' : 'Login'}
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* RIGHT SIDE - ILLUSTRATION */}
-            <div className="login-right">
-                <div className="illustration-container">
-                    <div className="icon-circle">
-                        {/* Animated Orbiting Icons */}
-                        <div className="orbit-icons">
-                            <div className="orbit-item"><i className="fas fa-stethoscope"></i></div>
-                            <div className="orbit-item"><i className="fas fa-user-md"></i></div>
-                            <div className="orbit-item"><i className="fas fa-heartbeat"></i></div>
-                            <div className="orbit-item"><i className="fas fa-pills"></i></div>
-                            <div className="orbit-item"><i className="fas fa-hospital"></i></div>
-                            <div className="orbit-item"><i className="fas fa-ambulance"></i></div>
-                            <div className="orbit-item"><i className="fas fa-notes-medical"></i></div>
-                            <div className="orbit-item"><i className="fas fa-syringe"></i></div>
-                        </div>
-
-                        {/* Center Logo/Text */}
-                        <div className="center-logo">
-                            <div style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '10px' }}>
-                                <i className="fas fa-hospital-alt"></i>
-                            </div>
-                            <h2>Hospital</h2>
-                            <span>Management Service</span>
-                        </div>
+                            <button
+                                type="button"
+                                className="btn-link ml-1 text-primary font-bold"
+                                onClick={() => {
+                                    setIsLogin(!isLogin);
+                                    setAlert(null);
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}
+                            >
+                                {isLogin ? 'Sign up' : 'Login'}
+                            </button>
+                        </p>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );
@@ -1041,10 +975,10 @@ const DoctorDashboard = ({ user }) => {
                             </table>
                         </div>
                     ) : (
-                        <div className="text-center p-4">
-                            <i className="fas fa-mug-hot text-muted" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
-                            <p className="text-muted">No patients in the active queue.</p>
-                        </div>
+                        <EmptyState
+                            icon="fa-mug-hot"
+                            message="No patients in the active queue."
+                        />
                     )}
                 </div>
             </div>
@@ -1085,7 +1019,10 @@ const DoctorDashboard = ({ user }) => {
                             </table>
                         </div>
                     ) : (
-                        <p className="text-center text-muted">No appointments scheduled for today.</p>
+                        <EmptyState
+                            icon="fa-calendar-day"
+                            message="No appointments scheduled for today."
+                        />
                     )}
                 </div>
             </div>
@@ -1190,30 +1127,10 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
     };
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px'
-        }}>
-            <div style={{
-                background: 'white',
-                borderRadius: '10px',
-                padding: '30px',
-                maxWidth: '800px',
-                width: '100%',
-                maxHeight: '90vh',
-                overflow: 'auto'
-            }}>
-                <h2 style={{ marginBottom: '20px' }}>Create Prescription</h2>
-                <p style={{ marginBottom: '20px', color: '#666' }}>
+        <div className="modal-overlay">
+            <div className="modal-content fade-in">
+                <h2 className="modal-title">Create Prescription</h2>
+                <p className="text-secondary mb-4">
                     Patient: <strong>{appointment.patient_name}</strong> |
                     Token: <strong>#{appointment.token_number}</strong>
                 </p>
@@ -1256,25 +1173,12 @@ const PrescriptionForm = ({ appointment, onClose, onSuccess }) => {
                         />
 
                         {medicines.length > 0 && (
-                            <div style={{
-                                border: '1px solid #ddd',
-                                borderRadius: '5px',
-                                marginTop: '5px',
-                                maxHeight: '150px',
-                                overflow: 'auto'
-                            }}>
+                            <div className="dropdown-list">
                                 {medicines.map(medicine => (
                                     <div
                                         key={medicine.id}
-                                        style={{
-                                            padding: '10px',
-                                            borderBottom: '1px solid #eee',
-                                            cursor: 'pointer',
-                                            background: '#fff'
-                                        }}
+                                        className="dropdown-item"
                                         onClick={() => addMedication(medicine)}
-                                        onMouseEnter={(e) => e.target.style.background = '#f8f9fa'}
-                                        onMouseLeave={(e) => e.target.style.background = '#fff'}
                                     >
                                         <strong>{medicine.name}</strong> - {medicine.strength}
                                         <br />
@@ -1460,7 +1364,7 @@ const PharmacyDashboard = ({ user }) => {
                     {dashboardData?.pending_prescriptions?.length ? (
                         <div className="flex flex-col gap-4">
                             {dashboardData.pending_prescriptions.map(prescription => (
-                                <div key={prescription.id} className="p-4" style={{ border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                                <div key={prescription.id} className="p-4 border rounded mb-4 bg-white relative">
                                     <div className="flex justify-between items-center mb-4">
                                         <div>
                                             <div className="font-bold text-lg">#{prescription.prescription_number}</div>
@@ -1503,7 +1407,10 @@ const PharmacyDashboard = ({ user }) => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-center text-muted p-4">No pending prescriptions to dispense.</p>
+                        <EmptyState
+                            icon="fa-prescription-bottle-alt"
+                            message="No pending prescriptions to dispense."
+                        />
                     )}
                 </div>
             </div>
@@ -1655,7 +1562,10 @@ const AdminDashboard = ({ user }) => {
                             </table>
                         </div>
                     ) : (
-                        <p>No pending user verifications.</p>
+                        <EmptyState
+                            icon="fa-user-check"
+                            message="All users verified."
+                        />
                     )}
                 </div>
             </div>
