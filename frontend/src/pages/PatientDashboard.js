@@ -3,11 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { patientAPI } from '../utils/api';
 import socketService from '../utils/socket';
 import toast from 'react-hot-toast';
-import { 
-  Calendar, 
-  Clock, 
-  Plus, 
-  Activity, 
+import {
+  Calendar,
+  Clock,
+  Plus,
+  Activity,
   Stethoscope,
   FileText,
   User,
@@ -21,11 +21,32 @@ const PatientDashboard = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [allDoctors, setAllDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [queueStatus, setQueueStatus] = useState({});
 
+  // Coimbatore Hospitals List
+  const HOSPITALS = [
+    'Coimbatore Medical College Hospital',
+    'KMCH',
+    'Ganga Hospital',
+    'PSG Hospitals',
+    'Sri Ramakrishna Hospital',
+    'Royal Care Super Speciality Hospital',
+    'K.G. Hospital',
+    'Aravind Eye Hospital',
+    'Lotus Eye Hospital',
+    'Ortho One Orthopaedic Hospital',
+    'Vikram ENT Hospital',
+    'Sheela Hospital',
+    'Hindusthan Hospital',
+    'Gem Hospital',
+    'Sugam Multispeciality Hospital'
+  ];
+
   // Appointment booking form
   const [bookingForm, setBookingForm] = useState({
+    hospital_name: '',
     doctor_id: '',
     appointment_date: '',
     appointment_time: '',
@@ -72,35 +93,49 @@ const PatientDashboard = () => {
   };
 
   const loadInitialData = async () => {
+    console.log('=== loadInitialData started ===');
     setLoading(true);
     try {
+      console.log('Starting parallel API calls...');
       await Promise.all([
         loadAppointments(),
         loadPrescriptions(),
-        loadDepartments()
+        loadDepartments(),
+        loadDoctors()
       ]);
+      console.log('=== All initial data loaded successfully ===');
     } catch (error) {
+      console.error('=== loadInitialData ERROR ===');
+      console.error('Failed to load data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
+      console.log('=== loadInitialData finished - loading set to false ===');
     }
   };
 
   const loadAppointments = async () => {
     try {
+      console.log('=== Loading appointments ===');
       const response = await patientAPI.getAppointments();
-      setAppointments(response.data);
-      
+      console.log('API Response:', response);
+      const appointmentsData = response.data || [];
+      console.log('Appointments data:', appointmentsData);
+      console.log('Is array?', Array.isArray(appointmentsData));
+      console.log('Length:', appointmentsData.length);
+      setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+
       // Load queue status for active appointments
-      const activeAppointments = response.data.filter(
+      const activeAppointments = appointmentsData.filter(
         apt => apt.status === 'booked' || apt.status === 'in_queue'
       );
-      
+
       for (const apt of activeAppointments) {
         loadQueueStatus(apt.id);
       }
     } catch (error) {
       console.error('Failed to load appointments:', error);
+      setAppointments([]); // Set empty array on error
     }
   };
 
@@ -119,36 +154,71 @@ const PatientDashboard = () => {
   const loadPrescriptions = async () => {
     try {
       const response = await patientAPI.getPrescriptions();
-      setPrescriptions(response.data);
+      const prescriptionsData = response.data || [];
+      setPrescriptions(Array.isArray(prescriptionsData) ? prescriptionsData : []);
     } catch (error) {
       console.error('Failed to load prescriptions:', error);
+      setPrescriptions([]); // Set empty array on error
     }
   };
 
   const loadDepartments = async () => {
     try {
       const response = await patientAPI.getDepartments();
-      setDepartments(response.data);
+      const departmentsData = response.data || [];
+      setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
     } catch (error) {
       console.error('Failed to load departments:', error);
+      setDepartments([]); // Set empty array on error
     }
   };
 
-  const loadDoctors = async (departmentId = '') => {
+  const loadDoctors = async () => {
+    console.log('=== loadDoctors function called ===');
     try {
-      const response = await patientAPI.getDoctors(departmentId);
-      setDoctors(response.data);
+      console.log('Making API call to get doctors...');
+      const doctorsData = await patientAPI.getDoctors();
+      console.log('Loaded doctors from API:', doctorsData);
+      console.log('Doctors data type:', typeof doctorsData);
+      console.log('Is doctors data array?', Array.isArray(doctorsData));
+      
+      // Handle direct array response from our API
+      const doctorsList = Array.isArray(doctorsData) ? doctorsData : [];
+      console.log('Final doctors list:', doctorsList);
+      console.log('Doctors list length:', doctorsList.length);
+      
+      setAllDoctors(doctorsList);
+      setDoctors(doctorsList); // Show all doctors initially
+      
+      console.log('Set doctors count:', doctorsList.length);
+      console.log('=== loadDoctors completed successfully ===');
     } catch (error) {
+      console.error('=== loadDoctors ERROR ===');
       console.error('Failed to load doctors:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      toast.error('Failed to load doctors list');
+      setAllDoctors([]);
+      setDoctors([]);
+      console.log('=== loadDoctors finished with error ===');
     }
   };
+
+  // Show all doctors (no department filtering)
+  useEffect(() => {
+    setDoctors(allDoctors);
+    console.log('All doctors count:', allDoctors.length);
+  }, [allDoctors]);
 
   const handleBookAppointment = async (e) => {
     e.preventDefault();
-    
+    console.log('=== Booking appointment ===');
+    console.log('Booking form data:', bookingForm);
+
     try {
       setLoading(true);
-      await patientAPI.bookAppointment(bookingForm);
+      const bookResult = await patientAPI.bookAppointment(bookingForm);
+      console.log('Book appointment result:', bookResult);
       
       // Reset form
       setBookingForm({
@@ -158,12 +228,16 @@ const PatientDashboard = () => {
         symptoms: '',
         priority: 'normal'
       });
-      
+
       // Reload appointments
+      console.log('Reloading appointments after booking...');
       await loadAppointments();
+      console.log('Switching to appointments tab...');
       setActiveTab('appointments');
-      
+      console.log('=== Booking completed ===');
+
     } catch (error) {
+      console.error('Booking error:', error);
       const errorMessage = error.response?.data?.error || 'Failed to book appointment';
       toast.error(errorMessage);
     } finally {
@@ -179,7 +253,7 @@ const PatientDashboard = () => {
       completed: 'status-completed',
       cancelled: 'status-cancelled'
     };
-    
+
     return (
       <span className={statusClasses[status] || 'status-pending'}>
         {status.replace('_', ' ').toUpperCase()}
@@ -194,7 +268,7 @@ const PatientDashboard = () => {
       ready: 'status-ready',
       dispensed: 'status-dispensed'
     };
-    
+
     return (
       <span className={statusClasses[status] || 'status-pending'}>
         {status.toUpperCase()}
@@ -219,22 +293,22 @@ const PatientDashboard = () => {
   };
 
   const renderOverview = () => {
-    const todayAppointments = appointments.filter(
+    const todayAppointments = (appointments || []).filter(
       apt => apt.appointment_date === new Date().toISOString().split('T')[0]
     );
-    
-    const activeAppointments = appointments.filter(
+
+    const activeAppointments = (appointments || []).filter(
       apt => apt.status === 'booked' || apt.status === 'in_queue' || apt.status === 'consulting'
     );
 
-    const pendingPrescriptions = prescriptions.filter(
+    const pendingPrescriptions = (prescriptions || []).filter(
       presc => presc.pharmacy_status !== 'dispensed'
     );
 
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-        
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="card">
@@ -350,20 +424,16 @@ const PatientDashboard = () => {
     );
   };
 
-  const renderAppointments = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+  const renderAppointments = () => {
+    console.log('=== Rendering appointments ===');
+    console.log('Appointments state:', appointments);
+    console.log('Appointments length:', appointments.length);
+    
+    return (
+      <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">My Appointments</h2>
-        <button
-          onClick={() => setActiveTab('book')}
-          className="btn-primary flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Book Appointment
-        </button>
-      </div>
 
-      {appointments.length > 0 ? (
+        {appointments.length > 0 ? (
         <div className="space-y-4">
           {appointments.map(appointment => {
             const status = queueStatus[appointment.id];
@@ -386,7 +456,7 @@ const PatientDashboard = () => {
                       <p className="text-sm text-gray-700 mt-2"><strong>Doctor's Notes:</strong> {appointment.doctor_notes}</p>
                     )}
                   </div>
-                  
+
                   <div className="text-right">
                     <div className="mb-2">
                       {getStatusBadge(appointment.status)}
@@ -408,64 +478,58 @@ const PatientDashboard = () => {
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg mb-4">No appointments scheduled</p>
-          <button
-            onClick={() => setActiveTab('book')}
-            className="btn-primary"
-          >
-            Book Your First Appointment
-          </button>
+        <div className="text-center py-8">
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500">No appointments yet</p>
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   const renderBookAppointment = () => (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Book New Appointment</h2>
-      
+
       <div className="card max-w-2xl">
         <form onSubmit={handleBookAppointment} className="space-y-6">
           <div>
-            <label className="form-label">Department</label>
+            <label className="form-label">Select Hospital</label>
             <select
-              value={bookingForm.department_id}
-              onChange={(e) => {
-                setBookingForm({ ...bookingForm, department_id: e.target.value, doctor_id: '' });
-                if (e.target.value) {
-                  loadDoctors(e.target.value);
-                } else {
-                  setDoctors([]);
-                }
-              }}
+              value={bookingForm.hospital_name}
+              onChange={(e) => setBookingForm({ ...bookingForm, hospital_name: e.target.value, doctor_id: '' })}
               className="form-input"
               required
             >
-              <option value="">Select Department</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
+              <option value="">Select Hospital</option>
+              {HOSPITALS.map(hospital => (
+                <option key={hospital} value={hospital}>{hospital}</option>
               ))}
             </select>
           </div>
 
           <div>
             <label className="form-label">Doctor</label>
+            {console.log('RENDER: Current doctors array length:', doctors.length)}
+            {console.log('RENDER: Loading state:', loading)}
+            {console.log('RENDER: All doctors length:', allDoctors.length)}
             <select
               value={bookingForm.doctor_id}
               onChange={(e) => setBookingForm({ ...bookingForm, doctor_id: e.target.value })}
               className="form-input"
               required
-              disabled={!doctors.length}
             >
-              <option value="">Select Doctor</option>
-              {doctors.map(doctor => (
-                <option key={doctor.id} value={doctor.id}>
-                  {doctor.doctor_name} - {doctor.specialization || 'General'}
-                  {doctor.consultation_fee > 0 && ` (₹${doctor.consultation_fee})`}
-                </option>
-              ))}
+              <option value="">
+                {doctors.length === 0 ? 'Loading doctors...' : 'Select Doctor'}
+              </option>
+              {doctors.map(doctor => {
+                console.log('RENDER: Mapping doctor:', doctor.name);
+                return (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name} - {doctor.specialization} ({doctor.department}) - ₹{doctor.consultation_fee}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -531,7 +595,7 @@ const PatientDashboard = () => {
               )}
               {loading ? 'Booking...' : 'Book Appointment'}
             </button>
-            
+
             <button
               type="button"
               onClick={() => setActiveTab('appointments')}
@@ -606,73 +670,141 @@ const PatientDashboard = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'book', label: 'Book Appointment', icon: Plus },
     { id: 'prescriptions', label: 'Prescriptions', icon: FileText }
   ];
 
   return (
     <div className="dashboard">
-      {/* Role Header */}
-      <div className="role-header">
-        <div className="role-header-content">
-          <User className="role-icon" />
-          <div>
-            <h1>Patient Dashboard</h1>
-            <p>Welcome back, {user?.name || user?.username}! Manage your appointments and health records</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      {/* Modern Header with Gradient */}
+      <header style={{
+        background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+        padding: '2rem 0',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        marginBottom: '2rem'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center mr-3">
-                <i className="fas fa-hospital-user text-white text-lg"></i>
+          {/* Top Row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Activity size={28} color="white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-teal-600">Queue-Free Healthcare System</h1>
-                <p className="text-xs text-gray-600">Patient Portal</p>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white', margin: 0 }}>
+                  Queue-Free Healthcare System
+                </h1>
+                <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.9)', margin: 0 }}>
+                  Patient Portal
+                </p>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user?.full_name}</p>
-                <p className="text-xs text-gray-600 capitalize">{user?.role}</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'white', margin: 0 }}>
+                  {user?.full_name || user?.name || user?.username}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0, textTransform: 'capitalize' }}>
+                  {user?.role}
+                </p>
               </div>
-              
               <button
                 onClick={logout}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-                title="Logout"
+                style={{
+                  padding: '0.625rem 1.25rem',
+                  background: 'rgba(239, 68, 68, 0.9)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
               >
-                <i className="fas fa-sign-out-alt text-lg"></i>
+                <LogOut size={16} />
+                Logout
               </button>
             </div>
+          </div>
+
+          {/* Welcome Message - Highlighted */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            padding: '1.25rem 1.5rem',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>
+              Welcome, {user?.full_name || user?.name || user?.username}!
+            </h2>
+            <p style={{ fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.95)', margin: 0 }}>
+              Book your Appointment here
+            </p>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <nav className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
+        {/* Navigation Tabs with Icons - Modern Design */}
+        <div style={{ marginBottom: '2rem' }}>
+          <nav style={{
+            display: 'flex',
+            gap: '0.75rem',
+            background: 'white',
+            padding: '0.5rem',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}>
             {tabs.map(tab => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-teal-100 text-teal-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.875rem 1rem',
+                    background: isActive ? '#14B8A6' : 'transparent',
+                    color: isActive ? 'white' : '#6B7280',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = '#F3F4F6';
+                      e.currentTarget.style.color = '#111827';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#6B7280';
+                    }
+                  }}
                 >
-                  <Icon className="w-4 h-4 mr-2" />
+                  <Icon size={18} />
                   {tab.label}
                 </button>
               );

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, BarChart3, Clipboard, CheckCircle, Calendar } from 'lucide-react';
-
-const API_BASE = 'http://localhost:5000/api';
+import { patientAPI } from '../utils/api';
 
 const PatientDashboard = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -22,16 +21,16 @@ const PatientDashboard = ({ user, onLogout }) => {
     loadInitialData();
   }, []);
 
-  const getToken = () => localStorage.getItem('token');
-
   const loadInitialData = async () => {
     setLoading(true);
     try {
+      console.log('Starting initial data load...');
       await Promise.all([
         loadAppointments(),
         loadDoctors(),
         loadDepartments()
       ]);
+      console.log('Initial data load completed');
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -41,43 +40,47 @@ const PatientDashboard = ({ user, onLogout }) => {
 
   const loadAppointments = async () => {
     try {
-      const response = await fetch(`${API_BASE}/patient/appointments`, {
-        headers: {
-          'Authorization': `Bearer ${getToken()}`
-        }
-      });
-      const data = await response.json();
-      setAppointments(data);
+      console.log('Loading appointments...');
+      const data = await patientAPI.getAppointments();
+      console.log('Appointments API response:', data);
+      
+      const appointmentsArray = Array.isArray(data) ? data : (data?.appointments || data?.data || []);
+      setAppointments(appointmentsArray);
     } catch (error) {
       console.error('Error loading appointments:', error);
+      setAppointments([]);
     }
   };
 
   const loadDoctors = async () => {
     try {
-      const response = await fetch(`${API_BASE}/patient/doctors`, {
-        headers: {
-          'Authorization': `Bearer ${getToken()}`
-        }
-      });
-      const data = await response.json();
-      setDoctors(data);
+      console.log('Loading doctors...');
+      const data = await patientAPI.getDoctors();
+      console.log('Doctors API response:', data);
+      console.log('Number of doctors received:', data ? data.length : 0);
+      
+      // Handle both direct array and wrapped response formats
+      const doctorsArray = Array.isArray(data) ? data : (data?.doctors || data?.data || []);
+      console.log('Final doctors array:', doctorsArray);
+      
+      setDoctors(doctorsArray);
     } catch (error) {
       console.error('Error loading doctors:', error);
+      setDoctors([]);
     }
   };
 
   const loadDepartments = async () => {
     try {
-      const response = await fetch(`${API_BASE}/patient/departments`, {
-        headers: {
-          'Authorization': `Bearer ${getToken()}`
-        }
-      });
-      const data = await response.json();
-      setDepartments(data);
+      console.log('Loading departments...');
+      const data = await patientAPI.getDepartments();
+      console.log('Departments API response:', data);
+      
+      const departmentsArray = Array.isArray(data) ? data : (data?.departments || data?.data || []);
+      setDepartments(departmentsArray);
     } catch (error) {
       console.error('Error loading departments:', error);
+      setDepartments([]);
     }
   };
 
@@ -86,32 +89,20 @@ const PatientDashboard = ({ user, onLogout }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/patient/book-appointment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`
-        },
-        body: JSON.stringify(bookingForm)
+      const data = await patientAPI.bookAppointment(bookingForm);
+
+      // Handle success response
+      alert(`Appointment booked! Your token number is: ${data.token_number}`);
+      setBookingForm({
+        doctor_id: '',
+        appointment_date: '',
+        appointment_time: '10:00',
+        symptoms: ''
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`Appointment booked! Your token number is: ${data.token_number}`);
-        setBookingForm({
-          doctor_id: '',
-          appointment_date: '',
-          appointment_time: '10:00',
-          symptoms: ''
-        });
-        loadAppointments();
-        setActiveTab('appointments');
-      } else {
-        alert(data.error || 'Booking failed');
-      }
+      loadAppointments();
+      setActiveTab('appointments');
     } catch (error) {
-      alert('Network error. Please try again.');
+      alert(error.message || 'Booking failed');
     } finally {
       setLoading(false);
     }
@@ -177,11 +168,23 @@ const PatientDashboard = ({ user, onLogout }) => {
     </div>
   );
 
-  const renderBooking = () => (
-    <div className="dashboard-content">
-      <h2>Book New Appointment</h2>
-      
-      <form onSubmit={handleBookAppointment} className="booking-form">
+  const renderBooking = () => {
+    // Debug: log current doctors state
+    console.log('Rendering booking form. Current doctors state:', doctors);
+    console.log('Doctors length:', doctors.length);
+    
+    return (
+      <div className="dashboard-content">
+        <h2>Book New Appointment</h2>
+        
+        {/* Debug info for user */}
+        {doctors.length === 0 && (
+          <div style={{ padding: '10px', backgroundColor: '#f0f0f0', marginBottom: '10px' }}>
+            Loading doctors... ({loading ? 'Please wait' : 'If this persists, check console for errors'})
+          </div>
+        )}
+        
+        <form onSubmit={handleBookAppointment} className="booking-form">
         <div className="form-row">
           <div className="form-group">
             <label>Doctor</label>
@@ -190,10 +193,12 @@ const PatientDashboard = ({ user, onLogout }) => {
               onChange={(e) => setBookingForm({...bookingForm, doctor_id: e.target.value})}
               required
             >
-              <option value="">Select a doctor</option>
+              <option value="">
+                {doctors.length === 0 ? 'Loading doctors...' : 'Select a doctor'}
+              </option>
               {doctors.map(doctor => (
                 <option key={doctor.id} value={doctor.id}>
-                  {doctor.name} - {doctor.department} (₹{doctor.consultation_fee})
+                  {doctor.name} - {doctor.specialization || doctor.department} ({doctor.department}) - ₹{doctor.consultation_fee}
                 </option>
               ))}
             </select>
@@ -245,6 +250,7 @@ const PatientDashboard = ({ user, onLogout }) => {
       </form>
     </div>
   );
+};
 
   const renderAppointments = () => (
     <div className="dashboard-content">

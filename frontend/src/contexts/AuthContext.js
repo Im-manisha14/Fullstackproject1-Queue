@@ -22,41 +22,44 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/api/auth/profile');
-        setUser(response.data);
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-        logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
+    // Clear any existing token to force login
+    localStorage.removeItem('token');
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+    setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (credentials) => {
     try {
       setLoading(true);
       const response = await api.post('/api/auth/login', credentials);
-      const { access_token, user: userData } = response.data;
-      
+
+      console.log('Login response:', response);
+      console.log('Response data:', response.data);
+
+      // Check if response has the expected structure
+      if (!response.data || !response.data.data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      const { access_token, user: userData } = response.data.data;
+
+      if (!access_token || !userData) {
+        throw new Error('Missing access token or user data');
+      }
+
+      console.log('User data:', userData);
+      console.log('User role:', userData.role);
+
       // Store token and set user
       localStorage.setItem('token', access_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(userData);
-      
+
       toast.success(`Welcome back, ${userData.full_name}!`);
-      
+
       // Role-based routing
+      console.log('Navigating based on role:', userData.role);
       switch (userData.role) {
         case 'patient':
           navigate('/dashboard/patient');
@@ -71,10 +74,12 @@ export const AuthProvider = ({ children }) => {
           navigate('/dashboard');
           break;
       }
-      
+
       return { success: true, user: userData };
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Login failed';
+      console.error('Login error:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

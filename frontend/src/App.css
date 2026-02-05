@@ -1,103 +1,246 @@
-﻿/* ðŸŽ¨ CLINICAL CALM - Professional Healthcare Color Theme */
-/* Designed for trust, professionalism, and accessibility */
+/*  PROFESSIONAL HEALTHCARE - Clean & Modern Design */
+/* Optimized for mobile-first, clean aesthetics */
 
 :root {
-  /* PRIMARY COLORS - Core brand identity */
-  --primary-deep-blue: #1E3A8A;      /* Headers, buttons, main brand */
-  --primary-hover: #1D4ED8;           /* Button hover states */
-  --secondary-teal: #14B8A6;          /* Highlights, icons, active states */
-  --accent-green: #22C55E;            /* Success, positive actions */
+  /* CORE BRAND COLORS - Clean & Trustworthy */
+  --primary-teal: #0D9488;              /* Main brand - professional teal */
+  --primary-teal-light: #14B8A6;        /* Lighter accent */
+  --primary-teal-dark: #065F46;         /* Darker shade */
+  --secondary-blue: #1E40AF;            /* Professional blue */
+  --accent-green: #059669;              /* Success states */
   
-  /* STATUS COLORS - Clear communication */
-  --warning-amber: #F59E0B;           /* Waiting states, caution */
-  --error-red: #EF4444;              /* Errors, dangerous actions */
+  /* NEUTRAL PALETTE - Clean & Modern */
+  --gray-50: #F9FAFB;                   /* Lightest background */
+  --gray-100: #F3F4F6;                  /* Light background */
+  --gray-200: #E5E7EB;                  /* Borders */
+  --gray-300: #D1D5DB;                  /* Subtle borders */
+  --gray-400: #9CA3AF;                  /* Placeholder text */
+  --gray-500: #6B7280;                  /* Secondary text */
+  --gray-600: #4B5563;                  /* Primary text light */
+  --gray-700: #374151;                  /* Primary text */
+  --gray-800: #1F2937;                  /* Headings */
+  --gray-900: #111827;                  /* Darkest text */
   
-  /* BACKGROUND & SURFACE COLORS - Professional depth */
-  --bg-light-gray: #F8FAFC;          /* Main page backgrounds */
-  --bg-white: #FFFFFF;               /* Card backgrounds, surfaces */
-  --border-light: #E5E7EB;           /* Subtle borders, dividers */
+  /* SEMANTIC COLORS - Clear Communication */
+  --success: #059669;                   /* Success messages */
+  --warning: #D97706;                   /* Warnings */
+  --error: #DC2626;                     /* Errors */
+  --info: #2563EB;                      /* Information */
   
-  /* TEXT HIERARCHY - Excellent readability */
-  --text-primary: #1F2937;           /* Main headings, important text */
-  --text-secondary: #6B7280;         /* Descriptions, less important text */
+  /* BACKGROUND & SURFACES */
+  --bg-primary: #FFFFFF;                /* Main backgrounds */
+  --bg-secondary: var(--gray-50);       /* Secondary backgrounds */
+  --bg-tertiary: var(--gray-100);       /* Tertiary backgrounds */
   
-  /* SEMANTIC STATUS COLORS - Queue management */
-  --status-waiting: var(--warning-amber);
-  --status-called: var(--primary-deep-blue);
-  --status-consulting: var(--accent-green);
-  --status-completed: var(--text-secondary);
+  /* TYPOGRAPHY - Clean & Readable */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
   
-  /* LAYOUT CONSTRAINTS - Professional spacing */
-  --max-content-width: 1200px;
-  --section-padding: 32px;
-  --card-gap: 16px;
-  --button-height: 44px;
-  --border-radius-card: 8px;
-  --border-radius-input: 6px;
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  
+  /* SPACING & LAYOUT */
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-12: 3rem;     /* 48px */
+  
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  
+  /* SHADOWS - Subtle & Clean */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* TRANSITIONS - Smooth & Responsive */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
 }
 
-/* GLOBAL FOUNDATION - Clean, professional base */
-* {
+/* GLOBAL FOUNDATION - Clean, modern base */
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--primary-deep-blue);
-  min-height: 100vh;
-  color: var(--text-primary);
-  line-height: 1.6;
+html {
   font-size: 16px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.App {
+body {
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-normal);
+  color: var(--gray-800);
+  background: var(--bg-secondary);
   min-height: 100vh;
-  max-width: var(--max-content-width);
-  margin: 0 auto;
+  overflow-x: hidden;
 }
 
-/* ðŸ” LOGIN PAGE - Trust & Professionalism */
+.App {
+  min-height: 100vh;
+  max-width: 100%;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+}
+
+/* TYPOGRAPHY - Clean hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-900);
+  line-height: 1.25;
+  margin-bottom: var(--spacing-2);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+h5 { font-size: var(--text-base); }
+h6 { font-size: var(--text-sm); }
+
+p {
+  color: var(--gray-600);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-3);
+}
+
+.text-primary { color: var(--gray-900); }
+.text-secondary { color: var(--gray-600); }
+.text-muted { color: var(--gray-500); }
+
+.font-medium { font-weight: var(--font-weight-medium); }
+.font-semibold { font-weight: var(--font-weight-semibold); }
+.font-bold { font-weight: var(--font-weight-bold); }
+
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+
+/* LOGIN PAGE - Clean & Professional */
 .login-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: var(--primary-deep-blue);
+  padding: var(--spacing-6);
+  background: linear-gradient(135deg, var(--primary-teal), var(--primary-teal-dark));
 }
 
 .login-card {
-  background: var(--bg-white);
-  border-radius: var(--border-radius-card);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   max-width: 900px;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--gray-200);
 }
 
-/* Login Header - Professional brand impression */
 .login-header {
-  background: var(--primary-deep-blue);
-  color: var(--bg-white);
-  padding: 40px;
+  background: var(--primary-teal);
+  color: white;
+  padding: var(--spacing-12) var(--spacing-8);
   text-align: center;
 }
 
 .hospital-icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
+  font-size: 3rem;
+  margin-bottom: var(--spacing-5);
   opacity: 0.95;
-  color: var(--secondary-teal);
+  color: white;
 }
 
 .login-header h1 {
-  font-size: 2.25rem;
-  margin-bottom: 12px;
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-3);
+  color: white;
+}
+
+.login-header p {
+  font-size: var(--text-lg);
+  opacity: 0.9;
+  color: white;
+  margin-bottom: 0;
+}
+
+/* Login Content */
+.login-content {
+  display: flex;
+  min-height: 400px;
+}
+
+.features {
+  flex: 1;
+  padding: var(--spacing-8);
+  background: var(--gray-50);
+  border-right: 1px solid var(--gray-200);
+}
+
+.login-form-section {
+  flex: 1;
+  padding: var(--spacing-8);
+  background: var(--bg-primary);
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-6);
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-teal);
+  color: white;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: var(--spacing-4);
+  flex-shrink: 0;
+}
+
+.feature-item h4 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-900);
+  margin-bottom: var(--spacing-1);
+}
+
+.feature-item p {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  margin: 0;
+}
+
+.login-header h2 {
   font-weight: 600;
   letter-spacing: -0.025em;
 }
@@ -107,6 +250,11 @@ body {
   opacity: 0.9;
   font-weight: 400;
 }
+
+/* ==========================================
+    LOGIN FORM STYLES
+    Clean and professional login interface
+   ========================================== */
 
 /* Login Form Section */
 .login-form-section {
@@ -336,36 +484,61 @@ body {
   gap: 20px;
 }
 
+/* FORM ELEMENTS - Clean & Modern */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: var(--spacing-5);
 }
 
 .form-group label {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.95rem;
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-2);
 }
 
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-2);
+}
+
+.form-input,
+.form-select,
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 15px;
-  border: 2px solid var(--border-gray);
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  background: var(--white);
-  color: var(--text-primary);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--gray-800);
+  transition: var(--transition-normal);
 }
 
+.form-input:focus,
+.form-select:focus,
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--gray-400);
+}
+
+.form-row {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
 /* Role Header Component */
@@ -402,23 +575,26 @@ body {
   opacity: 0.9;
 }
 
-/* Buttons */
+/* BUTTONS - Clean & Modern */
 .login-button,
 .primary-button,
 .book-button,
 .call-next-button,
 .complete-consultation-button {
-  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-teal));
-  color: var(--white);
+  background: var(--primary-teal);
+  color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: var(--spacing-3) var(--spacing-6);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: var(--transition-normal);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
 }
 
 .login-button:hover,
@@ -426,8 +602,9 @@ body {
 .book-button:hover,
 .call-next-button:hover,
 .complete-consultation-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 136, 229, 0.3);
+  background: var(--primary-teal-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .login-button:disabled,
@@ -440,19 +617,32 @@ body {
   transform: none;
 }
 
-/* Success Button Variant */
+/* Button Variants */
 .success-button {
-  background: linear-gradient(135deg, var(--success-green), #388E3C);
+  background: var(--success);
+  color: white;
 }
 
-/* Warning Button Variant */
+.success-button:hover {
+  background: #047857;
+}
+
 .warning-button {
-  background: linear-gradient(135deg, var(--warning-orange), #F57C00);
+  background: var(--warning);
+  color: white;
 }
 
-/* Error Button Variant */
+.warning-button:hover {
+  background: #B45309;
+}
+
 .error-button {
-  background: linear-gradient(135deg, var(--error-red), #D32F2F);
+  background: var(--error);
+  color: white;
+}
+
+.error-button:hover {
+  background: #B91C1C;
 }
 
 .error-message {
@@ -1063,7 +1253,7 @@ body {
 }
 
 /* ==========================================
-   ðŸ  DASHBOARD LAYOUTS - Professional Interface
+    DASHBOARD LAYOUTS - Professional Interface
    ========================================== */
 
 .dashboard-container {
@@ -1172,12 +1362,12 @@ body {
 }
 
 .card-body:empty::before {
-  content: 'ðŸ“„ No data available';
+  content: ' No data available';
   font-size: 14px;
 }
 
 /* ==========================================
-   ðŸ“‹ QUEUE PAGE - Clarity & Hierarchy  
+    QUEUE PAGE - Clarity & Hierarchy  
    ========================================== */
 
 .queue-container {
@@ -1287,7 +1477,7 @@ body {
 }
 
 /* ==========================================
-   ðŸŽ¯ ACTION BUTTONS - Consistent Interface
+    ACTION BUTTONS - Consistent Interface
    ========================================== */
 
 .btn-secondary {
@@ -1381,7 +1571,7 @@ body {
 }
 
 /* ==========================================
-   ðŸ“± RESPONSIVE DESIGN - Mobile-first approach
+    RESPONSIVE DESIGN - Mobile-first approach
    ========================================== */
 
 @media (max-width: 768px) {
@@ -1422,7 +1612,7 @@ body {
 }
 
 /* ==========================================
-   âœ¨ LOADING & STATES - Smooth interactions
+    LOADING & STATES - Smooth interactions
    ========================================== */
 
 .loading-spinner {
@@ -2745,5 +2935,827 @@ body {
   .role-icon .icon {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* ========================================
+   ENHANCED POLISH STYLES
+   Modern, clean healthcare aesthetic
+   ======================================== */
+
+/* Improved Card Styles */
+.card {
+  background: var(--bg-white);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Enhanced Status Badges */
+.status-in-queue {
+  background: #E3F2FD;
+  color: #1976D2;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Professional Polish Complete */
+
+/* ==========================================
+    COMPREHENSIVE MOBILE RESPONSIVENESS
+    Enhanced for all screen sizes
+   ========================================== */
+
+/* Universal mobile improvements */
+@media (max-width: 1024px) {
+  .App {
+    padding: 0 16px;
+  }
+  
+  .dashboard-container {
+    padding: 0;
+  }
+  
+  /* Form improvements for tablets */
+  .form-row {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+/* Tablet and large mobile */
+@media (max-width: 768px) {
+  /* Global spacing adjustments */
+  :root {
+    --section-padding: 20px;
+    --card-gap: 12px;
+    --button-height: 48px; /* Larger tap targets */
+  }
+  
+  /* App container */
+  .App {
+    padding: 0 12px;
+  }
+  
+  /* Login page mobile */
+  .login-container {
+    padding: 16px;
+    min-height: 100vh;
+  }
+  
+  .login-card {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 12px;
+  }
+  
+  .login-header {
+    padding: 24px 20px;
+  }
+  
+  .login-header h1 {
+    font-size: 1.75rem;
+    margin-bottom: 8px;
+  }
+  
+  .login-header p {
+    font-size: 0.9rem;
+  }
+  
+  .hospital-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+  }
+  
+  .features {
+    padding: 20px;
+  }
+  
+  .feature-item {
+    margin-bottom: 16px;
+  }
+  
+  .feature-item h4 {
+    font-size: 1rem;
+  }
+  
+  .login-form-section {
+    padding: 24px 20px;
+  }
+  
+  /* Dashboard header mobile */
+  .dashboard-header {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .dashboard-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .nav-item {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+  
+  .user-menu {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  
+  /* Dashboard content mobile */
+  .dashboard-main {
+    padding: 16px;
+  }
+  
+  .dashboard-content {
+    padding: 16px;
+  }
+  
+  .dashboard-content h2 {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+  }
+  
+  /* Cards and stats mobile */
+  .stats-grid,
+  .queue-stats,
+  .prescription-stats,
+  .inventory-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .stat-card p {
+    font-size: 0.85rem;
+  }
+  
+  /* Forms mobile */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-input,
+  .form-select {
+    padding: 12px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: 8px;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+  
+  /* Buttons mobile */
+  .login-button,
+  .primary-button,
+  .book-button,
+  .call-next-button,
+  .complete-consultation-button {
+    padding: 15px 20px;
+    font-size: 1rem;
+    border-radius: 8px;
+    min-height: 48px;
+    width: 100%;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .btn-group .btn-secondary,
+  .btn-group .btn-primary,
+  .btn-group .btn-success,
+  .btn-group .btn-warning,
+  .btn-group .btn-danger {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* Tables mobile - scroll horizontally */
+  .appointments-table,
+  .queue-table,
+  .prescription-table {
+    overflow-x: auto;
+    /* Smooth scrolling on mobile - modern alternative to deprecated -webkit-overflow-scrolling */
+    scroll-behavior: smooth;
+  }
+  
+  .table-header,
+  .table-row {
+    min-width: 600px; /* Minimum width for horizontal scroll */
+  }
+  
+  /* Tabs mobile */
+  .tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+  
+  .tab {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 10px 8px;
+  }
+  
+  /* Queue display mobile */
+  .queue-item {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .queue-status {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  /* Modals mobile */
+  .modal-content {
+    margin: 20px;
+    max-width: calc(100% - 40px);
+    max-height: calc(100% - 40px);
+    padding: 20px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  /* Extra small spacing */
+  :root {
+    --section-padding: 16px;
+    --card-gap: 8px;
+  }
+  
+  .App {
+    padding: 0 8px;
+  }
+  
+  /* Login adjustments */
+  .login-container {
+    padding: 8px;
+  }
+  
+  .login-header {
+    padding: 20px 16px;
+  }
+  
+  .login-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .hospital-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+  
+  .features,
+  .login-form-section {
+    padding: 20px 16px;
+  }
+  
+  /* Dashboard very small mobile */
+  .dashboard-header {
+    padding: 8px 12px;
+  }
+  
+  .dashboard-nav {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .nav-item {
+    width: 100%;
+    font-size: 0.8rem;
+    padding: 12px;
+  }
+  
+  .dashboard-main {
+    padding: 12px 8px;
+  }
+  
+  .dashboard-content {
+    padding: 12px;
+  }
+  
+  /* Single column stats on very small screens */
+  .stats-grid,
+  .queue-stats,
+  .prescription-stats,
+  .inventory-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+    text-align: center;
+  }
+  
+  /* Forms very small mobile */
+  .form-input,
+  .form-select {
+    padding: 14px 12px; /* Larger touch targets */
+    font-size: 16px;
+  }
+  
+  /* Buttons very small mobile */
+  .login-button,
+  .primary-button,
+  .book-button,
+  .call-next-button,
+  .complete-consultation-button {
+    padding: 16px;
+    font-size: 0.95rem;
+    min-height: 50px;
+  }
+  
+  /* Tables - stack vertically on very small screens */
+  .table-header {
+    display: none; /* Hide headers on very small screens */
+  }
+  
+  .table-row {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+    min-width: unset;
+  }
+  
+  .table-row > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .table-row > div:last-child {
+    border-bottom: none;
+  }
+  
+  /* Add labels for table data on mobile */
+  .table-row > div::before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  
+  /* Tabs single row on very small screens */
+  .tabs {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .tab {
+    width: 100%;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+  
+  /* Toast notifications mobile */
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+  
+  .toast {
+    min-width: unset;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* Landscape orientation improvements */
+@media (max-height: 500px) and (orientation: landscape) {
+  .login-container {
+    padding: 16px;
+  }
+  
+  .login-card {
+    display: flex;
+    flex-direction: row;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .login-header {
+    flex: 1;
+    padding: 24px;
+  }
+  
+  .login-content {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .features,
+  .login-form-section {
+    flex: 1;
+    padding: 24px;
+  }
+  
+  .hospital-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+}
+
+/* Touch device improvements */
+@media (pointer: coarse) {
+  /* Larger touch targets */
+  .nav-item,
+  .tab,
+  .btn-secondary,
+  .btn-primary,
+  .btn-success,
+  .btn-warning,
+  .btn-danger {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+  
+  /* Better touch feedback */
+  .nav-item:active,
+  .tab:active,
+  button:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+  
+  /* Improved select dropdowns for touch */
+  select {
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+/* High DPI screen improvements */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Crisper borders and shadows */
+  .card,
+  .login-card,
+  .stat-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+  
+  .dashboard-header {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* ==========================================
+    MOBILE-OPTIMIZED COMPONENTS
+    Enhanced mobile-specific improvements
+   ========================================== */
+
+/* Mobile-friendly status badges */
+@media (max-width: 768px) {
+  .status-badge,
+  .queue-number,
+  .token-number {
+    font-size: 0.875rem;
+    padding: 6px 12px;
+    border-radius: 16px;
+    display: inline-block;
+    text-align: center;
+    min-width: 60px;
+  }
+  
+  /* Appointment cards mobile */
+  .appointment-card,
+  .queue-item-mobile {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: var(--bg-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-light);
+  }
+  
+  /* Mobile queue display */
+  .queue-mobile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .queue-mobile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  
+  .queue-mobile-details {
+    flex: 1;
+  }
+  
+  .queue-mobile-status {
+    text-align: right;
+    min-width: 80px;
+  }
+  
+  /* Mobile-friendly form sections */
+  .booking-form-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  /* Responsive text sizes */
+  .mobile-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .mobile-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  
+  /* Mobile navigation improvements */
+  .mobile-nav-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--primary-deep-blue);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-nav-scroll {
+    display: flex;
+    overflow-x: auto;
+    /* Cross-browser scrollbar hiding */
+    -ms-overflow-style: none; /* Internet Explorer 10+, Edge */
+    padding: 8px 16px;
+  }
+  
+  .mobile-nav-scroll::-webkit-scrollbar {
+    display: none; /* WebKit browsers */
+  }
+  
+  .mobile-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .mobile-nav-item {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    margin-right: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: white;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-nav-item.active,
+  .mobile-nav-item:hover {
+    background: var(--secondary-teal);
+    transform: translateY(-1px);
+  }
+}
+
+/* Small mobile specific improvements */
+@media (max-width: 480px) {
+  /* Ultra-compact layout */
+  .queue-mobile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .queue-mobile-status {
+    text-align: left;
+    width: 100%;
+  }
+  
+  /* Mobile-first form layouts */
+  .form-grid-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* Improved touch targets */
+  .touch-target {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .touch-target:active {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+  
+  /* Mobile-optimized loading states */
+  .loading-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .loading-mobile .spinner {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 16px;
+  }
+  
+  .loading-mobile p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+}
+
+/* Dark mode mobile improvements (if implemented) */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  .card,
+  .appointment-card,
+  .queue-item-mobile {
+    background: #1F2937;
+    border-color: #374151;
+    color: #F9FAFB;
+  }
+  
+  .mobile-nav-item {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .mobile-nav-item.active {
+    background: var(--secondary-teal);
+    color: white;
+  }
+}
+
+/* Accessibility improvements for mobile */
+@media (max-width: 768px) {
+  /* Focus indicators for keyboard navigation on mobile */
+  .nav-item:focus,
+  .tab:focus,
+  .touch-target:focus,
+  button:focus {
+    outline: 2px solid var(--secondary-teal);
+    outline-offset: 2px;
+  }
+  
+  /* Better contrast for small text on mobile */
+  .mobile-subtitle,
+  .text-sm {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  
+  /* Ensure minimum text size for readability */
+  .appointment-card p,
+  .queue-item p,
+  .card p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}
+
+/* ==========================================
+    ADDITIONAL CLEAN MOBILE ENHANCEMENTS
+    Final polish for mobile experience
+   ========================================== */
+
+/* Enhanced touch targets and visual feedback */
+@media (max-width: 768px) {
+  /* Better button spacing for mobile */
+  .login-button,
+  .primary-button,
+  .book-button {
+    width: 100%;
+    margin-bottom: var(--spacing-3);
+  }
+  
+  /* Improved form layout */
+  .booking-form-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+  
+  /* Enhanced status visibility */
+  .status-badge {
+    font-size: var(--text-sm);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-xl);
+  }
+  
+  /* Mobile-optimized queue display */
+  .queue-mobile-layout {
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-4);
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+  }
+  
+  /* Clean appointment cards */
+  .appointment-card {
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
+    margin-bottom: var(--spacing-4);
+  }
+  
+  /* Mobile text optimization */
+  .mobile-title {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-2);
+  }
+  
+  .mobile-subtitle {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    margin-bottom: var(--spacing-1);
+  }
+}
+
+/* Very small mobile final touches */
+@media (max-width: 480px) {
+  /* Ultra-clean compact design */
+  .card,
+  .appointment-card,
+  .queue-mobile-layout {
+    padding: var(--spacing-3);
+    margin-bottom: var(--spacing-3);
+  }
+  
+  /* Optimal typography for small screens */
+  .mobile-title {
+    font-size: var(--text-lg);
+  }
+  
+  /* Stack everything vertically */
+  .mobile-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
   }
 }

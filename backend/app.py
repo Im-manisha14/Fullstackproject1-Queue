@@ -142,6 +142,7 @@ class DoctorProfile(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id', ondelete='RESTRICT'), nullable=False)
     specialization = db.Column(db.String(100))
+    hospital = db.Column(db.String(100), nullable=False, default='Coimbatore Medical College Hospital')
     experience_years = db.Column(db.Integer)
     consultation_fee = db.Column(db.Float, default=0.0)
     available_from = db.Column(db.Time, default=time(9, 0))
@@ -168,7 +169,9 @@ class DoctorProfile(db.Model):
         return {
             'id': self.id,
             'doctor_name': self.user.full_name,
+            'department_id': self.department_id,
             'department': self.department.name,
+            'hospital': self.hospital,
             'specialization': self.specialization,
             'experience_years': self.experience_years,
             'consultation_fee': self.consultation_fee,
@@ -218,7 +221,8 @@ class Appointment(db.Model):
             'id': self.id,
             'patient_name': self.patient.full_name,
             'doctor_name': self.doctor.full_name,
-            'department_name': self.department.name,
+            'department': self.department.name,  # Frontend expects 'department', not 'department_name'
+            'department_name': self.department.name,  # Keep both for compatibility
             'appointment_date': self.appointment_date.isoformat(),
             'appointment_time': self.appointment_time.strftime('%H:%M'),
             'token_number': self.token_number,
@@ -227,6 +231,7 @@ class Appointment(db.Model):
             'estimated_wait_time': self.estimated_wait_time,
             'symptoms': self.symptoms,
             'doctor_notes': self.doctor_notes,
+            'diagnosis': self.doctor_notes,  # Frontend expects 'diagnosis' field
             'actual_start_time': self.actual_start_time.isoformat() if self.actual_start_time else None,
             'actual_end_time': self.actual_end_time.isoformat() if self.actual_end_time else None
         }
@@ -316,7 +321,7 @@ def role_required(allowed_roles):
         @jwt_required()
         def decorated_function(*args, **kwargs):
             try:
-                current_user_id = get_jwt_identity()
+                current_user_id = get_current_user_id()
                 
                 if not current_user_id:
                     return {
@@ -325,7 +330,8 @@ def role_required(allowed_roles):
                         'data': None
                     }, 401
                 
-                current_user = User.query.get(current_user_id)
+                # Convert string ID to integer for database query
+                current_user = User.query.get(int(current_user_id))
                 
                 if not current_user:
                     return {
@@ -359,6 +365,10 @@ def role_required(allowed_roles):
         return decorated_function
     return decorator
 
+def get_current_user_id():
+    """Helper function to get current user ID as integer from JWT"""
+    return int(get_jwt_identity())
+
 # =======================
 # HEALTH CHECK & SYSTEM ROUTES
 # =======================
@@ -385,6 +395,36 @@ def health_check():
             'websockets': 'active'
         }
     }), 200
+
+@app.route('/api/test-jwt', methods=['POST'])
+def test_jwt():
+    """Test JWT token validation"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        
+        if not token:
+            return jsonify({'error': 'No token provided'}), 400
+        
+        # Try to decode the token manually
+        from flask_jwt_extended import decode_token
+        
+        try:
+            decoded = decode_token(token)
+            return jsonify({
+                'success': True,
+                'decoded': decoded,
+                'message': 'Token is valid'
+            }), 200
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'message': 'Token validation failed'
+            }), 401
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # =======================
 # AUTHENTICATION ROUTES
@@ -505,11 +545,17 @@ def login():
             }, 401
         
         # Create JWT token with user role
+        # IMPORTANT: identity must be a string, not an integer
         additional_claims = {"role": user.role, "username": user.username}
         access_token = create_access_token(
-            identity=user.id,
+            identity=str(user.id),  # Convert to string
             additional_claims=additional_claims
         )
+        
+        print(f"=== LOGIN SUCCESSFUL ===")
+        print(f"User: {user.username} (ID: {user.id}, Role: {user.role})")
+        print(f"Token (first 50 chars): {access_token[:50]}...")
+        print(f"JWT Secret Key: {app.config['JWT_SECRET_KEY'][:20]}...")
         
         return {
             'success': True,
@@ -531,16 +577,24 @@ def login():
 @jwt_required()
 def get_profile():
     try:
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        print("=== PROFILE ENDPOINT CALLED ===")
+        print(f"Headers: {dict(request.headers)}")
+        
+        current_user_id = get_current_user_id()
+        print(f"Current user ID from JWT (string): {current_user_id}")
+        
+        # Convert string ID back to integer for database query
+        user = User.query.get(int(current_user_id))
         
         if not user:
+            print(f"User not found for ID: {current_user_id}")
             return {
                 'success': False,
                 'message': 'User not found',
                 'data': None
             }, 404
         
+        print(f"User found: {user.username} ({user.role})")
         return {
             'success': True,
             'message': 'Profile retrieved successfully',
@@ -548,6 +602,9 @@ def get_profile():
         }, 200
         
     except Exception as e:
+        print(f"Profile endpoint error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             'success': False,
             'message': str(e),
@@ -609,22 +666,22 @@ def get_doctors():
         
         result = []
         for doctor_profile, user, department in doctors:
-            doctor_data = doctor_profile.to_dict()
-            doctor_data['doctor_name'] = user.full_name
-            doctor_data['department_name'] = department.name
-            result.append(doctor_data)
+            result.append({
+                'id': user.id,  # Frontend expects user.id not doctor_profile.id
+                'name': user.full_name,  # Frontend expects 'name' not 'doctor_name'
+                'department': department.name,  # Frontend expects 'department' 
+                'specialization': doctor_profile.specialization,
+                'consultation_fee': doctor_profile.consultation_fee,
+                'hospital': doctor_profile.hospital,
+                'experience_years': doctor_profile.experience_years,
+                'available_from': doctor_profile.available_from.strftime('%H:%M') if doctor_profile.available_from else None,
+                'available_to': doctor_profile.available_to.strftime('%H:%M') if doctor_profile.available_to else None,
+                'current_token': doctor_profile.current_token
+            })
         
-        return {
-            'success': True,
-            'message': 'Doctors retrieved successfully',
-            'data': result
-        }, 200
+        return jsonify(result), 200  # Return doctors array directly, not wrapped
     except Exception as e:
-        return {
-            'success': False,
-            'message': f'Failed to get doctors: {str(e)}',
-            'data': None
-        }, 500
+        return jsonify({'error': str(e)}), 500
 
 # Frontend expects /api/doctors endpoint
 @app.route('/api/doctors', methods=['GET'])
@@ -641,6 +698,7 @@ def get_all_doctors():
                 'name': user.full_name,
                 'specialization': doctor_profile.specialization,
                 'department': department.name,
+                'hospital': doctor_profile.hospital,
                 'consultation_fee': doctor_profile.consultation_fee,
                 'current_token': doctor_profile.current_token
             })
@@ -661,7 +719,7 @@ def get_all_doctors():
 @role_required(['patient'])
 def book_appointment():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         
         required_fields = ['doctor_id', 'appointment_date', 'appointment_time', 'symptoms']
@@ -734,6 +792,7 @@ def book_appointment():
         
         return jsonify({
             'message': 'Appointment booked successfully',
+            'token_number': token_number,  # Frontend expects token_number at root level
             'appointment': appointment.to_dict()
         }), 201
     except Exception as e:
@@ -745,7 +804,7 @@ def book_appointment():
 @role_required(['patient'])
 def create_appointment():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         
         required_fields = ['doctor_id', 'appointment_date', 'appointment_time', 'symptoms']
@@ -869,7 +928,7 @@ def create_appointment():
 @role_required(['patient'])
 def get_patient_appointments():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         appointments = Appointment.query.filter_by(patient_id=current_user_id).order_by(Appointment.appointment_date.desc()).all()
         
         result = []
@@ -898,7 +957,7 @@ def get_patient_appointments():
 @role_required(['patient'])
 def get_queue_status(appointment_id):
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         appointment = Appointment.query.filter_by(
             id=appointment_id,
             patient_id=current_user_id
@@ -934,7 +993,7 @@ def get_queue_status(appointment_id):
 @role_required(['patient'])
 def get_patient_prescriptions():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         prescriptions = Prescription.query.filter_by(patient_id=current_user_id).order_by(Prescription.created_at.desc()).all()
         
         return jsonify([prescription.to_dict() for prescription in prescriptions]), 200
@@ -945,7 +1004,7 @@ def get_patient_prescriptions():
 @jwt_required()
 def verify_token():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         user = User.query.get(current_user_id)
         if not user:
             return jsonify({'valid': False}), 401
@@ -960,7 +1019,7 @@ def cancel_appointment(appointment_id):
     Cancel appointment with proper token reordering and notifications
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         current_user = User.query.get(current_user_id)
         
         with db.session.begin():
@@ -1072,7 +1131,7 @@ def mark_no_show(appointment_id):
     Mark patient as no-show and handle queue progression
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         
         with db.session.begin():
             appointment = db.session.query(Appointment).with_for_update().filter_by(
@@ -1133,7 +1192,7 @@ def doctor_logout_cleanup():
     Handle doctor logout - reschedule or cancel pending appointments
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         action = data.get('action', 'reschedule')  # 'reschedule' or 'cancel'
         
@@ -1213,7 +1272,7 @@ def doctor_logout_cleanup():
     Cancel appointment with proper token reordering and notifications
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         current_user = User.query.get(current_user_id)
         
         with db.session.begin():
@@ -1327,7 +1386,7 @@ def doctor_logout_cleanup():
 @role_required(['doctor'])
 def doctor_profile():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         
         if request.method == 'GET':
             profile = DoctorProfile.query.filter_by(user_id=current_user_id).first()
@@ -1373,7 +1432,7 @@ def doctor_profile():
 @role_required(['doctor'])
 def get_doctor_appointments():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
@@ -1390,7 +1449,7 @@ def get_doctor_appointments():
 @role_required(['doctor'])
 def get_doctor_queue():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
@@ -1407,7 +1466,7 @@ def get_doctor_queue():
 @role_required(['doctor'])
 def call_next_patient():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         date_str = datetime.now().strftime('%Y-%m-%d')
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
@@ -1496,7 +1555,7 @@ def call_next_patient():
 @role_required(['doctor'])
 def complete_consultation():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         
         appointment_id = data.get('appointment_id')
@@ -1573,7 +1632,7 @@ def complete_consultation():
 @role_required(['doctor'])
 def create_prescription():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         
         required_fields = ['appointment_id', 'medicines', 'notes']
@@ -1623,7 +1682,7 @@ def create_prescription():
 @role_required(['doctor'])
 def update_appointment_status(appointment_id):
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         data = request.get_json()
         
         appointment = Appointment.query.get(appointment_id)
@@ -1638,14 +1697,14 @@ def update_appointment_status(appointment_id):
             # BUT allow doctors to mark as 'no_show' or 'cancelled' if patient is missing
             if new_status == 'cancelled':
                 # Get current user info
-                current_user_id = get_jwt_identity()
+                current_user_id = get_current_user_id()
                 user = User.query.get(current_user_id)
                 # Allow doctor to cancel/no_show even if consulting (e.g. patient didn't show up)
                 if appointment.status in ['consulting', 'completed'] and user.role != 'doctor':
                      return jsonify({'error': 'Cannot cancel an appointment that is already in progress or completed.'}), 400
             
             # Allow specific no_show status
-            current_user_id = get_jwt_identity()
+            current_user_id = get_current_user_id()
             user = User.query.get(current_user_id)
             if new_status == 'no_show' and user.role == 'doctor':
                  # Doctor marking patient as missing
@@ -1670,7 +1729,7 @@ def update_appointment_status(appointment_id):
 @role_required(['doctor'])
 def get_daily_summary():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
@@ -2183,7 +2242,7 @@ def get_system_stats():
 @jwt_required()
 def get_dashboard_data(role):
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_id()
         user = User.query.get(current_user_id)
         
         if not user or user.role != role:
@@ -2226,7 +2285,7 @@ def get_dashboard_data(role):
             }
             
         elif role == 'doctor':
-             current_user_id = get_jwt_identity()
+             current_user_id = get_current_user_id()
              date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
              appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
              
