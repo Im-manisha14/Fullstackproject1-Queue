@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authAPI, TokenManager } from '../utils/api';
-import { Stethoscope, Heart, Pill, Activity, Clipboard, Search } from 'lucide-react';
+import { Building2, Zap, Shield, BarChart3, User } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
   const [activeTab, setActiveTab] = useState('patient');
@@ -70,31 +70,68 @@ const Login = ({ onLogin }) => {
     setError('');
   };
 
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
+  };
+
   return (
-    <div className="hospital-login-container">
-      {/* Header */}
-      <div className="hospital-header">
-        <h1>HOSPITAL</h1>
-        <span className="login-text">LOGIN</span>
-      </div>
+    <div className="login-container">
+      <div className="login-card">
+        {/* Header */}
+        <div className="login-header">
+          <div className="hospital-icon"><Building2 size={24} /></div>
+          <h1>Hospital Information System</h1>
+          <p>Streamlined Healthcare Management</p>
+        </div>
 
-      {/* Main Content */}
-      <div className="hospital-main">
-        {/* Left Side - Login Form */}
-        <div className="hospital-login-form">
-          <div className="hospital-branding">
-            <h2>HOSPITAL</h2>
-            <p>Management Service</p>
+        {/* Features */}
+        <div className="features">
+          <div className="feature">
+            <span className="feature-icon"><Zap size={20} /></span>
+            <div>
+              <h3>Queue-Free Experience</h3>
+              <p>Skip the wait with real-time appointment management</p>
+            </div>
           </div>
+          
+          <div className="feature">
+            <span className="feature-icon"><Shield size={20} /></span>
+            <div>
+              <h3>Digital Prescriptions</h3>
+              <p>Seamless prescription workflow to pharmacy</p>
+            </div>
+          </div>
+          
+          <div className="feature">
+            <span className="feature-icon"><BarChart3 size={20} /></span>
+            <div>
+              <h3>Real-time Updates</h3>
+              <p>Live status updates for all appointments</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Demo Account Selection */}
-          <div className="demo-selection">
-            <p>Select Demo Account:</p>
-            <div className="demo-buttons">
+        {/* Login Form */}
+        <div className="login-form-section">
+          <h2>Hospital Information System</h2>
+          <p>Access your secure medical dashboard</p>
+
+          {/* Demo Account Tabs */}
+          <div className="demo-tabs">
+            <h3>Demo Accounts:</h3>
+            <div className="tabs">
               {Object.keys(demoAccounts).map(role => (
                 <button
                   key={role}
-                  className={`demo-btn ${activeTab === role ? 'active' : ''}`}
+                  className={`tab ${activeTab === role ? 'active' : ''}`}
                   onClick={() => handleDemoLogin(role)}
                 >
                   {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -103,56 +140,39 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          {error && <div className="hospital-error">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="hospital-form">
-            <div className="input-group">
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label><User size={16} style={{ marginRight: '8px', display: 'inline' }} /> Username</label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
                 required
-                placeholder="Username"
-                className="hospital-input"
+                placeholder="Enter your username"
               />
             </div>
 
-            <div className="input-group">
+            <div className="form-group">
+              <label>� Password</label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 required
-                placeholder="Password"
-                className="hospital-input"
+                placeholder="Enter your password"
               />
             </div>
 
             <button
               type="submit"
-              className="hospital-login-btn"
+              className="login-button"
               disabled={loading}
             >
-              {loading ? 'Logging in...' : 'Login Account'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
-        </div>
-
-        {/* Right Side - Medical Graphics */}
-        <div className="hospital-graphics">
-          <div className="medical-icons">
-            <div className="icon-item"><Heart size={24} /></div>
-            <div className="icon-item"><Stethoscope size={20} /></div>
-            <div className="icon-item"><Pill size={24} /></div>
-            <div className="icon-item"><Stethoscope size={24} /></div>
-            <div className="icon-item"><Activity size={24} /></div>
-            <div className="icon-item"><Heart size={20} /></div>
-            <div className="icon-item"><Search size={20} /></div>
-            <div className="icon-item"><Clipboard size={20} /></div>
-          </div>
-          <div className="hospital-logo">
-            <h3>HOSPITAL</h3>
-          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Building2, BarChart3, Clipboard, CheckCircle, Calendar } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -135,7 +136,7 @@ const PatientDashboard = ({ user, onLogout }) => {
     <div className="dashboard-content">
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon">📅</div>
+          <div className="stat-icon"><Calendar size={24} /></div>
           <div>
             <h3>{appointments.length}</h3>
             <p>Total Appointments</p>
@@ -149,7 +150,7 @@ const PatientDashboard = ({ user, onLogout }) => {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"><CheckCircle size={24} /></div>
           <div>
             <h3>{appointments.filter(a => a.status === 'completed').length}</h3>
             <p>Completed</p>
@@ -305,7 +306,7 @@ const PatientDashboard = ({ user, onLogout }) => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-left">
-          <div className="hospital-icon">🏥</div>
+          <div className="hospital-icon"><Building2 size={24} /></div>
           <div>
             <h1>Patient Dashboard</h1>
             <p>Welcome, {user.full_name}</p>
@@ -322,19 +323,19 @@ const PatientDashboard = ({ user, onLogout }) => {
           className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          📊 Overview
+          <BarChart3 size={16} style={{ marginRight: '8px' }} /> Overview
         </button>
         <button
           className={`nav-item ${activeTab === 'book' ? 'active' : ''}`}
           onClick={() => setActiveTab('book')}
         >
-          📅 Book Appointment
+          <Calendar size={16} style={{ marginRight: '8px' }} /> Book Appointment
         </button>
         <button
           className={`nav-item ${activeTab === 'appointments' ? 'active' : ''}`}
           onClick={() => setActiveTab('appointments')}
         >
-          📋 My Appointments
+          <Clipboard size={16} style={{ marginRight: '8px' }} /> My Appointments
         </button>
       </nav>
 

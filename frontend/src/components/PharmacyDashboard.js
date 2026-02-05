@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CheckCircle, Pill, AlertTriangle, TrendingUp, Clipboard, RotateCcw, Package } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -132,21 +133,21 @@ const PharmacyDashboard = ({ user, onLogout }) => {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">🔄</div>
+          <div className="stat-icon"><RotateCcw size={24} /></div>
           <div>
             <h3>{prescriptions.filter(p => p.status === 'preparing').length}</h3>
             <p>Preparing</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"><CheckCircle size={20} /></div>
           <div>
             <h3>{prescriptions.filter(p => p.status === 'ready').length}</h3>
             <p>Ready</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📦</div>
+          <div className="stat-icon"><Package size={24} /></div>
           <div>
             <h3>{prescriptions.filter(p => p.status === 'dispensed').length}</h3>
             <p>Dispensed</p>
@@ -228,21 +229,21 @@ const PharmacyDashboard = ({ user, onLogout }) => {
       
       <div className="inventory-stats">
         <div className="stat-card">
-          <div className="stat-icon">💊</div>
+          <div className="stat-icon"><Pill size={20} /></div>
           <div>
             <h3>{medicines.length}</h3>
             <p>Total Medicines</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">⚠️</div>
+          <div className="stat-icon"><AlertTriangle size={20} /></div>
           <div>
             <h3>{medicines.filter(m => m.stock_quantity <= m.minimum_stock).length}</h3>
             <p>Low Stock</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">📈</div>
+          <div className="stat-icon"><TrendingUp size={20} /></div>
           <div>
             <h3>{medicines.reduce((total, m) => total + m.stock_quantity, 0)}</h3>
             <p>Total Stock</p>
@@ -296,7 +297,7 @@ const PharmacyDashboard = ({ user, onLogout }) => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-left">
-          <div className="hospital-icon">💊</div>
+          <div className="hospital-icon"><Pill size={24} /></div>
           <div>
             <h1>Pharmacy Dashboard</h1>
             <p>Welcome, {user.full_name}</p>
@@ -313,13 +314,13 @@ const PharmacyDashboard = ({ user, onLogout }) => {
           className={`nav-item ${activeTab === 'prescriptions' ? 'active' : ''}`}
           onClick={() => setActiveTab('prescriptions')}
         >
-          📋 Prescriptions
+          <Clipboard size={16} style={{ marginRight: '8px' }} /> Prescriptions
         </button>
         <button
           className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`}
           onClick={() => setActiveTab('inventory')}
         >
-          📦 Inventory
+          <Package size={16} style={{ marginRight: '8px' }} /> Inventory
         </button>
       </nav>
 

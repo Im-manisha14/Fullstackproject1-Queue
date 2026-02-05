@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Stethoscope, Users, RotateCcw } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -157,7 +158,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
 
       <div className="queue-stats">
         <div className="stat-card">
-          <div className="stat-icon">👥</div>
+          <div className="stat-icon"><Users size={24} /></div>
           <div>
             <h3>{queue.length}</h3>
             <p>Patients in Queue</p>
@@ -171,7 +172,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon">🔄</div>
+          <div className="stat-icon"><RotateCcw size={24} /></div>
           <div>
             <h3>{queue.filter(p => p.status === 'in_progress').length}</h3>
             <p>In Progress</p>
@@ -363,7 +364,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-left">
-          <div className="hospital-icon">👨‍⚕️</div>
+          <div className="hospital-icon"><Stethoscope size={24} /></div>
           <div>
             <h1>Doctor Dashboard</h1>
             <p>Welcome, {user.full_name}</p>
@@ -380,13 +381,13 @@ const DoctorDashboard = ({ user, onLogout }) => {
           className={`nav-item ${activeTab === 'queue' ? 'active' : ''}`}
           onClick={() => setActiveTab('queue')}
         >
-          👥 Patient Queue
+          <Users size={16} style={{ marginRight: '8px' }} /> Patient Queue
         </button>
         <button
           className={`nav-item ${activeTab === 'consultation' ? 'active' : ''}`}
           onClick={() => setActiveTab('consultation')}
         >
-          🩺 Consultation
+          <Stethoscope size={16} style={{ marginRight: '8px' }} /> Consultation
         </button>
       </nav>
 

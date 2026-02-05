@@ -8,8 +8,7 @@ import {
   Calendar,
   Play,
   CheckCircle,
-  Stethoscope,
-  LogOut
+  Stethoscope
 } from 'lucide-react';
 
 const DoctorDashboard = () => {

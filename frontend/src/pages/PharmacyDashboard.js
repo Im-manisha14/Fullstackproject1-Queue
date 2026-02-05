@@ -11,8 +11,7 @@ import {
   CheckCircle, 
   Activity,
   Search,
-  Pill,
-  LogOut
+  Pill
 } from 'lucide-react';
 
 const PharmacyDashboard = () => {

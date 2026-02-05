@@ -11,21 +11,25 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, time, date
 from functools import wraps
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy import text
 import os
 import json
 import random
 import uuid
+import psycopg2
 
 app = Flask(__name__, static_folder='static')
 
-# Configuration for SQLite (fallback) or PostgreSQL
-database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost/healthcare_db')
-if database_url.startswith('postgresql://') and not os.getenv('DATABASE_URL'):
-    # Fallback to SQLite if PostgreSQL is not available
-    database_url = 'sqlite:///healthcare.db'
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# Configuration for PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Manisha14@localhost/queue'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'pool_timeout': 20,
+    'max_overflow': 0
+}
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'healthcare-queue-secret-key-2026')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'healthcare-socket-secret-2026')
@@ -35,12 +39,44 @@ db = SQLAlchemy(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Initialize SocketIO with CORS allowed
-socketio = SocketIO(app, cors_allowed_origins="*")
+# Initialize SocketIO with threading mode to avoid eventlet compatibility issues
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global queue status for real-time updates
 active_queues = {}
 prescription_queue = []
+
+# JWT Token Blacklist for security
+blacklisted_tokens = set()
+
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    return jti in blacklisted_tokens
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return {
+        'success': False,
+        'message': 'Token has expired',
+        'data': None
+    }, 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return {
+        'success': False,
+        'message': 'Invalid token',
+        'data': None
+    }, 401
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return {
+        'success': False,
+        'message': 'Authorization token required',
+        'data': None
+    }, 401
 
 # =======================
 # DATABASE MODELS
@@ -50,14 +86,22 @@ class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20))
-    role = db.Column(db.String(20), nullable=False)  # patient, doctor, pharmacy
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    role = db.Column(db.String(20), nullable=False, index=True)  # patient, doctor, pharmacy
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Add check constraints
+    __table_args__ = (
+        db.CheckConstraint("role IN ('patient', 'doctor', 'pharmacy')", name='check_valid_role'),
+        db.CheckConstraint("length(username) >= 3", name='check_username_length'),
+        db.CheckConstraint("length(full_name) >= 2", name='check_name_length'),
+    )
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -95,8 +139,8 @@ class DoctorProfile(db.Model):
     __tablename__ = 'doctor_profiles'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id', ondelete='RESTRICT'), nullable=False)
     specialization = db.Column(db.String(100))
     experience_years = db.Column(db.Integer)
     consultation_fee = db.Column(db.Float, default=0.0)
@@ -104,9 +148,21 @@ class DoctorProfile(db.Model):
     available_to = db.Column(db.Time, default=time(17, 0))
     max_patients_per_day = db.Column(db.Integer, default=50)
     current_token = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    user = db.relationship('User', backref='doctor_profile')
+    # Relationships with cascading
+    user = db.relationship('User', backref=db.backref('doctor_profile', uselist=False, cascade='all, delete-orphan'))
     department = db.relationship('Department', backref='doctors')
+    
+    # Add check constraints
+    __table_args__ = (
+        db.CheckConstraint("experience_years >= 0", name='check_positive_experience'),
+        db.CheckConstraint("consultation_fee >= 0", name='check_positive_fee'),
+        db.CheckConstraint("max_patients_per_day > 0", name='check_positive_max_patients'),
+        db.CheckConstraint("current_token >= 0", name='check_positive_current_token'),
+        db.CheckConstraint("available_from < available_to", name='check_valid_time_range'),
+    )
     
     def to_dict(self):
         return {
@@ -125,24 +181,37 @@ class Appointment(db.Model):
     __tablename__ = 'appointments'
     
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=False)
-    appointment_date = db.Column(db.Date, nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id', ondelete='RESTRICT'), nullable=False)
+    appointment_date = db.Column(db.Date, nullable=False, index=True)
     appointment_time = db.Column(db.Time, nullable=False)
     token_number = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='booked')  # booked, in_queue, consulting, completed, cancelled
-    priority = db.Column(db.String(10), default='normal')  # normal, emergency
-    estimated_wait_time = db.Column(db.Integer, default=0)  # in minutes
+    status = db.Column(db.String(20), default='booked', nullable=False, index=True)
+    priority = db.Column(db.String(10), default='normal', nullable=False)
+    estimated_wait_time = db.Column(db.Integer, default=0)
     actual_start_time = db.Column(db.DateTime)
     actual_end_time = db.Column(db.DateTime)
-    symptoms = db.Column(db.Text)
+    symptoms = db.Column(db.Text, nullable=False)
     doctor_notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Enhanced relationships
     patient = db.relationship('User', foreign_keys=[patient_id], backref='patient_appointments')
     doctor = db.relationship('User', foreign_keys=[doctor_id], backref='doctor_appointments')
     department = db.relationship('Department', backref='appointments')
+    
+    # Add constraints
+    __table_args__ = (
+        db.CheckConstraint("status IN ('booked', 'in_queue', 'consulting', 'completed', 'cancelled', 'no_show')", name='check_valid_status'),
+        db.CheckConstraint("priority IN ('normal', 'emergency')", name='check_valid_priority'),
+        db.CheckConstraint("token_number > 0", name='check_positive_token'),
+        db.CheckConstraint("estimated_wait_time >= 0", name='check_positive_wait_time'),
+        db.UniqueConstraint('doctor_id', 'appointment_date', 'token_number', name='unique_doctor_date_token'),
+        db.Index('idx_appointment_date_status', 'appointment_date', 'status'),
+        db.Index('idx_doctor_date_token', 'doctor_id', 'appointment_date', 'token_number'),
+    )
     
     def to_dict(self):
         return {
@@ -157,7 +226,9 @@ class Appointment(db.Model):
             'priority': self.priority,
             'estimated_wait_time': self.estimated_wait_time,
             'symptoms': self.symptoms,
-            'doctor_notes': self.doctor_notes
+            'doctor_notes': self.doctor_notes,
+            'actual_start_time': self.actual_start_time.isoformat() if self.actual_start_time else None,
+            'actual_end_time': self.actual_end_time.isoformat() if self.actual_end_time else None
         }
 
 class Prescription(db.Model):
@@ -244,13 +315,47 @@ def role_required(allowed_roles):
         @wraps(f)
         @jwt_required()
         def decorated_function(*args, **kwargs):
-            current_user_id = get_jwt_identity()
-            current_user = User.query.get(current_user_id)
-            
-            if not current_user or current_user.role not in allowed_roles:
-                return jsonify({'error': 'Access denied. Insufficient permissions.'}), 403
-            
-            return f(*args, **kwargs)
+            try:
+                current_user_id = get_jwt_identity()
+                
+                if not current_user_id:
+                    return {
+                        'success': False,
+                        'message': 'Invalid user identity',
+                        'data': None
+                    }, 401
+                
+                current_user = User.query.get(current_user_id)
+                
+                if not current_user:
+                    return {
+                        'success': False,
+                        'message': 'User not found',
+                        'data': None
+                    }, 404
+                    
+                if not current_user.is_active:
+                    return {
+                        'success': False,
+                        'message': 'Account is deactivated',
+                        'data': None
+                    }, 403
+                
+                if current_user.role not in allowed_roles:
+                    return {
+                        'success': False,
+                        'message': f'Access denied. Required roles: {", ".join(allowed_roles)}',
+                        'data': None
+                    }, 403
+                
+                return f(*args, **kwargs)
+                
+            except Exception as e:
+                return {
+                    'success': False,
+                    'message': 'Authorization failed',
+                    'data': None
+                }, 500
         return decorated_function
     return decorator
 
@@ -263,7 +368,7 @@ def health_check():
     """Health check endpoint for system monitoring"""
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         db_status = 'healthy'
     except Exception as e:
         db_status = f'unhealthy: {str(e)}'
@@ -290,22 +395,51 @@ def register():
     try:
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['username', 'email', 'password', 'full_name', 'role']
+        # Validate required fields (username is optional, will use email as fallback)
+        required_fields = ['email', 'password', 'full_name', 'role']
         for field in required_fields:
-            if field not in data:
-                return jsonify({'error': f'{field} is required'}), 400
+            if field not in data or not data[field]:
+                return {
+                    'success': False,
+                    'message': f'{field} is required',
+                    'data': None
+                }, 400
+        
+        # Use email as username if username is not provided or empty
+        if 'username' not in data or not data['username']:
+            data['username'] = data['email']
+        
+        # Validate password strength
+        password = data['password']
+        if len(password) < 6:
+            return {
+                'success': False,
+                'message': 'Password must be at least 6 characters long',
+                'data': None
+            }, 400
         
         # Check if user already exists
         if User.query.filter_by(username=data['username']).first():
-            return jsonify({'error': 'Username already exists'}), 400
+            return {
+                'success': False,
+                'message': 'Username already exists',
+                'data': None
+            }, 400
         
         if User.query.filter_by(email=data['email']).first():
-            return jsonify({'error': 'Email already exists'}), 400
+            return {
+                'success': False,
+                'message': 'Email already exists',
+                'data': None
+            }, 400
         
         # Validate role
         if data['role'] not in ['patient', 'doctor', 'pharmacy']:
-            return jsonify({'error': 'Invalid role'}), 400
+            return {
+                'success': False,
+                'message': 'Invalid role. Must be patient, doctor, or pharmacy',
+                'data': None
+            }, 400
         
         # Create new user
         password_hash = generate_password_hash(data['password'])
@@ -321,11 +455,19 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        return jsonify({'message': 'User registered successfully'}), 201
+        return {
+            'success': True,
+            'message': 'User registered successfully',
+            'data': {'user_id': new_user.id}
+        }, 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Registration failed: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -337,7 +479,11 @@ def login():
         password = data.get('password')
         
         if not identifier or not password:
-            return jsonify({'error': 'Email/username and password are required'}), 400
+            return {
+                'success': False,
+                'message': 'Email/username and password are required',
+                'data': None
+            }, 400
         
         # Try to find user by email or username
         user = User.query.filter(
@@ -345,25 +491,41 @@ def login():
         ).first()
         
         if not user or not user.check_password(password):
-            return jsonify({'error': 'Invalid credentials'}), 401
+            return {
+                'success': False,
+                'message': 'Invalid credentials',
+                'data': None
+            }, 401
         
         if not user.is_active:
-            return jsonify({'error': 'Account is deactivated'}), 401
+            return {
+                'success': False,
+                'message': 'Account is deactivated. Please contact administrator.',
+                'data': None
+            }, 401
         
         # Create JWT token with user role
-        additional_claims = {"role": user.role}
+        additional_claims = {"role": user.role, "username": user.username}
         access_token = create_access_token(
             identity=user.id,
             additional_claims=additional_claims
         )
         
-        return jsonify({
-            'access_token': access_token,
-            'user': user.to_dict()
-        }), 200
+        return {
+            'success': True,
+            'message': 'Login successful',
+            'data': {
+                'access_token': access_token,
+                'user': user.to_dict()
+            }
+        }, 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Login failed: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/auth/profile', methods=['GET'])
 @jwt_required()
@@ -373,12 +535,44 @@ def get_profile():
         user = User.query.get(current_user_id)
         
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return {
+                'success': False,
+                'message': 'User not found',
+                'data': None
+            }, 404
         
-        return jsonify(user.to_dict()), 200
+        return {
+            'success': True,
+            'message': 'Profile retrieved successfully',
+            'data': user.to_dict()
+        }, 200
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': str(e),
+            'data': None
+        }, 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    try:
+        jti = get_jwt()['jti']
+        blacklisted_tokens.add(jti)
+        
+        return {
+            'success': True,
+            'message': 'Successfully logged out',
+            'data': None
+        }, 200
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'message': str(e),
+            'data': None
+        }, 500
 
 # =======================
 # PATIENT ROUTES
@@ -389,9 +583,17 @@ def get_profile():
 def get_departments():
     try:
         departments = Department.query.filter_by(is_active=True).all()
-        return jsonify([dept.to_dict() for dept in departments]), 200
+        return {
+            'success': True,
+            'message': 'Departments retrieved successfully',
+            'data': [dept.to_dict() for dept in departments]
+        }, 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to get departments: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/patient/doctors', methods=['GET'])
 @role_required(['patient'])
@@ -412,9 +614,17 @@ def get_doctors():
             doctor_data['department_name'] = department.name
             result.append(doctor_data)
         
-        return jsonify(result), 200
+        return {
+            'success': True,
+            'message': 'Doctors retrieved successfully',
+            'data': result
+        }, 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to get doctors: {str(e)}',
+            'data': None
+        }, 500
 
 # Frontend expects /api/doctors endpoint
 @app.route('/api/doctors', methods=['GET'])
@@ -435,9 +645,17 @@ def get_all_doctors():
                 'current_token': doctor_profile.current_token
             })
         
-        return jsonify({'doctors': result}), 200
+        return {
+            'success': True,
+            'message': 'All doctors retrieved successfully', 
+            'data': {'doctors': result}
+        }, 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to get doctors: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/patient/book-appointment', methods=['POST'])
 @role_required(['patient'])
@@ -532,30 +750,51 @@ def create_appointment():
         
         required_fields = ['doctor_id', 'appointment_date', 'appointment_time', 'symptoms']
         for field in required_fields:
-            if field not in data:
-                return jsonify({'error': f'{field} is required'}), 400
+            if field not in data or not data[field]:
+                return {
+                    'success': False,
+                    'message': f'{field} is required',
+                    'data': None
+                }, 400
         
         # Get doctor profile to get department  
         doctor_profile = DoctorProfile.query.get(data['doctor_id'])
         if not doctor_profile:
-            return jsonify({'error': 'Doctor not found'}), 404
+            return {
+                'success': False,
+                'message': 'Doctor not found',
+                'data': None
+            }, 404
         
         # Parse appointment date and time
-        appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
-        appointment_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
+        try:
+            appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
+            appointment_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
+        except ValueError:
+            return {
+                'success': False,
+                'message': 'Invalid date or time format. Use YYYY-MM-DD for date and HH:MM for time',
+                'data': None
+            }, 400
 
-        # Hardening: Prevent booking past dates
+        # Prevent booking past dates
         if appointment_date < datetime.now().date():
-             return jsonify({'error': 'Cannot book appointments in the past.'}), 400
+            return {
+                'success': False,
+                'message': 'Cannot book appointments in the past',
+                'data': None
+            }, 400
 
-        # Hardening: Check Doctor Availability (Time)
+        # Check Doctor Availability (Time)
         if doctor_profile.available_from and doctor_profile.available_to:
             if not (doctor_profile.available_from <= appointment_time <= doctor_profile.available_to):
-                return jsonify({
-                    'error': f'Doctor is only available between {doctor_profile.available_from.strftime("%H:%M")} and {doctor_profile.available_to.strftime("%H:%M")}'
-                }), 400
+                return {
+                    'success': False,
+                    'message': f'Doctor is only available between {doctor_profile.available_from.strftime("%H:%M")} and {doctor_profile.available_to.strftime("%H:%M")}',
+                    'data': None
+                }, 400
 
-        # Hardening: Check for Double Booking (Same Patient, Same Doctor, Same Day)
+        # Check for Double Booking (Same Patient, Same Doctor, Same Day)
         existing_appointment = Appointment.query.filter_by(
             patient_id=current_user_id,
             doctor_id=doctor_profile.user_id,
@@ -563,7 +802,11 @@ def create_appointment():
         ).filter(Appointment.status.in_(['booked', 'in_queue', 'consulting'])).first()
         
         if existing_appointment:
-            return jsonify({'error': 'You already have an appointment with this doctor today.'}), 409
+            return {
+                'success': False,
+                'message': 'You already have an appointment with this doctor today',
+                'data': None
+            }, 409
         
         # Generate token number for the day
         daily_appointments = Appointment.query.filter_by(
@@ -571,9 +814,13 @@ def create_appointment():
             appointment_date=appointment_date
         ).count()
         
-        # Hardening: Check Max Patients
+        # Check Max Patients
         if daily_appointments >= doctor_profile.max_patients_per_day:
-             return jsonify({'error': 'Doctor has reached maximum patients for this day.'}), 400
+            return {
+                'success': False,
+                'message': 'Doctor has reached maximum patients for this day',
+                'data': None
+            }, 400
         
         token_number = daily_appointments + 1
         
@@ -598,18 +845,25 @@ def create_appointment():
             'appointment': appointment.to_dict()
         }, room=f'user_{appointment.doctor_id}')
         
-        return jsonify({
+        return {
+            'success': True,
             'message': 'Appointment booked successfully',
-            'appointment_id': appointment.id,
-            'token_number': token_number,
-            'status': 'booked',
-            'appointment_date': data['appointment_date'],
-            'appointment_time': data['appointment_time']
-        }), 201
+            'data': {
+                'appointment_id': appointment.id,
+                'token_number': token_number,
+                'status': 'booked',
+                'appointment_date': data['appointment_date'],
+                'appointment_time': data['appointment_time']
+            }
+        }, 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to book appointment: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/patient/appointments', methods=['GET'])
 @role_required(['patient'])
@@ -699,71 +953,374 @@ def verify_token():
     except Exception:
         return jsonify({'valid': False}), 401
 
-@app.route('/api/appointments/advance-queue', methods=['POST'])
-@role_required(['doctor'])
-def advance_queue_item():
+@app.route('/api/appointments/<int:appointment_id>/cancel', methods=['POST', 'DELETE'])
+@role_required(['patient', 'doctor'])
+def cancel_appointment(appointment_id):
+    """
+    Cancel appointment with proper token reordering and notifications
+    """
     try:
         current_user_id = get_jwt_identity()
-        data = request.get_json()
-        appointment_id = data.get('appointment_id')
+        current_user = User.query.get(current_user_id)
         
-        if not appointment_id:
-            return jsonify({'error': 'Appointment ID required'}), 400
+        with db.session.begin():
+            # Get appointment with lock
+            appointment = db.session.query(Appointment).with_for_update().get(appointment_id)
             
-        # Hardening: Use with_for_update() to lock the row and prevent race conditions
-        # This ensures no other transaction can modify this appointment until we commit
-        appointment = db.session.query(Appointment).with_for_update().filter_by(
-            id=appointment_id,
-            doctor_id=current_user_id
-        ).first()
+            if not appointment:
+                return {
+                    'success': False,
+                    'message': 'Appointment not found',
+                    'data': None
+                }, 404
+            
+            # Check permissions
+            if current_user.role == 'patient' and appointment.patient_id != current_user_id:
+                return {
+                    'success': False,
+                    'message': 'You can only cancel your own appointments',
+                    'data': None
+                }, 403
+            
+            if current_user.role == 'doctor' and appointment.doctor_id != current_user_id:
+                return {
+                    'success': False,
+                    'message': 'You can only cancel appointments for your patients',
+                    'data': None
+                }, 403
+            
+            # Check if appointment can be cancelled
+            if appointment.status in ['completed', 'cancelled']:
+                return {
+                    'success': False,
+                    'message': f'Cannot cancel {appointment.status} appointment',
+                    'data': None
+                }, 400
+            
+            # Store original token for reordering
+            cancelled_token = appointment.token_number
+            appointment_date = appointment.appointment_date
+            doctor_id = appointment.doctor_id
+            
+            # Update appointment status
+            appointment.status = 'cancelled'
+            appointment.actual_end_time = datetime.utcnow()
+            
+            # Reorder subsequent tokens to fill the gap
+            subsequent_appointments = db.session.query(Appointment).filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.appointment_date == appointment_date,
+                Appointment.token_number > cancelled_token,
+                Appointment.status.in_(['booked', 'in_queue'])
+            ).all()
+            
+            for apt in subsequent_appointments:
+                apt.token_number -= 1
+            
+            # Log the cancellation
+            log_entry = QueueLog(
+                appointment_id=appointment.id,
+                status_change=f'CANCELLED by {current_user.role}',
+                notes=f'Token #{cancelled_token} cancelled, subsequent tokens reordered'
+            )
+            db.session.add(log_entry)
         
-        if not appointment:
-            return jsonify({'error': 'Appointment not found or access denied'}), 404
-            
-        # State Transition Logic
-        if appointment.status == 'booked' or appointment.status == 'in_queue':
-            appointment.status = 'consulting'
-            appointment.actual_start_time = datetime.utcnow()
-            
-            # Update doctor's current token
-            doctor_profile = DoctorProfile.query.filter_by(user_id=current_user_id).first()
-            if doctor_profile:
-                doctor_profile.current_token = appointment.token_number
-            
-            message = 'Patient called for consultation'
-        
-        elif appointment.status == 'consulting':
-             appointment.status = 'completed'
-             appointment.actual_end_time = datetime.utcnow()
-             message = 'Consultation completed'
-             
+        # Real-time notifications
+        if current_user.role == 'patient':
+            # Notify doctor
+            socketio.emit('appointment_cancelled', {
+                'message': f'Patient {appointment.patient.full_name} cancelled appointment',
+                'appointment': appointment.to_dict(),
+                'cancelled_by': 'patient'
+            }, room=f'user_{appointment.doctor_id}')
         else:
-             return jsonify({'error': f'Invalid status transition from {appointment.status}'}), 400
-
-        # Log the change
-        log = QueueLog(appointment_id=appointment.id, status_change=message)
-        db.session.add(log)
+            # Notify patient
+            socketio.emit('appointment_cancelled', {
+                'message': 'Your appointment has been cancelled by the doctor',
+                'appointment': appointment.to_dict(),
+                'cancelled_by': 'doctor'
+            }, room=f'user_{appointment.patient_id}')
         
-        db.session.commit()
+        # Notify affected patients about token changes
+        for apt in subsequent_appointments:
+            socketio.emit('token_updated', {
+                'message': f'Your token number has been updated to {apt.token_number}',
+                'appointment': apt.to_dict()
+            }, room=f'user_{apt.patient_id}')
         
-        # Real-time: Notify the patient
-        socketio.emit('queue_update', {
-            'type': appointment.status,
-            'message': message,
-            'appointment': appointment.to_dict()
-        }, room=f'user_{appointment.patient_id}')
-        
-        return jsonify({
-            'message': message,
-            'appointment': appointment.to_dict()
-        }), 200
+        return {
+            'success': True,
+            'message': 'Appointment cancelled successfully',
+            'data': {
+                'appointment': appointment.to_dict(),
+                'affected_appointments': len(subsequent_appointments)
+            }
+        }, 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to cancel appointment: {str(e)}',
+            'data': None
+        }, 500
+
+@app.route('/api/appointments/<int:appointment_id>/mark-no-show', methods=['POST'])
+@role_required(['doctor'])
+def mark_no_show(appointment_id):
+    """
+    Mark patient as no-show and handle queue progression
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        with db.session.begin():
+            appointment = db.session.query(Appointment).with_for_update().filter_by(
+                id=appointment_id,
+                doctor_id=current_user_id
+            ).first()
+            
+            if not appointment:
+                return {
+                    'success': False,
+                    'message': 'Appointment not found or access denied',
+                    'data': None
+                }, 404
+            
+            if appointment.status not in ['booked', 'in_queue', 'consulting']:
+                return {
+                    'success': False,
+                    'message': f'Cannot mark {appointment.status} appointment as no-show',
+                    'data': None
+                }, 400
+            
+            # Update status
+            appointment.status = 'no_show'
+            appointment.actual_end_time = datetime.utcnow()
+            
+            # Log the no-show
+            log_entry = QueueLog(
+                appointment_id=appointment.id,
+                status_change='MARKED as NO_SHOW',
+                notes=f'Patient did not show up for token #{appointment.token_number}'
+            )
+            db.session.add(log_entry)
+        
+        # Notify patient
+        socketio.emit('appointment_no_show', {
+            'message': 'You have been marked as no-show for your appointment',
+            'appointment': appointment.to_dict()
+        }, room=f'user_{appointment.patient_id}')
+        
+        return {
+            'success': True,
+            'message': 'Patient marked as no-show',
+            'data': {'appointment': appointment.to_dict()}
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'success': False,
+            'message': f'Failed to mark no-show: {str(e)}',
+            'data': None
+        }, 500
+
+@app.route('/api/doctor/logout-cleanup', methods=['POST'])
+@role_required(['doctor'])
+def doctor_logout_cleanup():
+    """
+    Handle doctor logout - reschedule or cancel pending appointments
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        action = data.get('action', 'reschedule')  # 'reschedule' or 'cancel'
+        
+        today = datetime.now().date()
+        
+        with db.session.begin():
+            # Get all pending appointments for today
+            pending_appointments = db.session.query(Appointment).filter(
+                Appointment.doctor_id == current_user_id,
+                Appointment.appointment_date == today,
+                Appointment.status.in_(['booked', 'in_queue'])
+            ).all()
+            
+            if not pending_appointments:
+                return {
+                    'success': True,
+                    'message': 'No pending appointments to handle',
+                    'data': {'affected_count': 0}
+                }, 200
+            
+            if action == 'cancel':
+                # Cancel all pending appointments
+                for appointment in pending_appointments:
+                    appointment.status = 'cancelled'
+                    appointment.actual_end_time = datetime.utcnow()
+                    
+                    # Log cancellation
+                    log_entry = QueueLog(
+                        appointment_id=appointment.id,
+                        status_change='CANCELLED due to doctor logout',
+                        notes='Doctor logged out with pending appointments'
+                    )
+                    db.session.add(log_entry)
+                    
+                    # Notify patient
+                    socketio.emit('appointment_cancelled', {
+                        'message': 'Your appointment has been cancelled due to doctor unavailability',
+                        'appointment': appointment.to_dict(),
+                        'reason': 'doctor_logout'
+                    }, room=f'user_{appointment.patient_id}')
+                
+                message = f'Cancelled {len(pending_appointments)} pending appointments'
+                
+            else:  # reschedule
+                # For now, just notify patients - in real system, this would integrate with scheduling
+                for appointment in pending_appointments:
+                    # Log rescheduling request
+                    log_entry = QueueLog(
+                        appointment_id=appointment.id,
+                        status_change='PENDING RESCHEDULE due to doctor logout',
+                        notes='Appointment needs to be rescheduled'
+                    )
+                    db.session.add(log_entry)
+                    
+                    # Notify patient
+                    socketio.emit('appointment_reschedule_needed', {
+                        'message': 'Your appointment needs to be rescheduled due to doctor unavailability',
+                        'appointment': appointment.to_dict()
+                    }, room=f'user_{appointment.patient_id}')
+                
+                message = f'Marked {len(pending_appointments)} appointments for rescheduling'
+        
+        return {
+            'success': True,
+            'message': message,
+            'data': {'affected_count': len(pending_appointments)}
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'success': False,
+            'message': f'Failed to handle logout cleanup: {str(e)}',
+            'data': None
+        }, 500
+    """
+    Cancel appointment with proper token reordering and notifications
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
+        
+        with db.session.begin():
+            # Get appointment with lock
+            appointment = db.session.query(Appointment).with_for_update().get(appointment_id)
+            
+            if not appointment:
+                return {
+                    'success': False,
+                    'message': 'Appointment not found',
+                    'data': None
+                }, 404
+            
+            # Check permissions
+            if current_user.role == 'patient' and appointment.patient_id != current_user_id:
+                return {
+                    'success': False,
+                    'message': 'You can only cancel your own appointments',
+                    'data': None
+                }, 403
+            
+            if current_user.role == 'doctor' and appointment.doctor_id != current_user_id:
+                return {
+                    'success': False,
+                    'message': 'You can only cancel appointments for your patients',
+                    'data': None
+                }, 403
+            
+            # Check if appointment can be cancelled
+            if appointment.status in ['completed', 'cancelled']:
+                return {
+                    'success': False,
+                    'message': f'Cannot cancel {appointment.status} appointment',
+                    'data': None
+                }, 400
+            
+            # Store original token for reordering
+            cancelled_token = appointment.token_number
+            appointment_date = appointment.appointment_date
+            doctor_id = appointment.doctor_id
+            
+            # Update appointment status
+            appointment.status = 'cancelled'
+            appointment.actual_end_time = datetime.utcnow()
+            
+            # Reorder subsequent tokens to fill the gap
+            subsequent_appointments = db.session.query(Appointment).filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.appointment_date == appointment_date,
+                Appointment.token_number > cancelled_token,
+                Appointment.status.in_(['booked', 'in_queue'])
+            ).all()
+            
+            for apt in subsequent_appointments:
+                apt.token_number -= 1
+            
+            # Log the cancellation
+            log_entry = QueueLog(
+                appointment_id=appointment.id,
+                status_change=f'CANCELLED by {current_user.role}',
+                notes=f'Token #{cancelled_token} cancelled, subsequent tokens reordered'
+            )
+            db.session.add(log_entry)
+        
+        # Real-time notifications
+        if current_user.role == 'patient':
+            # Notify doctor
+            socketio.emit('appointment_cancelled', {
+                'message': f'Patient {appointment.patient.full_name} cancelled appointment',
+                'appointment': appointment.to_dict(),
+                'cancelled_by': 'patient'
+            }, room=f'user_{appointment.doctor_id}')
+        else:
+            # Notify patient
+            socketio.emit('appointment_cancelled', {
+                'message': 'Your appointment has been cancelled by the doctor',
+                'appointment': appointment.to_dict(),
+                'cancelled_by': 'doctor'
+            }, room=f'user_{appointment.patient_id}')
+        
+        # Notify affected patients about token changes
+        for apt in subsequent_appointments:
+            socketio.emit('token_updated', {
+                'message': f'Your token number has been updated to {apt.token_number}',
+                'appointment': apt.to_dict()
+            }, room=f'user_{apt.patient_id}')
+        
+        return {
+            'success': True,
+            'message': 'Appointment cancelled successfully',
+            'data': {
+                'appointment': appointment.to_dict(),
+                'affected_appointments': len(subsequent_appointments)
+            }
+        }, 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return {
+            'success': False,
+            'message': f'Failed to cancel appointment: {str(e)}',
+            'data': None
+        }, 500
 
 # =======================
 # DOCTOR ROUTES
+# =======================
 # =======================
 
 @app.route('/api/doctor/profile', methods=['GET', 'POST'])
@@ -854,56 +1411,86 @@ def call_next_patient():
         date_str = datetime.now().strftime('%Y-%m-%d')
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Get next patient in queue
-        next_appointment = Appointment.query.filter_by(
-            doctor_id=current_user_id,
-            appointment_date=appointment_date,
-            status='booked'
-        ).order_by(Appointment.token_number).first()
+        # Start a transaction with row locking to prevent race conditions
+        with db.session.begin():
+            # Get next patient in queue with row lock
+            next_appointment = db.session.query(Appointment).with_for_update().filter_by(
+                doctor_id=current_user_id,
+                appointment_date=appointment_date,
+                status='booked'
+            ).order_by(Appointment.token_number).first()
+            
+            if not next_appointment:
+                return {
+                    'success': False,
+                    'message': 'No patients in queue',
+                    'data': None
+                }, 404
+            
+            # Check if doctor already has a patient in consultation
+            ongoing_consultation = db.session.query(Appointment).filter_by(
+                doctor_id=current_user_id,
+                appointment_date=appointment_date,
+                status='consulting'
+            ).first()
+            
+            if ongoing_consultation:
+                return {
+                    'success': False,
+                    'message': 'Please complete current consultation before calling next patient',
+                    'data': {'current_patient': ongoing_consultation.patient.full_name}
+                }, 400
+            
+            # Update appointment status with strict state transition
+            next_appointment.status = 'consulting'
+            next_appointment.actual_start_time = datetime.utcnow()
+            
+            # Update doctor's current token with row lock
+            doctor_profile = db.session.query(DoctorProfile).with_for_update().filter_by(
+                user_id=current_user_id
+            ).first()
+            
+            if doctor_profile:
+                doctor_profile.current_token = next_appointment.token_number
+            
+            # Log the status change
+            log_entry = QueueLog(
+                appointment_id=next_appointment.id,
+                status_change='WAITING → CALLED',
+                notes=f'Token #{next_appointment.token_number} called by doctor {current_user_id}'
+            )
+            db.session.add(log_entry)
         
-        if not next_appointment:
-            return jsonify({'message': 'No patients in queue'}), 404
+        # Emit real-time updates after transaction
+        socketio.emit('patient_called', {
+            'appointment_id': next_appointment.id,
+            'token_number': next_appointment.token_number,
+            'patient_name': next_appointment.patient.full_name,
+            'doctor_id': current_user_id
+        }, room=f'doctor_{current_user_id}')
         
-        # Update appointment status
-        next_appointment.status = 'consulting'
-        next_appointment.actual_start_time = datetime.utcnow()
+        socketio.emit('consultation_started', {
+            'message': 'Your consultation has started. Please proceed to the doctor\'s chamber.',
+            'token_number': next_appointment.token_number,
+            'status': 'consulting'
+        }, room=f'user_{next_appointment.patient_id}')
         
-        # Update doctor's current token
-        doctor_profile = DoctorProfile.query.filter_by(user_id=current_user_id).first()
-        if doctor_profile:
-            doctor_profile.current_token = next_appointment.token_number
-        
-        db.session.commit()
-        
-        # Log the status change
-        log_entry = QueueLog(
-            appointment_id=next_appointment.id,
-            status_change='Patient called for consultation',
-            notes=f'Token #{next_appointment.token_number} called'
-        )
-        db.session.add(log_entry)
-        db.session.commit()
-        
-        # Emit real-time updates (disabled for now)
-        # socketio.emit('patient_called', {
-        #     'appointment_id': next_appointment.id,
-        #     'token_number': next_appointment.token_number,
-        #     'patient_name': next_appointment.patient.full_name
-        # }, room=f'doctor_{current_user_id}')
-        # 
-        # socketio.emit('consultation_started', {
-        #     'message': f'Your consultation has started. Please proceed to the doctor\'s chamber.',
-        #     'token_number': next_appointment.token_number
-        # }, room=f'patient_{next_appointment.patient_id}')
-        
-        return jsonify({
-            'message': 'Next patient called',
-            'appointment': next_appointment.to_dict()
-        }), 200
+        return {
+            'success': True,
+            'message': 'Next patient called successfully',
+            'data': {
+                'appointment': next_appointment.to_dict(),
+                'patient_name': next_appointment.patient.full_name
+            }
+        }, 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return {
+            'success': False,
+            'message': f'Failed to call next patient: {str(e)}',
+            'data': None
+        }, 500
 
 @app.route('/api/doctor/complete-consultation', methods=['POST'])
 @role_required(['doctor'])
@@ -1050,12 +1637,17 @@ def update_appointment_status(appointment_id):
             # Hardening: Prevent cancelling active/completed appointments
             # BUT allow doctors to mark as 'no_show' or 'cancelled' if patient is missing
             if new_status == 'cancelled':
+                # Get current user info
+                current_user_id = get_jwt_identity()
+                user = User.query.get(current_user_id)
                 # Allow doctor to cancel/no_show even if consulting (e.g. patient didn't show up)
-                if appointment.status in ['consulting', 'completed'] and current_user.role != 'doctor':
+                if appointment.status in ['consulting', 'completed'] and user.role != 'doctor':
                      return jsonify({'error': 'Cannot cancel an appointment that is already in progress or completed.'}), 400
             
             # Allow specific no_show status
-            if new_status == 'no_show' and current_user.role == 'doctor':
+            current_user_id = get_jwt_identity()
+            user = User.query.get(current_user_id)
+            if new_status == 'no_show' and user.role == 'doctor':
                  # Doctor marking patient as missing
                  pass 
 
@@ -1287,48 +1879,171 @@ def get_low_stock_medicines():
         return jsonify({'error': str(e)}), 500
 
 # =======================
-# WEBSOCKET EVENTS
+# WEBSOCKET EVENTS WITH AUTHENTICATION
 # =======================
 
-# SocketIO Event Handlers
-from flask_jwt_extended import decode_token
+# Socket connection tracking
+connected_users = {}
 
 @socketio.on('connect')
-def handle_connect():
-    # Strict Authentication Handshake
+def handle_connect(auth):
+    """
+    Enhanced socket connection with JWT authentication
+    """
     try:
-        token = request.args.get('token')
+        # Get token from auth data or query params
+        token = None
+        if auth and 'token' in auth:
+            token = auth['token']
+        else:
+            token = request.args.get('token')
+        
         if not token:
-            print("Socket Connection Refused: No Token")
+            print("❌ Socket Connection Refused: No authentication token provided")
             return False  # Reject connection
         
-        # Verify Token
-        decoded_token = decode_token(token)
-        user_id = decoded_token['sub']
-        user = User.query.get(user_id)
-        
-        if not user:
-             print("Socket Connection Refused: Invalid User")
-             return False
-        
-        # Join Role-Based Rooms for Targeted Updates (No Global Broadcasts)
-        join_room(f'user_{user_id}')  # Personal notifications
-        join_room(f'role_{user.role}') # Role-wide updates (e.g. pharmacy)
-        
-        if user.role == 'pharmacy':
-            join_room('pharmacy_global')
+        # Verify JWT token
+        try:
+            from flask_jwt_extended import decode_token
+            decoded_token = decode_token(token)
+            user_id = decoded_token['sub']
             
-        emit('connected', {'message': f'Connected securely as {user.role}'})
-        print(f"Socket Connected: User {user_id} ({user.role})")
+            # Check if token is blacklisted
+            if decoded_token['jti'] in blacklisted_tokens:
+                print(f"❌ Socket Connection Refused: Token blacklisted for user {user_id}")
+                return False
+                
+        except Exception as jwt_error:
+            print(f"❌ Socket Connection Refused: Invalid token - {str(jwt_error)}")
+            return False
+        
+        # Verify user exists and is active
+        user = User.query.get(user_id)
+        if not user or not user.is_active:
+            print(f"❌ Socket Connection Refused: User {user_id} not found or inactive")
+            return False
+        
+        # Store connection info
+        connected_users[request.sid] = {
+            'user_id': user_id,
+            'username': user.username,
+            'role': user.role,
+            'connected_at': datetime.utcnow()
+        }
+        
+        # Join authenticated rooms
+        join_room(f'user_{user_id}')  # Personal notifications
+        join_room(f'role_{user.role}')  # Role-based updates
+        
+        # Role-specific room joining
+        if user.role == 'doctor':
+            join_room(f'doctor_{user_id}')
+        elif user.role == 'pharmacy':
+            join_room('pharmacy_global')
+        elif user.role == 'patient':
+            join_room(f'patient_{user_id}')
+        
+        # Send connection confirmation
+        emit('authenticated', {
+            'success': True,
+            'message': f'Connected securely as {user.role}',
+            'user': {
+                'id': user_id,
+                'username': user.username,
+                'role': user.role
+            }
+        })
+        
+        print(f"✅ Socket Connected: User {user_id} ({user.username}) as {user.role}")
         
     except Exception as e:
-        print(f"Socket Connection Failed: {str(e)}")
+        print(f"❌ Socket Connection Failed: {str(e)}")
         return False
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print("Socket Disconnected")
-    # Auto-leave rooms is handled by SocketIO, but we can log it
+    """
+    Handle socket disconnection and cleanup
+    """
+    if request.sid in connected_users:
+        user_info = connected_users[request.sid]
+        user_id = user_info['user_id']
+        username = user_info['username']
+        role = user_info['role']
+        
+        # Leave all rooms (automatic, but we can add custom logic)
+        leave_room(f'user_{user_id}')
+        leave_room(f'role_{role}')
+        
+        # Remove from tracking
+        del connected_users[request.sid]
+        
+        print(f"🔌 Socket Disconnected: User {user_id} ({username})")
+    else:
+        print("🔌 Socket Disconnected: Unknown session")
+
+@socketio.on('join_queue_updates')
+def handle_join_queue_updates(data):
+    """
+    Join queue-specific room for real-time updates
+    """
+    if request.sid not in connected_users:
+        emit('error', {'message': 'Not authenticated'})
+        return
+    
+    user_info = connected_users[request.sid]
+    appointment_id = data.get('appointment_id')
+    
+    if appointment_id:
+        # Verify user owns this appointment or is the doctor
+        appointment = Appointment.query.get(appointment_id)
+        if appointment and (appointment.patient_id == user_info['user_id'] or 
+                          appointment.doctor_id == user_info['user_id']):
+            join_room(f'appointment_{appointment_id}')
+            emit('joined_queue_updates', {'appointment_id': appointment_id})
+
+@socketio.on('leave_queue_updates')  
+def handle_leave_queue_updates(data):
+    """
+    Leave queue-specific room
+    """
+    appointment_id = data.get('appointment_id')
+    if appointment_id:
+        leave_room(f'appointment_{appointment_id}')
+        emit('left_queue_updates', {'appointment_id': appointment_id})
+
+@socketio.on('get_connected_users')
+def handle_get_connected_users():
+    """
+    Admin function to see connected users (for debugging)
+    """
+    if request.sid not in connected_users:
+        emit('error', {'message': 'Not authenticated'})
+        return
+        
+    user_info = connected_users[request.sid]
+    
+    # Only allow admins or for debugging
+    if user_info['role'] in ['doctor', 'pharmacy']:  # Admin roles
+        emit('connected_users', {
+            'count': len(connected_users),
+            'users': list(connected_users.values())
+        })
+
+# Helper function to emit to specific users safely
+def emit_to_user(user_id, event, data):
+    """
+    Safely emit to a specific user if they're connected
+    """
+    room = f'user_{user_id}'
+    socketio.emit(event, data, room=room)
+
+def emit_to_role(role, event, data):
+    """
+    Emit to all users of a specific role
+    """
+    room = f'role_{role}'
+    socketio.emit(event, data, room=room)
 
 # =======================
 # UTILITY ROUTES
