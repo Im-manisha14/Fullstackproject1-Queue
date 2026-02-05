@@ -949,7 +949,22 @@ def get_patient_appointments():
             
             result.append(appointment_data)
         
-        return jsonify(result), 200
+        return jsonify({'success': True, 'data': result}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/patient/prescriptions', methods=['GET'])
+@role_required(['patient'])
+def get_patient_prescriptions():
+    try:
+        current_user_id = get_current_user_id()
+        prescriptions = Prescription.query.filter_by(patient_id=current_user_id).order_by(Prescription.created_at.desc()).all()
+        
+        result = []
+        for prescription in prescriptions:
+            result.append(prescription.to_dict())
+            
+        return jsonify({'success': True, 'data': result}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -989,16 +1004,7 @@ def get_queue_status(appointment_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/patient/prescriptions', methods=['GET'])
-@role_required(['patient'])
-def get_patient_prescriptions():
-    try:
-        current_user_id = get_current_user_id()
-        prescriptions = Prescription.query.filter_by(patient_id=current_user_id).order_by(Prescription.created_at.desc()).all()
-        
-        return jsonify([prescription.to_dict() for prescription in prescriptions]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/auth/verify', methods=['GET'])
 @jwt_required()
