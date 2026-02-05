@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 from flask_cors import CORS
-# from flask_socketio import SocketIO, emit, join_room, leave_room  # Disabled for now
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, time, date
 from functools import wraps
@@ -35,8 +35,8 @@ db = SQLAlchemy(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Comment out SocketIO for now - will add back after basic functionality works
-# socketio = SocketIO(app, cors_allowed_origins="*")
+# Initialize SocketIO with CORS allowed
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Global queue status for real-time updates
 active_queues = {}
@@ -592,6 +592,12 @@ def create_appointment():
         db.session.add(appointment)
         db.session.commit()
         
+        # Real-time: Notify the doctor
+        socketio.emit('new_appointment', {
+            'message': 'New appointment booked',
+            'appointment': appointment.to_dict()
+        }, room=f'user_{appointment.doctor_id}')
+        
         return jsonify({
             'message': 'Appointment booked successfully',
             'appointment_id': appointment.id,
@@ -739,6 +745,13 @@ def advance_queue_item():
         db.session.add(log)
         
         db.session.commit()
+        
+        # Real-time: Notify the patient
+        socketio.emit('queue_update', {
+            'type': appointment.status,
+            'message': message,
+            'appointment': appointment.to_dict()
+        }, room=f'user_{appointment.patient_id}')
         
         return jsonify({
             'message': message,
@@ -998,6 +1011,17 @@ def create_prescription():
         db.session.add(prescription)
         db.session.commit()
         
+        # Real-time: Notify Pharmacy and Patient
+        socketio.emit('new_prescription', {
+            'message': 'New prescription requesting dispensing',
+            'prescription': prescription.to_dict()
+        }, room='pharmacy_global')
+        
+        socketio.emit('new_prescription', {
+            'message': 'New prescription created',
+            'prescription': prescription.to_dict()
+        }, room=f'user_{appointment.patient_id}')
+        
         return jsonify({
             'message': 'Prescription created successfully',
             'prescription_id': prescription.id
@@ -1024,10 +1048,17 @@ def update_appointment_status(appointment_id):
             new_status = data['status']
             
             # Hardening: Prevent cancelling active/completed appointments
+            # BUT allow doctors to mark as 'no_show' or 'cancelled' if patient is missing
             if new_status == 'cancelled':
-                if appointment.status in ['consulting', 'completed']:
+                # Allow doctor to cancel/no_show even if consulting (e.g. patient didn't show up)
+                if appointment.status in ['consulting', 'completed'] and current_user.role != 'doctor':
                      return jsonify({'error': 'Cannot cancel an appointment that is already in progress or completed.'}), 400
             
+            # Allow specific no_show status
+            if new_status == 'no_show' and current_user.role == 'doctor':
+                 # Doctor marking patient as missing
+                 pass 
+
             appointment.status = new_status
             if new_status == 'completed':
                 appointment.actual_end_time = datetime.utcnow()
@@ -1133,6 +1164,12 @@ def dispense_medicines():
         prescription.dispensed_at = datetime.utcnow()
         
         db.session.commit()
+        
+        # Real-time: Notify Patient
+        socketio.emit('prescription_dispensed', {
+            'message': 'Your medicines are ready for collection',
+            'prescription': prescription.to_dict()
+        }, room=f'user_{prescription.patient_id}')
         
         return jsonify({
             'message': 'Prescription dispensed and inventory updated',
@@ -1253,29 +1290,45 @@ def get_low_stock_medicines():
 # WEBSOCKET EVENTS
 # =======================
 
-# SocketIO Event Handlers (disabled for now)
-# @socketio.on('connect')
-# @jwt_required()
-# def handle_connect():
-#     user_id = get_jwt_identity()
-#     user = User.query.get(user_id)
-#     
-#     if user:
-#         join_room(f'{user.role}_{user_id}')
-#         if user.role == 'pharmacy':
-#             join_room('pharmacy')
-#         emit('connected', {'message': f'Connected as {user.role}'})
+# SocketIO Event Handlers
+from flask_jwt_extended import decode_token
 
-# @socketio.on('disconnect')
-# @jwt_required()
-# def handle_disconnect():
-#     user_id = get_jwt_identity()
-#     user = User.query.get(user_id)
-#     
-#     if user:
-#         leave_room(f'{user.role}_{user_id}')
-#         if user.role == 'pharmacy':
-#             leave_room('pharmacy')
+@socketio.on('connect')
+def handle_connect():
+    # Strict Authentication Handshake
+    try:
+        token = request.args.get('token')
+        if not token:
+            print("Socket Connection Refused: No Token")
+            return False  # Reject connection
+        
+        # Verify Token
+        decoded_token = decode_token(token)
+        user_id = decoded_token['sub']
+        user = User.query.get(user_id)
+        
+        if not user:
+             print("Socket Connection Refused: Invalid User")
+             return False
+        
+        # Join Role-Based Rooms for Targeted Updates (No Global Broadcasts)
+        join_room(f'user_{user_id}')  # Personal notifications
+        join_room(f'role_{user.role}') # Role-wide updates (e.g. pharmacy)
+        
+        if user.role == 'pharmacy':
+            join_room('pharmacy_global')
+            
+        emit('connected', {'message': f'Connected securely as {user.role}'})
+        print(f"Socket Connected: User {user_id} ({user.role})")
+        
+    except Exception as e:
+        print(f"Socket Connection Failed: {str(e)}")
+        return False
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print("Socket Disconnected")
+    # Auto-leave rooms is handled by SocketIO, but we can log it
 
 # =======================
 # UTILITY ROUTES
@@ -1489,6 +1542,14 @@ def get_dashboard_data(role):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
+
 # =======================
 # SERVE REACT APP
 # =======================
@@ -1516,4 +1577,4 @@ if __name__ == '__main__':
     print("=" * 50)
     
     # Start with debug mode to ensure code reloading
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

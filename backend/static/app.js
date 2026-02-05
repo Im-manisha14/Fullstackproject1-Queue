@@ -1008,17 +1008,41 @@ const DoctorDashboard = ({ user }) => {
                                         >
                                             <i className="fas fa-file-prescription"></i> Write Prescription
                                         </button>
-                                        <button
-                                            className="btn btn-primary w-full py-3 text-lg"
-                                            onClick={() => handleAdvanceQueue(activePatient.id)}
-                                            disabled={processingId === activePatient.id}
-                                        >
-                                            {processingId === activePatient.id ? (
-                                                <i className="fas fa-spinner fa-spin"></i>
-                                            ) : (
-                                                <span><i className="fas fa-check"></i> Complete Visit</span>
-                                            )}
-                                        </button>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '8px' }}>
+                                            <button
+                                                className="btn btn-outline-danger w-full py-3 text-lg"
+                                                onClick={async () => {
+                                                    if (confirm('Mark this patient as missing?')) {
+                                                        try {
+                                                            await apiService.request(`/appointments/${activePatient.id}`, {
+                                                                method: 'PUT',
+                                                                body: JSON.stringify({ status: 'no_show' })
+                                                            });
+                                                            fetchDashboardData();
+                                                            setAlert({ type: 'info', message: 'Patient marked as No Show' });
+                                                        } catch (err) {
+                                                            setAlert({ type: 'error', message: err.message });
+                                                        }
+                                                    }
+                                                }}
+                                                title="Patient Missing"
+                                            >
+                                                <i className="fas fa-user-times"></i>
+                                            </button>
+
+                                            <button
+                                                className="btn btn-primary w-full py-3 text-lg"
+                                                onClick={() => handleAdvanceQueue(activePatient.id)}
+                                                disabled={processingId === activePatient.id}
+                                            >
+                                                {processingId === activePatient.id ? (
+                                                    <i className="fas fa-spinner fa-spin"></i>
+                                                ) : (
+                                                    <span><i className="fas fa-check"></i> Complete Visit</span>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -1650,6 +1674,51 @@ const AdminDashboard = ({ user }) => {
 const App = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Socket IO Logic
+    useEffect(() => {
+        let socket = null;
+        if (user) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    // Initialize Socket with Auth Handshake
+                    const socketUrl = API_BASE.replace('/api', '');
+                    socket = io(socketUrl, {
+                        query: { token: token },
+                        transports: ['websocket']
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('Socket Connected Securely');
+                    });
+
+                    socket.on('queue_update', (data) => {
+                        if (data.message) alert(`🔔 Queue Update: ${data.message}`);
+                    });
+
+                    socket.on('new_appointment', (data) => {
+                        if (data.message) alert(`📅 New Appointment: ${data.message}`);
+                    });
+
+                    socket.on('new_prescription', (data) => {
+                        if (data.message) alert(`💊 Pharmacy Update: ${data.message}`);
+                    });
+
+                    socket.on('prescription_dispensed', (data) => {
+                        if (data.message) alert(`✅ Medicines Ready: ${data.message}`);
+                    });
+
+                } catch (err) {
+                    console.error("Socket Init Failed:", err);
+                }
+            }
+        }
+
+        return () => {
+            if (socket) socket.disconnect();
+        };
+    }, [user]);
 
     useEffect(() => {
         const initApp = async () => {
