@@ -181,15 +181,15 @@ const PatientDashboard = () => {
       console.log('Loaded doctors from API:', doctorsData);
       console.log('Doctors data type:', typeof doctorsData);
       console.log('Is doctors data array?', Array.isArray(doctorsData));
-      
+
       // Handle direct array response from our API
       const doctorsList = Array.isArray(doctorsData) ? doctorsData : [];
       console.log('Final doctors list:', doctorsList);
       console.log('Doctors list length:', doctorsList.length);
-      
+
       setAllDoctors(doctorsList);
       setDoctors(doctorsList); // Show all doctors initially
-      
+
       console.log('Set doctors count:', doctorsList.length);
       console.log('=== loadDoctors completed successfully ===');
     } catch (error) {
@@ -219,7 +219,7 @@ const PatientDashboard = () => {
       setLoading(true);
       const bookResult = await patientAPI.bookAppointment(bookingForm);
       console.log('Book appointment result:', bookResult);
-      
+
       // Reset form
       setBookingForm({
         doctor_id: '',
@@ -428,62 +428,62 @@ const PatientDashboard = () => {
     console.log('=== Rendering appointments ===');
     console.log('Appointments state:', appointments);
     console.log('Appointments length:', appointments.length);
-    
+
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">My Appointments</h2>
 
         {appointments.length > 0 ? (
-        <div className="space-y-4">
-          {appointments.map(appointment => {
-            const status = queueStatus[appointment.id];
-            return (
-              <div key={appointment.id} className="card">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <Stethoscope className="w-5 h-5 text-teal-600 mr-2" />
-                      <h3 className="text-lg font-semibold">{appointment.doctor_name}</h3>
-                    </div>
-                    <p className="text-gray-600 mb-1">{appointment.department_name}</p>
-                    <p className="text-gray-600 mb-2">
-                      {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)}
-                    </p>
-                    {appointment.symptoms && (
-                      <p className="text-sm text-gray-700"><strong>Symptoms:</strong> {appointment.symptoms}</p>
-                    )}
-                    {appointment.doctor_notes && (
-                      <p className="text-sm text-gray-700 mt-2"><strong>Doctor's Notes:</strong> {appointment.doctor_notes}</p>
-                    )}
-                  </div>
-
-                  <div className="text-right">
-                    <div className="mb-2">
-                      {getStatusBadge(appointment.status)}
-                    </div>
-                    <div className="text-2xl font-bold text-teal-600 mb-2">
-                      #{appointment.token_number}
-                    </div>
-                    {status && appointment.status === 'booked' && (
-                      <div className="text-sm text-gray-600">
-                        <p>Position: {status.queue_position}</p>
-                        <p>Wait: ~{status.estimated_wait_time} min</p>
-                        <p className="text-teal-600">Current: #{status.current_token}</p>
+          <div className="space-y-4">
+            {appointments.map(appointment => {
+              const status = queueStatus[appointment.id];
+              return (
+                <div key={appointment.id} className="card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <Stethoscope className="w-5 h-5 text-teal-600 mr-2" />
+                        <h3 className="text-lg font-semibold">{appointment.doctor_name}</h3>
                       </div>
-                    )}
+                      <p className="text-gray-600 mb-1">{appointment.department_name}</p>
+                      <p className="text-gray-600 mb-2">
+                        {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)}
+                      </p>
+                      {appointment.symptoms && (
+                        <p className="text-sm text-gray-700"><strong>Symptoms:</strong> {appointment.symptoms}</p>
+                      )}
+                      {appointment.doctor_notes && (
+                        <p className="text-sm text-gray-700 mt-2"><strong>Doctor's Notes:</strong> {appointment.doctor_notes}</p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <div className="mb-2">
+                        {getStatusBadge(appointment.status)}
+                      </div>
+                      <div className="text-2xl font-bold text-teal-600 mb-2">
+                        #{appointment.token_number}
+                      </div>
+                      {status && appointment.status === 'booked' && (
+                        <div className="text-sm text-gray-600">
+                          <p>Position: {status.queue_position}</p>
+                          <p>Wait: ~{status.estimated_wait_time} min</p>
+                          <p className="text-teal-600">Current: #{status.current_token}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500">No appointments yet</p>
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500">No appointments yet</p>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -677,61 +677,37 @@ const PatientDashboard = () => {
   return (
     <div className="dashboard">
       {/* Modern Header with Gradient */}
-      <header style={{
-        background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
-        padding: '2rem 0',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        marginBottom: '2rem'
-      }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Modern Header with Gradient */}
+      <header className="dashboard-header-modern">
+        <div className="header-content-wrapper">
           {/* Top Row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+          <div className="header-top-row">
+            <div className="brand-container">
+              <div className="logo-box">
                 <Activity size={28} color="white" />
               </div>
               <div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white', margin: 0 }}>
+                <h1 className="brand-title">
                   Queue-Free Healthcare System
                 </h1>
-                <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.9)', margin: 0 }}>
+                <p className="brand-subtitle">
                   Patient Portal
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'white', margin: 0 }}>
+            <div className="user-controls-container">
+              <div className="user-info-text">
+                <p className="user-name">
                   {user?.full_name || user?.name || user?.username}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0, textTransform: 'capitalize' }}>
+                <p className="user-role">
                   {user?.role}
                 </p>
               </div>
               <button
                 onClick={logout}
-                style={{
-                  padding: '0.625rem 1.25rem',
-                  background: 'rgba(239, 68, 68, 0.9)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
+                className="logout-btn-custom"
               >
                 <LogOut size={16} />
                 Logout
@@ -740,34 +716,21 @@ const PatientDashboard = () => {
           </div>
 
           {/* Welcome Message - Highlighted */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            padding: '1.25rem 1.5rem',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', margin: '0 0 0.5rem 0' }}>
+          <div className="welcome-banner">
+            <h2 className="welcome-title">
               Welcome, {user?.full_name || user?.name || user?.username}!
             </h2>
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.95)', margin: 0 }}>
+            <p className="welcome-subtitle">
               Book your Appointment here
             </p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="dashboard-content-container">
         {/* Navigation Tabs with Icons - Modern Design */}
-        <div style={{ marginBottom: '2rem' }}>
-          <nav style={{
-            display: 'flex',
-            gap: '0.75rem',
-            background: 'white',
-            padding: '0.5rem',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-          }}>
+        <div className="nav-container-wrapper">
+          <nav className="nav-modern">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -775,37 +738,10 @@ const PatientDashboard = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '0.875rem 1rem',
-                    background: isActive ? '#14B8A6' : 'transparent',
-                    color: isActive ? 'white' : '#6B7280',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = '#F3F4F6';
-                      e.currentTarget.style.color = '#111827';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#6B7280';
-                    }
-                  }}
+                  className={`nav-btn-modern ${isActive ? 'active' : ''}`}
                 >
                   <Icon size={18} />
-                  {tab.label}
+                  <span className="nav-label">{tab.label}</span>
                 </button>
               );
             })}
