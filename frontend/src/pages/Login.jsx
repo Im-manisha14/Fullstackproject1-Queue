@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api';
 import { Lock, User, Activity } from 'lucide-react';
+import Button from '../components/ui/Button';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -95,13 +96,13 @@ const Login = () => {
                     )}
 
                     <div>
-                        <button
+                        <Button
                             type="submit"
-                            disabled={loading}
-                            className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            loading={loading}
+                            className="w-full"
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
-                        </button>
+                            Sign in
+                        </Button>
                     </div>
                 </form>
 

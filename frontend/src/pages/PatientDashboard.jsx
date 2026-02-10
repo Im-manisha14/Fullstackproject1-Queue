@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { patientService } from '../services/api';
 import { Search, Calendar, Clock, MapPin, User, ChevronRight } from 'lucide-react';
+import Button from '../components/ui/Button';
 
 const PatientDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -101,13 +102,13 @@ const PatientDashboard = () => {
                                 </div>
                             </div>
 
-                            <button
+                            <Button
                                 onClick={() => handleBook(doctor)}
-                                className="w-full py-2.5 bg-slate-900 text-white rounded-lg font-medium hover:bg-teal-600 transition-all active:scale-95 flex items-center justify-center gap-2 group-hover:bg-teal-600"
+                                className="w-full justify-center gap-2"
                             >
                                 Book Appointment
                                 <ChevronRight size={16} />
-                            </button>
+                            </Button>
                         </div>
                     ))}
                 </div>

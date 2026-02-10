@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { pharmacyService } from '../services/api';
 import { Pill, Check, Clock, Search } from 'lucide-react';
+import Button from '../components/ui/Button';
 
 const PharmacyDashboard = () => {
     const [prescriptions, setPrescriptions] = useState([]);
@@ -81,12 +82,12 @@ const PharmacyDashboard = () => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         {p.status === 'Pending' && (
-                                            <button
+                                            <Button
                                                 onClick={() => dispense(p.id)}
-                                                className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-all shadow-sm active:scale-95"
+                                                className="px-4 py-2 text-sm"
                                             >
                                                 Dispense
-                                            </button>
+                                            </Button>
                                         )}
                                     </td>
                                 </tr>
