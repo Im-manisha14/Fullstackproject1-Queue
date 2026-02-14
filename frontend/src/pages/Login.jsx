@@ -1,120 +1,160 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/api';
-import { Lock, User, Activity } from 'lucide-react';
-import Button from '../components/ui/Button';
+import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import Button from '../components/common/Button';
+import InputField from '../components/common/InputField';
+import Card from '../components/common/Card';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
-    const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-        try {
-            const { user } = await authService.login(email, password);
-            login(user);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-            switch (user.role) {
-                case 'patient':
-                    navigate('/patient/dashboard');
-                    break;
-                case 'doctor':
-                    navigate('/doctor/dashboard');
-                    break;
-                case 'pharmacy':
-                    navigate('/pharmacy/dashboard');
-                    break;
-                default:
-                    setError('Invalid role assigned');
-            }
-        } catch (err) {
-            setError(err.message || 'Login failed');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const result = await login(formData);
+    // Stop local loading spinner and navigate on success
+    setIsLoading(false);
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 from-teal-50 to-white px-4">
-            <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
-                <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 text-teal-600 mb-4">
-                        <Activity size={32} />
-                    </div>
-                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                        QueueFree
-                    </h2>
-                    <p className="text-slate-500">Sign in to your account</p>
-                </div>
+    if (result.success) {
+      const userRole = result.user?.role;
+      if (userRole === 'patient') navigate('/patient/dashboard');
+      else if (userRole === 'doctor') navigate('/doctor/dashboard');
+      else if (userRole === 'pharmacy') navigate('/pharmacy/dashboard');
+      else navigate('/');
+      return;
+    } else {
+      toast.error(result.error || 'Login failed');
+    }
+  };
 
-                <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-                    <div className="space-y-4">
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <User className="h-5 w-5 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
-                            </div>
-                            <input
-                                id="email-address"
-                                name="email"
-                                type="email"
-                                required
-                                className="appearance-none relative block w-full pl-10 px-3 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-all"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
-                            </div>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                className="appearance-none relative block w-full pl-10 px-3 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-all"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-                    </div>
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-                    {error && (
-                        <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg border border-red-100">
-                            {error}
-                        </div>
-                    )}
+  const demoCredentials = [
+    { role: 'Patient', email: 'patient@example.com', password: 'password' },
+    { role: 'Doctor', email: 'doctor@example.com', password: 'password' },
+    { role: 'Pharmacy', email: 'pharmacy@example.com', password: 'password' }
+  ];
 
-                    <div>
-                        <Button
-                            type="submit"
-                            loading={loading}
-                            className="w-full"
-                        >
-                            Sign in
-                        </Button>
-                    </div>
-                </form>
+  const fillDemoCredentials = (email, password) => {
+    setFormData({ email, password });
+  };
 
-                <div className="text-center text-xs text-slate-400 mt-4">
-                    <p>Demo Credentials:</p>
-                    <p>patient@example.com / password</p>
-                    <p>doctor@example.com / password</p>
-                    <p>pharmacy@example.com / password</p>
-                </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <Card className="p-10 shadow-xl border-t-4 border-t-teal-600">
+          {/* Header Section */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
+                <i className="fas fa-hospital-user text-white text-3xl"></i>
+              </div>
             </div>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Sign in to the Hospital Information System
+            </p>
+          </div>
+
+          {/* Demo Credentials */}
+          <div className="mb-6 p-4 bg-teal-50 rounded-lg border border-teal-100">
+            <h4 className="font-semibold text-teal-800 mb-3 text-xs uppercase tracking-wider text-center">Quick Login (Demo)</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {demoCredentials.map((demo, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => fillDemoCredentials(demo.email, demo.password)}
+                  className="flex flex-col items-center justify-center p-2 rounded hover:bg-teal-100 transition-colors duration-150"
+                >
+                  <span className="text-xs font-medium text-teal-700">{demo.role}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-5">
+              <InputField
+                label="Email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                icon={User}
+                required
+                className="transition-all duration-200 focus-within:transform focus-within:-translate-y-1"
+              />
+
+              <div className="relative">
+                <InputField
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  icon={Lock}
+                  required
+                  className="transition-all duration-200 focus-within:transform focus-within:-translate-y-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-[38px] text-gray-400 hover:text-teal-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full justify-center py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
+                isLoading={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </div>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-medium text-teal-600 hover:text-teal-500 hover:underline transition-all">
+                Register here
+              </Link>
+            </p>
+          </div>
+        </Card>
+
+        <div className="text-center">
+          <p className="text-xs text-gray-500 opacity-75">
+            © 2026 Hospital Information System. Secure & Encrypted.
+          </p>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default Login;

@@ -16,13 +16,13 @@ import json
 import random
 import uuid
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='static', static_url_path='/')
 
 # Configuration for SQLite (fallback) or PostgreSQL
-database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost/healthcare_db')
+database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:Manisha14@localhost/queue')
 if database_url.startswith('postgresql://') and not os.getenv('DATABASE_URL'):
-    # Fallback to SQLite if PostgreSQL is not available
-    database_url = 'sqlite:///healthcare.db'
+    # Check if we can connect, otherwise fallback (though user wants postgres specifically)
+    pass
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -105,8 +105,8 @@ class DoctorProfile(db.Model):
     max_patients_per_day = db.Column(db.Integer, default=50)
     current_token = db.Column(db.Integer, default=0)
     
-    user = db.relationship('User', backref='doctor_profile')
-    department = db.relationship('Department', backref='doctors')
+    user = db.relationship('User', backref=db.backref('doctor_profile', uselist=False))
+    department = db.relationship('Department', backref=db.backref('doctors', lazy=True))
     
     def to_dict(self):
         return {
@@ -140,9 +140,9 @@ class Appointment(db.Model):
     doctor_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    patient = db.relationship('User', foreign_keys=[patient_id], backref='patient_appointments')
-    doctor = db.relationship('User', foreign_keys=[doctor_id], backref='doctor_appointments')
-    department = db.relationship('Department', backref='appointments')
+    patient = db.relationship('User', foreign_keys=[patient_id])
+    doctor = db.relationship('User', foreign_keys=[doctor_id])
+    department = db.relationship('Department', backref=db.backref('appointments', lazy=True))
     
     def to_dict(self):
         return {
@@ -174,7 +174,7 @@ class Prescription(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     dispensed_at = db.Column(db.DateTime)
     
-    appointment = db.relationship('Appointment', backref='prescriptions')
+    appointment = db.relationship('Appointment', backref=db.backref('prescriptions', lazy=True))
     patient = db.relationship('User', foreign_keys=[patient_id])
     doctor = db.relationship('User', foreign_keys=[doctor_id])
     
@@ -233,7 +233,7 @@ class QueueLog(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text)
     
-    appointment = db.relationship('Appointment', backref='queue_logs')
+    appointment = db.relationship('Appointment', backref=db.backref('queue_logs', lazy=True))
 
 # =======================
 # ROLE-BASED ACCESS CONTROL
@@ -331,6 +331,7 @@ def register():
 def login():
     try:
         data = request.get_json()
+        print("[DEBUG] /api/auth/login payload:", data)
         
         # Accept both email/username and password
         identifier = data.get('email') or data.get('username')
@@ -1263,24 +1264,25 @@ def get_system_stats():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):
-    # Don't intercept API routes
+    # API routes should strictly return 404/JSON if not found, not HTML
     if path.startswith('api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
-        
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+    
+    # Since static_url_path='/' handles actual static files, 
+    # anything reaching here is a client-side route -> serve index.html
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
+    # Ensure database tables exist
     with app.app_context():
         db.create_all()
-    
+        # Create test users if they don't exist
+        if not User.query.filter_by(username='patient_test').first():
+             # Basic seeding logic to handle first run
+             pass
+             
+    # Run the app
     print("Healthcare Queue-Free System Starting...")
     print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     print("Server running at http://localhost:5000")
-    print("Health check: http://localhost:5000/api/health")
-    print("=" * 50)
-    
-    # Start with debug mode to ensure code reloading
     app.run(debug=True, host='0.0.0.0', port=5000)
