@@ -1,25 +1,34 @@
 # QueueFree Appointment System
 
- A modern, queue-less appointment management system designed for Patients, Doctors, and Pharmacies. Built with a Frontend-First approach using React and a robust FastAPI backend.
+A modern, queue-less appointment management system designed for Patients, Doctors, and Pharmacies. Built with a Frontend-First approach using React and a robust FastAPI backend.
 
 ## 🚀 Tech Stack
 
 ### Frontend
 - **Framework:** React (Vite)
 - **Styling:** Tailwind CSS
+- **Components:** Custom Reusable UI Components
 - **Icons:** Lucide React
 - **Routing:** React Router DOM
+- **State Management:** React Context API
+- **Notifications:** React Hot Toast
+- **Real-time:** Socket.io Client
 
 ### Backend
 - **Framework:** FastAPI (Python)
 - **Database:** PostgreSQL
 - **ORM:** SQLAlchemy
-- **Authentication:** JWT (Planned)
+- **Authentication:** JWT
+- **Real-time:** Socket.io (Python-SocketIO)
 
 ## 📂 Project Structure
 
 ```
 /frontend    -> React Application
+  /src
+    /components  -> Reusable UI components
+    /pages       -> Application pages (Dashboards, Login, Register)
+    /utils       -> API and Socket utilities
 /backend     -> FastAPI Application
 ```
 
@@ -46,10 +55,21 @@ uvicorn app.main:app --reload
 API runs on: `http://localhost:8000`
 
 ## ✨ Features
-- **Patient Portal:** Search doctors, book appointments, view live queue status.
-- **Doctor Portal:** Manage patient queue, call next patient, complete consultations.
-- **Pharmacy Portal:** View and dispense prescriptions.
-- **Real-time Updates:** (Planned with WebSockets)
+
+- **Patient Portal:** 
+    - Search doctors by department
+    - Book appointments
+    - View live queue status and wait times
+    - Access digital prescriptions
+- **Doctor Portal:** 
+    - Manage patient queue
+    - Call next patient
+    - Complete consultations with digital prescriptions
+- **Pharmacy Portal:** 
+    - View incoming prescriptions
+    - Update prescription status (Preparing, Ready, Dispensed)
+    - Manage medicine inventory and stock alerts
+- **Real-time Updates:** Live queue position and status updates via WebSockets
 
 ## 📝 License
 This project is open-source and available under the MIT License.
