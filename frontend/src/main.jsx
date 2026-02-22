@@ -10,6 +10,7 @@ import PatientDashboard from './pages/PatientDashboard'
 import DoctorDashboard from './pages/DoctorDashboard'
 import PharmacyDashboard from './pages/PharmacyDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import Register from './pages/Register'
 
 const router = createBrowserRouter(
   [
@@ -18,6 +19,7 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { index: true, element: <Login /> },
+        { path: 'register', element: <Register /> },
         {
           path: 'patient/dashboard',
           element: (

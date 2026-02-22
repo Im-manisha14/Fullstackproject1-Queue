@@ -45,6 +45,7 @@ const Login = () => {
     });
   };
 
+  // Demo credentials for quick testing - keys match backend seed_db.py
   const demoCredentials = [
     { role: 'Patient', email: 'patient@example.com', password: 'password' },
     { role: 'Doctor', email: 'doctor@example.com', password: 'password' },

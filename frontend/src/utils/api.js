@@ -37,71 +37,67 @@ api.interceptors.response.use(
   }
 );
 
+// Helper: ensure data is always an array, handles nested keys
+const ensureArray = (data, ...keys) => {
+  if (Array.isArray(data)) return data;
+  // Try common nested keys like { doctors: [...] }, { appointments: [...] }, etc.
+  for (const key of keys) {
+    if (data && Array.isArray(data[key])) return data[key];
+  }
+  // Fallback - check any array-valued key
+  if (data && typeof data === 'object') {
+    for (const val of Object.values(data)) {
+      if (Array.isArray(val)) return val;
+    }
+  }
+  console.warn('[API] Expected array but got:', data);
+  return [];
+};
+
 // Authentication APIs
 export const authAPI = {
-  // Backend: POST -> /api/login
-  login: (credentials) => api.post('/api/login', credentials),
-  // Backend: POST -> /api/register
-  register: (userData) => api.post('/api/register', userData),
-  // Missing in backend, stubbing for now
+  login: (credentials) => api.post('/api/auth/login', credentials),
+  register: (userData) => api.post('/api/auth/register', userData),
   getProfile: () => Promise.resolve({ data: JSON.parse(localStorage.getItem('user') || '{}') }),
 };
 
 // Patient APIs
 export const patientAPI = {
-  // Missing in backend, stubbing
-  getDepartments: () => Promise.resolve({
-    data: [
-      { id: 'Cardiology', name: 'Cardiology' },
-      { id: 'Dermatology', name: 'Dermatology' },
-      { id: 'General', name: 'General Medicine' }
-    ]
-  }),
-  // Backend: @router.get("/doctors") -> /api/doctors
-  getDoctors: (departmentId) => api.get('/api/doctors'), // Backend returns all doctors
-  // Backend: @router.post("/appointments") -> /api/appointments
+  getDepartments: () => api.get('/api/departments'),
+  getDoctors: (departmentId) => api.get(`/api/doctors${departmentId ? `?department_id=${departmentId}` : ''}`),
   bookAppointment: (data) => api.post('/api/appointments', data),
-  // Missing in backend (get patient's appointments), checking /api/appointments might need filter?
-  // Current backend has no "my appointments" endpoint. 
-  getAppointments: () => Promise.resolve({ data: [] }),
-  // Missing
-  getQueueStatus: (appointmentId) => Promise.resolve({ data: { queue_position: 1, estimated_wait_time: 15, current_token: 1 } }),
-  // Missing
-  getPrescriptions: () => Promise.resolve({ data: [] }),
+  getAppointments: () => api.get('/api/patient/appointments'),
+  getQueueStatus: (appointmentId) => api.get(`/api/patient/queue-status/${appointmentId}`),
+  getPrescriptions: () => api.get('/api/patient/prescriptions'),
 };
 
 // Doctor APIs
 export const doctorAPI = {
-  getProfile: () => Promise.resolve({ data: {} }),
-  updateProfile: (data) => Promise.resolve({ data: {} }),
-  // Backend: @router.get("/queue") -> /api/queue
-  getQueue: (date) => api.get('/api/queue'),
-  getAppointments: (date) => api.get('/api/queue'), // Reusing queue for now
-  callNext: () => Promise.resolve({ data: {} }),
-  completeConsultation: (data) => Promise.resolve({ data: {} }),
-  getDailySummary: (date) => Promise.resolve({ data: {} }),
+  getProfile: () => api.get('/api/doctor/profile'),
+  updateProfile: (data) => api.put('/api/doctor/profile', data),
+  getQueue: (id) => api.get(`/api/queue/${id}`),
+  callNext: () => api.post('/api/queue/next'),
+  getDailySummary: (date) => api.get(`/api/doctor/daily-summary?date=${date}`),
+  createPrescription: (data) => api.post('/api/prescriptions', data),
+  // Add method to update appointment status (for completing consultation)
+  updateAppointmentStatus: (id, status) => api.put(`/api/appointments/${id}`, { status }),
 };
 
 // Pharmacy APIs
 export const pharmacyAPI = {
-  // Backend: @router.get("/prescriptions") -> /api/prescriptions
-  getPrescriptions: (status) => api.get('/api/prescriptions'),
-  // Backend: @router.put("/appointments/{id}/status") -> /api/appointments/{id}/status
-  // Note: Backend updates appointment status, not prescription status specifically?
-  // Checking api.py: update_status updates Appointment.status. 
-  // Pharmacy probably needs to update Prescription status. 
-  // Prescriptions table exists. But no endpoint to update it?
-  // Stubbing for now to prevent crash.
-  updatePrescriptionStatus: (prescriptionId, data) => Promise.resolve({ data: {} }),
-  getMedicines: () => Promise.resolve({ data: [] }),
-  addMedicine: (data) => Promise.resolve({ data: {} }),
-  getLowStock: () => Promise.resolve({ data: [] }),
+  getPrescriptions: (status) => api.get(`/api/pharmacy/prescriptions?status=${status || 'all'}`),
+  updatePrescriptionStatus: (id, data) => api.put(`/api/pharmacy/prescriptions/${id}/status`, data),
+  getMedicines: () => api.get('/api/pharmacy/medicines'),
+  getLowStock: () => api.get('/api/pharmacy/low-stock'),
+  getStats: () => api.get('/api/stats'),
 };
 
 // Utility APIs
 export const utilAPI = {
-  initializeDB: () => Promise.resolve({ data: {} }),
-  getStats: () => Promise.resolve({ data: {} }),
+  getStats: () => api.get('/api/stats'),
 };
+
+// Export the helper
+export { ensureArray };
 
 export default api;
