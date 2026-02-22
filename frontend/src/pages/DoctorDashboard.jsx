@@ -91,6 +91,19 @@ const DoctorDashboard = () => {
     }
   };
 
+  // Helper to sync consultation state with queue status
+  useEffect(() => {
+    if (queue.length > 0) {
+      const activeConsultation = queue.find(appt => appt.status === 'consulting');
+      if (activeConsultation && !consultationForm.appointment_id) {
+        setConsultationForm(prev => ({
+          ...prev,
+          appointment_id: activeConsultation.id
+        }));
+      }
+    }
+  }, [queue, consultationForm.appointment_id]);
+
   const loadAppointments = async () => {
     try {
       // Reuse getQueue for now as appointments list is similar
