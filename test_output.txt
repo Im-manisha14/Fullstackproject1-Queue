@@ -1,0 +1,42 @@
+﻿python : Traceback (most 
+recent call last):
+At line:1 char:21
++ chcp 65001 > $null; python 
+backend/tests/api_test.py 
+2>&1 | Out-File  ...
++                     ~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (Traceback  
+   (most recent call last):   
+ :String) [], RemoteExcept    
+ion
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+  File "C:\Fullstackproject-Qu
+eueFreeAppoinment\backend\test
+s\api_test.py", line 303, in 
+<module>
+    run_all_tests()
+  File "C:\Fullstackproject-Qu
+eueFreeAppoinment\backend\test
+s\api_test.py", line 246, in 
+run_all_tests
+    print("\n" + "\u2588" * 
+70)
+  File "C:\Program Files\Windo
+wsApps\PythonSoftwareFoundatio
+n.Python.3.12_3.12.2800.0_x64_
+_qbz5n2kfra8p0\Lib\encodings\c
+p1252.py", line 19, in encode
+    return codecs.charmap_enco
+de(input,self.errors,encoding_
+table)[0]
+           ^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^
+UnicodeEncodeError: 'charmap' 
+codec can't encode characters 
+in position 2-71: character 
+maps to <undefined>

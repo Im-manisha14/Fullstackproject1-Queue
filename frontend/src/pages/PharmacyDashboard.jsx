@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { pharmacyAPI } from '../utils/api';
+import { pharmacyAPI, ensureArray } from '../utils/api';
 import socketService from '../utils/socket';
 import toast from 'react-hot-toast';
 import {
@@ -56,7 +56,7 @@ const PharmacyDashboard = () => {
   const loadPrescriptions = async () => {
     try {
       const response = await pharmacyAPI.getPrescriptions(statusFilter === 'all' ? '' : statusFilter);
-      setPrescriptions(response.data);
+      setPrescriptions(ensureArray(response.data, 'prescriptions'));
     } catch (error) {
       // toast.error('Failed to load prescriptions');
     }
@@ -65,7 +65,7 @@ const PharmacyDashboard = () => {
   const loadMedicines = async () => {
     try {
       const response = await pharmacyAPI.getMedicines();
-      setMedicines(response.data);
+      setMedicines(ensureArray(response.data, 'medicines'));
     } catch (error) {
       // toast.error('Failed to load medicines');
     }
@@ -74,7 +74,7 @@ const PharmacyDashboard = () => {
   const loadLowStock = async () => {
     try {
       const response = await pharmacyAPI.getLowStock();
-      setLowStock(response.data);
+      setLowStock(ensureArray(response.data, 'medicines'));
     } catch (error) {
       // toast.error('Failed to load low stock');
     }
@@ -82,6 +82,7 @@ const PharmacyDashboard = () => {
 
   const updatePrescriptionStatus = async (prescriptionId, newStatus, notes = '') => {
     try {
+      // API expects { status, pharmacy_notes } or similar
       await pharmacyAPI.updatePrescriptionStatus(prescriptionId, {
         status: newStatus,
         pharmacy_notes: notes
@@ -90,6 +91,7 @@ const PharmacyDashboard = () => {
       toast.success(`Prescription status updated to ${newStatus}`);
       await loadPrescriptions();
     } catch (error) {
+      console.error('Failed to update status', error);
       toast.error('Failed to update prescription status');
     }
   };
@@ -217,7 +219,7 @@ const PharmacyDashboard = () => {
                   <p className="text-gray-600">{formatDate(prescription.created_at)}</p>
                   {prescription.pickup_token && (
                     <p className="text-sm text-teal-600 font-medium mt-1">
-                      Pickup Token: <strong>#{prescription.pickup_token}</strong>
+                      Pickup Token: <strong>{prescription.pickup_token}</strong>
                     </p>
                   )}
                 </div>
@@ -227,16 +229,20 @@ const PharmacyDashboard = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <h4 className="font-semibold mb-3">Prescribed Medicines:</h4>
                 <div className="space-y-2">
-                  {prescription.prescription_data.map((medicine, index) => (
-                    <div key={index} className="flex justify-between items-start bg-white p-2 rounded shadow-sm">
-                      <div>
-                        <p className="font-medium">{medicine.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {medicine.dosage} • {medicine.frequency} • {medicine.duration}
-                        </p>
+                  {Array.isArray(prescription.prescription_data) ? (
+                    prescription.prescription_data.map((medicine, index) => (
+                      <div key={index} className="flex justify-between items-start bg-white p-2 rounded shadow-sm">
+                        <div>
+                          <p className="font-medium">{medicine.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {medicine.dosage} • {medicine.frequency} • {medicine.duration}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">No prescription data available.</div>
+                  )}
                 </div>
               </div>
 
@@ -347,9 +353,9 @@ const PharmacyDashboard = () => {
             <Card key={medicine.id} className="hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold text-lg text-gray-900">{medicine.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${medicine.stock_quantity <= medicine.reorder_level
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-teal-100 text-teal-800'
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${medicine.stock_quantity <= medicine.reorder_level
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-teal-100 text-teal-800'
                   }`}>
                   Stock: {medicine.stock_quantity}
                 </span>
@@ -432,8 +438,8 @@ const PharmacyDashboard = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                      ? 'bg-teal-50 text-teal-700 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-teal-50 text-teal-700 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />

@@ -2,20 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Core Brand Colors */
+  --color-primary: #0D9488;
+  /* Teal-600 */
+  --color-primary-dark: #0F766E;
+  /* Teal-700 */
+  --color-primary-light: #F0FDFA;
+  /* Teal-50 */
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+
+  /* Neutral Colors */
+  --color-bg: #F8FAFC;
+  /* Slate-50 */
+  --color-card: #FFFFFF;
+  --color-text-main: #1E293B;
+  /* Slate-800 */
+  --color-text-muted: #64748B;
+  /* Slate-500 */
+  --color-border: #E2E8F0;
+  /* Slate-200 */
+
+  /* Design Tokens */
+  --radius: 0.75rem;
+  /* 12px */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  --transition: all 0.2s ease-in-out;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
 
 @layer components {
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #26C6DA;
+    background: #CBD5E1;
     border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+
+  /* Utility Classes for Design Tokens */
+  .card-base {
+    background-color: var(--color-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--color-border);
+  }
+
+  .btn-transition {
+    transition: var(--transition);
   }
 }

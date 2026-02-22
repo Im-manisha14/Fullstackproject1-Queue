@@ -16,26 +16,17 @@ import json
 import random
 import uuid
 
-# Resolve static folder path absolutely
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
+app = Flask(__name__, static_folder='static', static_url_path='/')
 
-app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='/static_assets')
+# Configuration for SQLite (fallback) or PostgreSQL
+database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:Manisha14@localhost/queue')
+if database_url.startswith('postgresql://') and not os.getenv('DATABASE_URL'):
+    # Check if we can connect, otherwise fallback (though user wants postgres specifically)
+    pass
 
-# Database Configuration
-DATABASE_URL = os.getenv(
-    'DATABASE_URL',
-    'postgresql://postgres:Manisha14@localhost:5432/queue'
-)
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-}
-
-# JWT Configuration
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'healthcare-queue-secret-key-2026')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'healthcare-socket-secret-2026')
 
@@ -375,11 +366,6 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Alias for /api/auth/login to support legacy frontend calls
-@app.route('/api/login', methods=['POST'])
-def login_alias():
-    return login()
-
 @app.route('/api/auth/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
@@ -402,16 +388,6 @@ def get_profile():
 @app.route('/api/patient/departments', methods=['GET'])
 @role_required(['patient'])
 def get_departments():
-    try:
-        departments = Department.query.filter_by(is_active=True).all()
-        return jsonify([dept.to_dict() for dept in departments]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Public departments endpoint (accessible to all authenticated roles)
-@app.route('/api/departments', methods=['GET'])
-@jwt_required()
-def get_all_departments():
     try:
         departments = Department.query.filter_by(is_active=True).all()
         return jsonify([dept.to_dict() for dept in departments]), 200
@@ -443,28 +419,24 @@ def get_doctors():
 
 # Frontend expects /api/doctors endpoint
 @app.route('/api/doctors', methods=['GET'])
-@jwt_required()
+@role_required(['patient'])
 def get_all_doctors():
     try:
-        department_id = request.args.get('department_id')
         query = db.session.query(DoctorProfile, User, Department).join(User).join(Department)
-        if department_id:
-            query = query.filter(DoctorProfile.department_id == int(department_id))
         doctors = query.all()
         
         result = []
         for doctor_profile, user, department in doctors:
             result.append({
                 'id': doctor_profile.id,
-                'doctor_name': user.full_name,
+                'name': user.full_name,
                 'specialization': doctor_profile.specialization,
                 'department': department.name,
-                'department_name': department.name,
                 'consultation_fee': doctor_profile.consultation_fee,
                 'current_token': doctor_profile.current_token
             })
         
-        return jsonify(result), 200
+        return jsonify({'doctors': result}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -559,29 +531,27 @@ def create_appointment():
         current_user_id = get_jwt_identity()
         data = request.get_json()
         
-        required_fields = ['doctor_id', 'appointment_date']
+        required_fields = ['doctor_id', 'appointment_date', 'appointment_time', 'symptoms']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'{field} is required'}), 400
         
         # Get doctor profile to get department  
-        # Frontend sends doctor_id which corresponds to DoctorProfile.id
         doctor_profile = DoctorProfile.query.get(data['doctor_id'])
         if not doctor_profile:
             return jsonify({'error': 'Doctor not found'}), 404
         
-        # Parse appointment date
+        # Parse appointment date and time
         appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
-        appointment_time = datetime.now().time()  # Use current time
+        appointment_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
         
-        # Generate token number for the day using MAX to avoid duplicates
-        from sqlalchemy import func
-        max_token = db.session.query(func.max(Appointment.token_number)).filter(
-            Appointment.doctor_id == doctor_profile.user_id,
-            Appointment.appointment_date == appointment_date
-        ).scalar()
+        # Generate token number for the day
+        daily_appointments = Appointment.query.filter_by(
+            doctor_id=doctor_profile.user_id,
+            appointment_date=appointment_date
+        ).count()
         
-        token_number = (max_token or 0) + 1
+        token_number = daily_appointments + 1
         
         # Create appointment
         appointment = Appointment(
@@ -591,28 +561,25 @@ def create_appointment():
             appointment_date=appointment_date,
             appointment_time=appointment_time,
             token_number=token_number,
-            symptoms=data.get('symptoms', data.get('reason', '')),
-            priority=data.get('priority', 'normal'),
-            status='in_queue'
+            symptoms=data['symptoms'],
+            priority=data.get('priority', 'normal')
         )
         
         db.session.add(appointment)
         db.session.commit()
         
         return jsonify({
-            'success': True,
-            'data': {
-                'appointment_id': appointment.id,
-                'queue_token': token_number,
-                'appointment_date': str(appointment_date),
-                'status': 'in_queue'
-            },
-            'message': 'Appointment booked successfully'
+            'message': 'Appointment booked successfully',
+            'appointment_id': appointment.id,
+            'token_number': token_number,
+            'status': 'booked',
+            'appointment_date': data['appointment_date'],
+            'appointment_time': data['appointment_time']
         }), 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'Booking failed: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/patient/appointments', methods=['GET'])
 @role_required(['patient'])
@@ -641,98 +608,6 @@ def get_patient_appointments():
         
         return jsonify(result), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/queue/<int:doctor_id>', methods=['GET'])
-@role_required(['doctor', 'receptionist'])
-def get_doctor_queue(doctor_id):
-    try:
-        current_date = date.today()
-        
-        # Get active appointments
-        appointments = Appointment.query.filter(
-            Appointment.doctor_id == doctor_id,
-            Appointment.appointment_date == current_date,
-            Appointment.status.in_(['in_queue', 'consulting'])
-        ).order_by(Appointment.token_number).all()
-        
-        result = []
-        for appt in appointments:
-            patient = User.query.get(appt.patient_id)
-            result.append({
-                'id': appt.id,
-                'patient_name': patient.full_name if patient else 'Unknown',
-                'token_number': appt.token_number,
-                'status': appt.status,
-                'symptoms': appt.symptoms,
-                'appointment_time': str(appt.appointment_time)
-            })
-            
-        return jsonify(result), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/queue/next', methods=['POST'])
-@role_required(['doctor'])
-def next_patient():
-    try:
-        doctor_user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        # Allow checking queue for other doctors if admin/reception (optional)
-        # For now assume doctor manages their own queue
-        
-        current_date = date.today()
-        
-        # 1. Finish current patient
-        current_appt = Appointment.query.filter_by(
-            doctor_id=doctor_user_id,
-            appointment_date=current_date,
-            status='consulting'
-        ).first()
-        
-        if current_appt:
-            current_appt.status = 'completed'
-            current_appt.actual_end_time = datetime.now()
-            db.session.add(current_appt)
-        
-        # 2. Get next patient
-        next_appt = Appointment.query.filter(
-            Appointment.doctor_id == doctor_user_id,
-            Appointment.appointment_date == current_date,
-            Appointment.status == 'in_queue'
-        ).order_by(Appointment.token_number).first()
-        
-        if next_appt:
-            next_appt.status = 'consulting'
-            next_appt.actual_start_time = datetime.now()
-            db.session.add(next_appt)
-            
-            # Update doctor's current token
-            profile = DoctorProfile.query.filter_by(user_id=doctor_user_id).first()
-            if profile:
-                profile.current_token = next_appt.token_number
-                db.session.add(profile)
-            
-            db.session.commit()
-            
-            # Return next patient details
-            patient = User.query.get(next_appt.patient_id)
-            return jsonify({
-                'message': 'Moved to next patient',
-                'current_patient': {
-                    'id': next_appt.id,
-                    'name': patient.full_name if patient else 'Unknown',
-                    'token': next_appt.token_number,
-                    'symptoms': next_appt.symptoms
-                }
-            }), 200
-        
-        db.session.commit()
-        return jsonify({'message': 'No more patients in queue', 'current_patient': None}), 200
-        
-    except Exception as e:
-        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/patient/queue-status/<int:appointment_id>', methods=['GET'])
@@ -851,7 +726,7 @@ def get_doctor_appointments():
 
 @app.route('/api/doctor/queue', methods=['GET'])
 @role_required(['doctor'])
-def get_doctor_queue_v1():
+def get_doctor_queue():
     try:
         current_user_id = get_jwt_identity()
         date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
@@ -1253,24 +1128,6 @@ def get_low_stock_medicines():
 #             leave_room('pharmacy')
 
 # =======================
-# REGISTER BLUEPRINTS
-# =======================
-# DISABLED: Service layer refactor deferred to Phase-5
-# from appointments.routes import appointments_bp
-# app.register_blueprint(appointments_bp, url_prefix='/api/appointments')
-
-# =======================
-# DEBUG: Print all registered routes
-# =======================
-print("\n" + "=" * 60)
-print("REGISTERED ROUTES:")
-print("=" * 60)
-for rule in app.url_map.iter_rules():
-    if '/api/' in str(rule):
-        print(f"  {rule.rule} -> {rule.endpoint} [{', '.join(rule.methods - {'HEAD', 'OPTIONS'})}]")
-print("=" * 60 + "\n")
-
-# =======================
 # UTILITY ROUTES
 # =======================
 
@@ -1407,16 +1264,12 @@ def get_system_stats():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):
-    # Security: check for api routes first
+    # API routes should strictly return 404/JSON if not found, not HTML
     if path.startswith('api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
     
-    # Check if the requested path is an actual file in the static directory
-    static_file_path = os.path.join(app.static_folder, path)
-    if path and os.path.isfile(static_file_path):
-        return send_from_directory(app.static_folder, path)
-        
-    # Default to index.html for all other routes (SPA fallback)
+    # Since static_url_path='/' handles actual static files, 
+    # anything reaching here is a client-side route -> serve index.html
     return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':

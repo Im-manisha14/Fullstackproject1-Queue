@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { doctorAPI } from '../utils/api';
+import { doctorAPI, ensureArray } from '../utils/api';
 import socketService from '../utils/socket';
 import toast from 'react-hot-toast';
 import {
@@ -49,7 +49,7 @@ const DoctorDashboard = () => {
 
   const setupSocketListeners = () => {
     socketService.on('patient_called', (data) => {
-      toast.success(`Patient called: Token #${data.token_number}`);
+      toast.success(`Patient called: Token ${data.token_number}`);
       loadQueue();
     });
   };
@@ -80,19 +80,26 @@ const DoctorDashboard = () => {
 
   const loadQueue = async () => {
     try {
-      const response = await doctorAPI.getQueue(selectedDate);
-      setQueue(response.data);
+      // Pass user.id to get queue for specific doctor
+      if (user?.id) {
+        const response = await doctorAPI.getQueue(user.id);
+        setQueue(ensureArray(response.data, 'queue', 'appointments'));
+      }
     } catch (error) {
-      toast.error('Failed to load queue');
+      console.error('Failed to load queue', error);
+      // toast.error('Failed to load queue');
     }
   };
 
   const loadAppointments = async () => {
     try {
-      const response = await doctorAPI.getAppointments(selectedDate);
-      setAppointments(response.data);
+      // Reuse getQueue for now as appointments list is similar
+      if (user?.id) {
+        const response = await doctorAPI.getQueue(user.id);
+        setAppointments(ensureArray(response.data, 'queue', 'appointments'));
+      }
     } catch (error) {
-      toast.error('Failed to load appointments');
+      // toast.error('Failed to load appointments');
     }
   };
 
@@ -104,7 +111,7 @@ const DoctorDashboard = () => {
 
       // Set up consultation form for the called patient
       setConsultationForm({
-        appointment_id: response.data.appointment.id,
+        appointment_id: response.data.current_patient.id, // Ensure correct mapping
         doctor_notes: '',
         prescription_data: []
       });
@@ -119,19 +126,24 @@ const DoctorDashboard = () => {
   };
 
   const addMedicineToPrescription = () => {
-    if (medicineForm.name && medicineForm.dosage) {
-      setConsultationForm(prev => ({
-        ...prev,
-        prescription_data: [...prev.prescription_data, { ...medicineForm }]
-      }));
-
-      setMedicineForm({
-        name: '',
-        dosage: '',
-        frequency: '',
-        duration: ''
-      });
+    if (!medicineForm.name) {
+      toast.error('Please enter a medicine name');
+      return;
     }
+
+    setConsultationForm(prev => ({
+      ...prev,
+      prescription_data: [...prev.prescription_data, { ...medicineForm }]
+    }));
+
+    // Reset medicine form
+    setMedicineForm({
+      name: '',
+      dosage: '',
+      frequency: '',
+      duration: ''
+    });
+    toast.success('Medicine added to prescription');
   };
 
   const removeMedicineFromPrescription = (index) => {
@@ -146,8 +158,21 @@ const DoctorDashboard = () => {
 
     try {
       setLoading(true);
-      await doctorAPI.completeConsultation(consultationForm);
-      toast.success('Consultation completed successfully');
+
+      // 1. Create prescription if medicines exist
+      if (consultationForm.prescription_data.length > 0) {
+        await doctorAPI.createPrescription({
+          appointment_id: consultationForm.appointment_id,
+          medicines: consultationForm.prescription_data,
+          notes: consultationForm.doctor_notes
+        });
+        toast.success('Prescription created');
+      }
+
+      // 2. Complete consultation / update status
+      await doctorAPI.updateAppointmentStatus(consultationForm.appointment_id, 'completed');
+
+      toast.success('Consultation completed');
 
       // Reset form
       setConsultationForm({
@@ -159,6 +184,7 @@ const DoctorDashboard = () => {
       await Promise.all([loadQueue(), loadAppointments()]);
 
     } catch (error) {
+      console.error(error);
       toast.error('Failed to complete consultation');
     } finally {
       setLoading(false);
@@ -221,8 +247,11 @@ const DoctorDashboard = () => {
           <Card className="border-l-4 border-orange-500 bg-orange-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-orange-700">Currently Consulting</h3>
-              <div className="text-3xl font-bold text-orange-600">
-                #{consultingPatient.token_number}
+              <div>
+                <p className="text-sm font-medium text-teal-600 mb-1">Current Token</p>
+                <div className="text-4xl font-extrabold text-teal-700">
+                  {consultingPatient.token_number}
+                </div>
               </div>
             </div>
 
@@ -361,8 +390,8 @@ const DoctorDashboard = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-teal-600">
-                      #{appointment.token_number}
+                    <div className="text-xl font-bold text-gray-900 border-2 border-dashed border-teal-200 w-12 h-12 rounded-lg flex items-center justify-center bg-teal-50">
+                      {appointment.token_number}
                     </div>
                     <div className="mt-1">
                       {getStatusBadge(appointment.status)}
@@ -485,8 +514,8 @@ const DoctorDashboard = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                      ? 'bg-teal-50 text-teal-700 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-teal-50 text-teal-700 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />
