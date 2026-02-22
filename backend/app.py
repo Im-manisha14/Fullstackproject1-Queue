@@ -786,7 +786,7 @@ def get_patient_prescriptions():
 # DOCTOR ROUTES
 # =======================
 
-@app.route('/api/doctor/profile', methods=['GET', 'POST'])
+@app.route('/api/doctor/profile', methods=['GET', 'POST', 'PUT'])
 @role_required(['doctor'])
 def doctor_profile():
     try:
