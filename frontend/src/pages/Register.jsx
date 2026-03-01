@@ -1,277 +1,119 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
-import Button from '../components/common/Button';
-import InputField from '../components/common/InputField';
-import Card from '../components/common/Card';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    full_name: '',
-    phone: '',
-    role: 'patient'
+    username: '', email: '', password: '', confirmPassword: '',
+    full_name: '', phone: '', role: 'patient'
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
+    setError('');
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
     setIsLoading(true);
-
     const { confirmPassword, ...registrationData } = formData;
     const result = await register(registrationData);
-
     if (result.success) {
-      // Redirect will be handled by the success toast
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 1500);
+      setSuccess('Registration successful! Redirecting to login...');
+      setTimeout(() => navigate('/'), 1500);
     } else {
+      setError(result.error || 'Registration failed');
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); setError(''); };
 
   const roles = [
-    { value: 'patient', label: 'Patient', description: 'Book appointments and track queue status' },
-    { value: 'doctor', label: 'Doctor', description: 'Manage consultations and create prescriptions' },
-    { value: 'pharmacy', label: 'Pharmacy', description: 'Handle prescriptions and manage inventory' }
+    { value: 'patient', label: 'Patient', icon: 'P' },
+    { value: 'doctor', label: 'Doctor', icon: 'D' },
+    { value: 'pharmacy', label: 'Pharmacy', icon: 'Rx' },
   ];
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-600 to-teal-800 items-center justify-center p-12">
-        <div className="max-w-md text-white">
-          <div className="flex items-center mb-8">
-            <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mr-4 backdrop-blur-sm border border-white/30">
-              <i className="fas fa-hospital-user text-2xl"></i>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">Hospital Information System</h1>
-              <p className="text-teal-200">Join Our Healthcare Network</p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Why Choose Our System?</h3>
-              <ul className="space-y-3">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-400 rounded-full mr-3"></div>
-                  <span className="text-teal-100">No more waiting in long queues</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-400 rounded-full mr-3"></div>
-                  <span className="text-teal-100">Real-time appointment tracking</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-400 rounded-full mr-3"></div>
-                  <span className="text-teal-100">Digital prescription management</span>
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-400 rounded-full mr-3"></div>
-                  <span className="text-teal-100">Secure and private healthcare data</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+    <div className="register-page">
+      <div className="register-card">
+        <div className="register-header">
+          <h1>Create Account</h1>
+          <p>Join the Queue-Free Healthcare System</p>
         </div>
-      </div>
-
-      {/* Right Side - Registration Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="max-w-md w-full">
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-teal-600 rounded-lg flex items-center justify-center mr-3">
-                <i className="fas fa-hospital-user text-white text-xl"></i>
-              </div>
-              <h1 className="text-2xl font-bold text-teal-600">Hospital Information System</h1>
-            </div>
-            <p className="text-gray-600">Create your account</p>
-          </div>
-
-          <Card className="p-8 shadow-xl border-t-4 border-t-teal-600">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p className="text-gray-600 mb-8">Join our healthcare network today</p>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Role Selection */}
-              <div>
-                <label className="form-label">Account Type</label>
-                <div className="grid grid-cols-1 gap-3">
-                  {roles.map((role) => (
-                    <label
-                      key={role.value}
-                      className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${formData.role === role.value
-                          ? 'border-teal-500 bg-teal-50'
-                          : 'border-gray-200 hover:border-teal-300'
-                        }`}
-                    >
-                      <input
-                        type="radio"
-                        name="role"
-                        value={role.value}
-                        checked={formData.role === role.value}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="flex items-start">
-                        <div className={`w-4 h-4 rounded-full border-2 mr-3 mt-0.5 ${formData.role === role.value
-                            ? 'border-teal-500 bg-teal-500'
-                            : 'border-gray-300'
-                          }`}>
-                          {formData.role === role.value && (
-                            <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{role.label}</h4>
-                          <p className="text-sm text-gray-600">{role.description}</p>
-                        </div>
-                      </div>
+        <div className="register-body">
+          {error && <div className="alert alert-error"><span className="alert-icon">!</span> {error}</div>}
+          {success && <div className="alert alert-success"><span className="alert-icon">v</span> {success}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Account Type</label>
+              <div className="role-selector">
+                {roles.map((r) => (
+                  <span key={r.value}>
+                    <input type="radio" id={
+ole_ + r.value} name="role" value={r.value}
+                      className="role-option" checked={formData.role === r.value} onChange={handleChange} />
+                    <label htmlFor={
+ole_ + r.value} className="role-label">
+                      <span className="role-icon">{r.icon}</span>{r.label}
                     </label>
-                  ))}
-                </div>
+                  </span>
+                ))}
               </div>
-
-              {/* Personal Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField
-                  label="Full Name"
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  placeholder="Your full name"
-                  icon={User}
-                  required
-                />
-
-                <InputField
-                  label="Phone"
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Your phone number"
-                  icon={Phone}
-                />
-              </div>
-
-              <InputField
-                label="Username"
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Choose a username"
-                icon={User}
-                required
-              />
-
-              <InputField
-                label="Email Address"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="your@email.com"
-                icon={Mail}
-                required
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <InputField
-                    label="Password"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Create password"
-                    icon={Lock}
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <InputField
-                    label="Confirm Password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    icon={Lock}
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full justify-center"
-                isLoading={isLoading}
-              >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-            </form>
-
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
-                Already have an account?{' '}
-                <Link to="/login" className="text-teal-600 hover:text-teal-700 font-semibold">
-                  Sign in here
-                </Link>
-              </p>
             </div>
-          </Card>
-
-          {/* Footer */}
-          <div className="text-center mt-8 text-sm text-gray-500">
-            <p>© 2026 Hospital Information System. Streamlined healthcare management.</p>
-          </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="full_name">Full Name</label>
+                <input id="full_name" type="text" name="full_name" className="form-control"
+                  placeholder="John Doe" value={formData.full_name} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <input id="username" type="text" name="username" className="form-control"
+                  placeholder="johndoe" value={formData.username} onChange={handleChange} required />
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <input id="email" type="email" name="email" className="form-control"
+                placeholder="john@example.com" value={formData.email} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="phone">Phone (optional)</label>
+              <input id="phone" type="tel" name="phone" className="form-control"
+                placeholder="+1234567890" value={formData.phone} onChange={handleChange} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div className="input-wrapper">
+                  <input id="password" type={showPassword ? 'text' : 'password'} name="password"
+                    className="form-control" placeholder="Min 8 chars" value={formData.password}
+                    onChange={handleChange} required />
+                  <button type="button" className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" type="password" name="confirmPassword" className="form-control"
+                  placeholder="Repeat password" value={formData.confirmPassword} onChange={handleChange} required />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+          <p style={{textAlign:'center',marginTop:'12px',fontSize:'13px',color:'#6b7280'}}>
+            Already have an account? <Link to="/">Sign in</Link>
+          </p>
         </div>
       </div>
     </div>

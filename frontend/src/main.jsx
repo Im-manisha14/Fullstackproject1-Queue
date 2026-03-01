@@ -1,16 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './App.css'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import PatientDashboard from './pages/PatientDashboard'
-import DoctorDashboard from './pages/DoctorDashboard'
+import DoctorControlPanel from './pages/DoctorControlPanel'
+import DoctorSelect from './pages/DoctorSelect'
 import PharmacyDashboard from './pages/PharmacyDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
-import Register from './pages/Register'
 
 const router = createBrowserRouter(
   [
@@ -32,9 +32,13 @@ const router = createBrowserRouter(
           path: 'doctor/dashboard',
           element: (
             <ProtectedRoute allowedRoles={["doctor"]}>
-              <DoctorDashboard />
+              <DoctorControlPanel />
             </ProtectedRoute>
           ),
+        },
+        {
+          path: 'doctor/select',
+          element: <DoctorSelect />,
         },
         {
           path: 'pharmacy/dashboard',

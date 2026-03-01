@@ -7,7 +7,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const location = useLocation();
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+        return (
+            <div className="loading-page">
+                <div className="loading-spinner dark"></div>
+                <p>Loading...</p>
+            </div>
+        );
     }
 
     if (!user) {
@@ -15,7 +20,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // Redirect to their appropriate dashboard if they try to access unauthorized route
         switch (user.role) {
             case 'patient': return <Navigate to="/patient/dashboard" replace />;
             case 'doctor': return <Navigate to="/doctor/dashboard" replace />;

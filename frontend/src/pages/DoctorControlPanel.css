@@ -1,0 +1,1189 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 PRODUCTION DOCTOR CONTROL PANEL - HOSPITAL SYSTEM
+   
+   Design Philosophy:
+   • Hospital control panel, not UI demo
+   • Authority over beauty
+   • Information density over whitespace
+   • Backend-controlled state, not frontend tricks
+   
+   Typography Discipline:
+   • 24px - Page titles
+   • 18px - Section headers  
+   • 14-16px - Body text
+   • 12px - Metadata
+   
+   Color System: Patient Portal Consistency
+   • Primary: #5B7C99 (Professional Blue)
+   • Background: #F7FAFC (Clean Gray)
+   • Secondary: #52B788 (Medical Green)
+   • Text: #2D3748 (Strong Dark)
+   
+═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Patient Portal Color Palette */
+  --dcp-primary: #5B7C99;
+  --dcp-primary-dark: #4A6B85;
+  --dcp-background: #F7FAFC;
+  --dcp-secondary: #52B788;
+  --dcp-text: #2D3748;
+  --dcp-text-light: #718096;
+  --dcp-surface: #FFFFFF;
+  --dcp-border: #E2E8F0;
+  
+  /* Status Colors */
+  --dcp-waiting: #3182CE;
+  --dcp-consulting: #D69E2E;
+  --dcp-completed: #68D391;
+  
+  /* Urgency Colors */
+  --dcp-urgent: #E53E3E;
+  --dcp-priority: #D69E2E;
+  --dcp-normal: #718096;
+  
+  /* Typography Scale */
+  --dcp-font-title: 24px;
+  --dcp-font-header: 18px;
+  --dcp-font-body: 16px;
+  --dcp-font-small: 14px;
+  --dcp-font-meta: 12px;
+  
+  /* Spacing Grid (16px base) */
+  --dcp-space-xs: 4px;
+  --dcp-space-sm: 8px;
+  --dcp-space-md: 16px;
+  --dcp-space-lg: 24px;
+  --dcp-space-xl: 32px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 BASE LAYOUT - PRODUCTION GRADE
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.doctor-control-panel {
+  min-height: 100vh;
+  background: var(--dcp-background);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--dcp-text);
+  font-size: var(--dcp-font-body);
+}
+
+/* Loading Overlay */
+.dcp-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(247, 250, 252, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dcp-space-md);
+  z-index: 1000;
+  font-size: var(--dcp-font-small);
+  font-weight: 600;
+  color: var(--dcp-text-light);
+}
+
+.dcp-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--dcp-border);
+  border-top: 3px solid var(--dcp-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 PRODUCTION HEADER - HOSPITAL IDENTITY
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.dcp-header {
+  background: var(--dcp-surface);
+  border-bottom: 2px solid var(--dcp-primary);
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+  box-shadow: 0 2px 8px rgba(91, 124, 153, 0.08);
+}
+
+.dcp-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dcp-doctor-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-md);
+}
+
+.dcp-doctor-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--dcp-primary) 0%, var(--dcp-primary-dark) 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: var(--dcp-font-header);
+  letter-spacing: -0.5px;
+}
+
+.dcp-doctor-name {
+  margin: 0;
+  font-size: var(--dcp-font-title);
+  font-weight: 700;
+  color: var(--dcp-text);
+  line-height: 1.2;
+}
+
+.dcp-doctor-specialty {
+  margin: 2px 0 0 0;
+  font-size: var(--dcp-font-small);
+  color: var(--dcp-text-light);
+  font-weight: 500;
+}
+
+.dcp-header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-lg);
+}
+
+.dcp-date-display {
+  font-size: var(--dcp-font-small);
+  font-weight: 600;
+  color: var(--dcp-text-light);
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  background: var(--dcp-background);
+  border-radius: 6px;
+  border: 1px solid var(--dcp-border);
+}
+
+.dcp-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-sm);
+  font-size: var(--dcp-font-meta);
+  font-weight: 700;
+  color: var(--dcp-secondary);
+  letter-spacing: 0.5px;
+}
+
+.dcp-live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--dcp-secondary);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+.dcp-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-sm);
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  background: transparent;
+  border: 1px solid var(--dcp-border);
+  border-radius: 6px;
+  color: var(--dcp-text-light);
+  font-size: var(--dcp-font-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-logout-btn:hover {
+  background: var(--dcp-background);
+  border-color: var(--dcp-primary);
+  color: var(--dcp-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 MAIN CONTENT - 40/60 SPLIT LAYOUT
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.dcp-main-content {
+  padding: var(--dcp-space-lg);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Messages */
+.dcp-message {
+  padding: var(--dcp-space-md);
+  border-radius: 6px;
+  margin-bottom: var(--dcp-space-md);
+  font-size: var(--dcp-font-small);
+  font-weight: 600;
+}
+
+.dcp-message-success {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  color: #166534;
+}
+
+.dcp-message-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+.dcp-content-grid {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: var(--dcp-space-lg);
+  height: calc(100vh - 140px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 LEFT PANEL (40%) - STRUCTURED QUEUE TABLE
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.dcp-queue-panel {
+  background: var(--dcp-surface);
+  border: 1px solid var(--dcp-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.dcp-panel-header {
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+  border-bottom: 1px solid var(--dcp-border);
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+}
+
+.dcp-panel-header h2 {
+  margin: 0 0 var(--dcp-space-sm) 0;
+  font-size: var(--dcp-font-header);
+  font-weight: 700;
+  color: var(--dcp-text);
+}
+
+.dcp-queue-stats {
+  display: flex;
+  gap: var(--dcp-space-md);
+}
+
+.dcp-stat {
+  font-size: var(--dcp-font-meta);
+  font-weight: 600;
+  padding: var(--dcp-space-xs) var(--dcp-space-sm);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dcp-stat.waiting {
+  background: rgba(49, 130, 206, 0.1);
+  color: var(--dcp-waiting);
+}
+
+.dcp-stat.consulting {
+  background: rgba(214, 158, 46, 0.1);
+  color: var(--dcp-consulting);
+}
+
+.dcp-stat.completed {
+  background: rgba(104, 211, 145, 0.1);
+  color: var(--dcp-completed);
+}
+
+/* Queue Table */
+.dcp-queue-table-container {
+  flex: 1;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--dcp-border);
+}
+
+.dcp-queue-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dcp-queue-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--dcp-background);
+  z-index: 10;
+}
+
+.dcp-queue-table th {
+  padding: var(--dcp-space-md);
+  text-align: left;
+  font-size: var(--dcp-font-meta);
+  font-weight: 700;
+  color: var(--dcp-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--dcp-border);
+}
+
+.dcp-queue-table tbody tr {
+  border-bottom: 1px solid var(--dcp-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dcp-queue-table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.dcp-queue-table tbody tr.selected {
+  background: rgba(91, 124, 153, 0.08);
+  border-left: 3px solid var(--dcp-primary);
+}
+
+.dcp-queue-table td {
+  padding: var(--dcp-space-md);
+  font-size: var(--dcp-font-small);
+  vertical-align: middle;
+}
+
+.dcp-queue-empty {
+  text-align: center;
+  padding: var(--dcp-space-xl);
+  color: var(--dcp-text-light);
+  font-style: italic;
+}
+
+/* Table Cells */
+.token-number {
+  font-weight: 700;
+  font-size: var(--dcp-font-body);
+  color: var(--dcp-primary);
+}
+
+.patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.patient-name {
+  font-weight: 600;
+  color: var(--dcp-text);
+}
+
+.patient-time {
+  font-size: var(--dcp-font-meta);
+  color: var(--dcp-text-light);
+}
+
+.visit-type {
+  font-size: var(--dcp-font-meta);
+  color: var(--dcp-text-light);
+  text-transform: capitalize;
+}
+
+.urgency-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-xs);
+  font-size: var(--dcp-font-meta);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.urgency-normal {
+  color: var(--dcp-normal);
+}
+
+.urgency-priority {
+  color: var(--dcp-priority);
+}
+
+.urgency-urgent {
+  color: var(--dcp-urgent);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: var(--dcp-space-xs) var(--dcp-space-sm);
+  border-radius: 12px;
+  font-size: var(--dcp-font-meta);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-waiting {
+  background: rgba(49, 130, 206, 0.1);
+  color: var(--dcp-waiting);
+}
+
+.status-consulting {
+  background: rgba(214, 158, 46, 0.1);
+  color: var(--dcp-consulting);
+}
+
+.status-completed {
+  background: rgba(104, 211, 145, 0.1);
+  color: var(--dcp-completed);
+}
+
+/* Queue Actions */
+.dcp-queue-actions {
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+}
+
+.dcp-call-next-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dcp-space-sm);
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+  background: var(--dcp-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--dcp-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-call-next-btn:hover:not(:disabled) {
+  background: var(--dcp-primary-dark);
+  transform: translateY(-1px);
+}
+
+.dcp-call-next-btn:disabled {
+  background: var(--dcp-text-light);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 RIGHT PANEL (60%) - CONSULTATION STATES
+═══════════════════════════════════════════════════════════════════════════════ */
+
+.dcp-consultation-panel {
+  background: var(--dcp-surface);
+  border: 1px solid var(--dcp-border);
+  border-radius: 8px;
+  padding: var(--dcp-space-lg);
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* STATE 1: No Patient Selected */
+.dcp-consultation-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--dcp-text-light);
+}
+
+.dcp-consultation-empty svg {
+  margin-bottom: var(--dcp-space-md);
+  opacity: 0.3;
+}
+
+.dcp-consultation-empty h3 {
+  margin: 0 0 var(--dcp-space-sm) 0;
+  font-size: var(--dcp-font-header);
+  font-weight: 600;
+}
+
+.dcp-consultation-empty p {
+  margin: 0;
+  font-size: var(--dcp-font-small);
+}
+
+/* STATE 2 & 3: Patient Selected/Consulting */
+.dcp-consultation-ready,
+.dcp-consultation-active {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dcp-consultation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--dcp-space-lg);
+  padding-bottom: var(--dcp-space-md);
+  border-bottom: 1px solid var(--dcp-border);
+}
+
+.dcp-consultation-header h3 {
+  margin: 0;
+  font-size: var(--dcp-font-header);
+  font-weight: 700;
+  color: var(--dcp-text);
+}
+
+.dcp-consultation-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-sm);
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  background: rgba(214, 158, 46, 0.1);
+  color: var(--dcp-consulting);
+  border-radius: 6px;
+  font-size: var(--dcp-font-small);
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+/* Patient Summary */
+.dcp-patient-summary {
+  background: var(--dcp-background);
+  border: 1px solid var(--dcp-border);
+  border-radius: 8px;
+  padding: var(--dcp-space-lg);
+  margin-bottom: var(--dcp-space-lg);
+}
+
+.dcp-patient-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-md);
+  margin-bottom: var(--dcp-space-md);
+}
+
+.dcp-patient-avatar {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--dcp-primary) 0%, var(--dcp-primary-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: var(--dcp-font-header);
+}
+
+.dcp-patient-main h4 {
+  margin: 0 0 var(--dcp-space-xs) 0;
+  font-size: var(--dcp-font-header);
+  font-weight: 700;
+  color: var(--dcp-text);
+}
+
+.dcp-patient-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--dcp-space-sm);
+  font-size: var(--dcp-font-meta);
+  color: var(--dcp-text-light);
+}
+
+.dcp-patient-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dcp-space-md);
+  margin-bottom: var(--dcp-space-md);
+}
+
+.dcp-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dcp-space-xs);
+}
+
+.dcp-detail-item .label {
+  font-size: var(--dcp-font-meta);
+  font-weight: 600;
+  color: var(--dcp-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dcp-detail-item .value {
+  font-size: var(--dcp-font-small);
+  font-weight: 600;
+  color: var(--dcp-text);
+}
+
+.dcp-symptoms-section {
+  margin-top: var(--dcp-space-md);
+  padding-top: var(--dcp-space-md);
+  border-top: 1px solid var(--dcp-border);
+}
+
+.dcp-symptoms-section h5 {
+  margin: 0 0 var(--dcp-space-sm) 0;
+  font-size: var(--dcp-font-small);
+  font-weight: 700;
+  color: var(--dcp-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dcp-symptoms-section p {
+  margin: 0;
+  font-size: var(--dcp-font-small);
+  line-height: 1.5;
+  color: var(--dcp-text);
+  padding: var(--dcp-space-md);
+  background: var(--dcp-surface);
+  border: 1px solid var(--dcp-border);
+  border-radius: 6px;
+}
+
+/* Consultation Actions */
+.dcp-consultation-actions {
+  display: flex;
+  gap: var(--dcp-space-md);
+  margin-bottom: var(--dcp-space-lg);
+}
+
+.dcp-start-consultation-btn,
+.dcp-complete-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dcp-space-sm);
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+  background: var(--dcp-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: var(--dcp-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-complete-btn {
+  background: var(--dcp-secondary);
+}
+
+.dcp-start-consultation-btn:hover,
+.dcp-complete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dcp-complete-btn:hover {
+  background: #40916C;
+}
+
+.dcp-start-consultation-btn:hover {
+  background: var(--dcp-primary-dark);
+}
+
+.dcp-prescription-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dcp-space-sm);
+  padding: var(--dcp-space-md) var(--dcp-space-lg);
+  background: transparent;
+  color: var(--dcp-primary);
+  border: 2px solid var(--dcp-primary);
+  border-radius: 6px;
+  font-size: var(--dcp-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-prescription-btn:hover {
+  background: var(--dcp-primary);
+  color: white;
+}
+
+/* Prescription Section */
+.dcp-prescription-section {
+  background: var(--dcp-background);
+  border: 1px solid var(--dcp-border);
+  border-radius: 8px;
+  padding: var(--dcp-space-lg);
+  margin-top: var(--dcp-space-lg);
+}
+
+.dcp-prescription-section h4 {
+  margin: 0 0 var(--dcp-space-md) 0;
+  font-size: var(--dcp-font-body);
+  font-weight: 700;
+  color: var(--dcp-text);
+}
+
+.dcp-notes-input {
+  width: 100%;
+  padding: var(--dcp-space-md);
+  border: 1px solid var(--dcp-border);
+  border-radius: 6px;
+  font-size: var(--dcp-font-small);
+  font-family: inherit;
+  margin-bottom: var(--dcp-space-md);
+  resize: vertical;
+}
+
+.dcp-medicine-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: var(--dcp-space-sm);
+  margin-bottom: var(--dcp-space-md);
+  align-items: start;
+}
+
+.dcp-medicine-form input {
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  border: 1px solid var(--dcp-border);
+  border-radius: 4px;
+  font-size: var(--dcp-font-small);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dcp-med-select {
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  border: 1px solid var(--dcp-border);
+  border-radius: 4px;
+  font-size: var(--dcp-font-small);
+  font-family: inherit;
+  color: var(--dcp-text);
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.dcp-med-select:focus {
+  outline: none;
+  border-color: var(--dcp-primary);
+  box-shadow: 0 0 0 2px rgba(26, 86, 219, 0.12);
+}
+
+.dcp-med-select option[value=""] {
+  color: #aaa;
+}
+
+.dcp-med-name-select {
+  border-color: var(--dcp-primary);
+  background: #f8faff;
+  font-weight: 500;
+}
+
+.dcp-med-name-select optgroup[label*="Suggested"] option {
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.dcp-medicine-form button {
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  background: var(--dcp-secondary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: var(--dcp-font-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dcp-medicine-form button:hover {
+  background: #40916C;
+}
+
+.dcp-medicine-list {
+  margin-top: var(--dcp-space-md);
+  padding-top: var(--dcp-space-md);
+  border-top: 1px solid var(--dcp-border);
+}
+
+.dcp-medicine-list h5 {
+  margin: 0 0 var(--dcp-space-md) 0;
+  font-size: var(--dcp-font-small);
+  font-weight: 700;
+  color: var(--dcp-text);
+}
+
+.dcp-medicine-item {
+  padding: var(--dcp-space-sm) var(--dcp-space-md);
+  background: var(--dcp-surface);
+  border: 1px solid var(--dcp-border);
+  border-radius: 4px;
+  margin-bottom: var(--dcp-space-sm);
+  font-size: var(--dcp-font-small);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dcp-med-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dcp-med-info strong {
+  font-size: var(--dcp-font-small);
+  color: var(--dcp-text);
+}
+
+.dcp-med-info span {
+  font-size: 11px;
+  color: var(--dcp-text-light);
+}
+
+.dcp-med-remove {
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #999;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.dcp-med-remove:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Symptom-Based Suggestions ── */
+.dcp-suggested-medicines {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.dcp-suggested-label {
+  font-size: 11px;
+  color: #0369a1;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dcp-suggested-label em {
+  font-style: normal;
+  font-weight: 400;
+  color: #0369a1;
+  opacity: 0.85;
+}
+
+.dcp-med-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dcp-med-chip {
+  padding: 5px 12px;
+  background: white;
+  border: 1.5px solid #38bdf8;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.dcp-med-chip:hover {
+  background: #0369a1;
+  color: white;
+  border-color: #0369a1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(3,105,161,0.25);
+}
+
+.dcp-med-chip.used {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+  cursor: default;
+  opacity: 0.75;
+}
+
+.dcp-med-chip.used:hover {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Medicine Name Autocomplete ── */
+.dcp-med-autocomplete-wrapper {
+  position: relative;
+}
+
+.dcp-med-autocomplete-list {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1.5px solid var(--dcp-primary);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dcp-med-autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.12s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dcp-med-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.dcp-med-autocomplete-item:hover {
+  background: #f0f9ff;
+}
+
+.dcp-ac-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dcp-text);
+}
+
+.dcp-ac-detail {
+  font-size: 11px;
+  color: var(--dcp-text-light);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🏥 RESPONSIVE DESIGN — Full Mobile Support
+   Breakpoints: 1200 → 1024 → 768 → 640 → 480 → 380
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wide tablets: shrink column ratio ── */
+@media (max-width: 1200px) {
+  .dcp-content-grid {
+    grid-template-columns: 45% 55%;
+  }
+}
+
+/* ── Tablets (portrait): stack panels vertically ── */
+@media (max-width: 1024px) {
+  .dcp-content-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+  .dcp-queue-panel {
+    height: 420px;
+  }
+  .dcp-consultation-panel {
+    height: auto;
+    min-height: 360px;
+  }
+  .dcp-medicine-form {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--dcp-space-sm);
+  }
+  .dcp-medicine-form .dcp-med-name-select {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── Mobile landscape / small tablets ── */
+@media (max-width: 768px) {
+  /* Header: stack identity + controls */
+  .dcp-header { padding: var(--dcp-space-md) var(--dcp-space-md); }
+  .dcp-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    text-align: left;
+  }
+  .dcp-header-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* Main content: reduce padding */
+  .dcp-main-content { padding: 14px 12px; }
+
+  /* Queue panel: shorter fixed height */
+  .dcp-queue-panel { height: 380px; }
+
+  /* Queue stats: wrap on small screens */
+  .dcp-queue-stats { flex-wrap: wrap; gap: 6px; }
+  .dcp-stat { font-size: 11px; padding: 3px 7px; }
+
+  /* Queue table: scroll horizontally, compact cells */
+  .dcp-queue-table-container { overflow-x: auto; }
+  .dcp-queue-table th,
+  .dcp-queue-table td { padding: 10px 8px; font-size: 12px; }
+  .token-number { font-size: 14px; }
+
+  /* Patient details: single column */
+  .dcp-patient-details-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Consultation action buttons: stack */
+  .dcp-consultation-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dcp-start-consultation-btn,
+  .dcp-complete-btn,
+  .dcp-prescription-btn {
+    width: 100%;
+  }
+
+  /* Medicine form: 2 col */
+  .dcp-medicine-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dcp-medicine-form .dcp-med-name-select {
+    grid-column: 1 / -1;
+  }
+  .dcp-medicine-form button {
+    grid-column: 1 / -1;
+  }
+
+  /* Patient summary: reduce padding */
+  .dcp-patient-summary { padding: 14px; }
+  .dcp-prescription-section { padding: 14px; }
+  .dcp-consultation-panel { padding: 14px; height: auto; }
+}
+
+/* ── Phones (portrait): ≤ 640px ── */
+@media (max-width: 640px) {
+  /* Hide non-essential table columns to save space */
+  .dcp-queue-table th.visit-cell,
+  .dcp-queue-table td.visit-cell { display: none; }
+
+  /* Queue panel a bit shorter */
+  .dcp-queue-panel { height: 340px; }
+
+  /* Compact header doctor info */
+  .dcp-doctor-name  { font-size: 16px; }
+  .dcp-doctor-specialty { font-size: 12px; }
+  .dcp-panel-header h2 { font-size: 15px; }
+
+  /* Patient details: single column */
+  .dcp-patient-details-grid { grid-template-columns: 1fr; gap: 8px; }
+
+  /* Message banners */
+  .dcp-message { font-size: 12px; padding: 10px 12px; }
+}
+
+/* ── Small phones: ≤ 480px ── */
+@media (max-width: 480px) {
+  /* Header: ultra compact */
+  .dcp-header { padding: 10px 12px; border-bottom: 2px solid var(--dcp-primary); }
+  .dcp-doctor-avatar { width: 38px; height: 38px; font-size: 14px; }
+  .dcp-doctor-name  { font-size: 15px; }
+
+  /* Hide "Switch Doctor" label — show only icon */
+  .dcp-logout-btn span { display: none; }
+  .dcp-logout-btn { padding: var(--dcp-space-sm); min-width: 36px; justify-content: center; }
+
+  /* Hide date display on very small */
+  .dcp-date-display { display: none; }
+
+  /* Main padding */
+  .dcp-main-content { padding: 10px 8px; }
+
+  /* Force single column with !important */
+  .dcp-content-grid {
+    grid-template-columns: 1fr !important;
+    height: auto;
+  }
+
+  /* Queue panel: shorter */
+  .dcp-queue-panel { height: 300px; }
+
+  /* Hide urgency column */
+  .dcp-queue-table th.urgency-cell,
+  .dcp-queue-table td.urgency-cell { display: none; }
+
+  /* Compact table cells */
+  .dcp-queue-table th,
+  .dcp-queue-table td { padding: 8px 6px; font-size: 11px; }
+  .token-number { font-size: 13px; }
+  .patient-name  { font-size: 12px; }
+  .patient-time  { font-size: 10px; }
+  .status-badge  { font-size: 10px; padding: 2px 5px; }
+
+  /* Medicine form: single column */
+  .dcp-medicine-form {
+    grid-template-columns: 1fr;
+  }
+
+  /* Prescription section */
+  .dcp-prescription-section { padding: 12px; }
+  .dcp-notes-input { font-size: 13px; }
+
+  /* Call next button */
+  .dcp-call-next-btn { padding: 12px; font-size: 14px; }
+
+  /* Consultation panel */
+  .dcp-consultation-panel { padding: 12px; }
+  .dcp-patient-summary    { padding: 12px; }
+}
+
+/* ── Ultra-narrow phones: ≤ 380px ── */
+@media (max-width: 380px) {
+  .dcp-header-content { gap: 6px; }
+  .dcp-doctor-name { font-size: 14px; }
+  .dcp-doctor-avatar { width: 34px; height: 34px; font-size: 12px; }
+  .dcp-queue-stats { gap: 4px; }
+  .dcp-stat { font-size: 10px; padding: 2px 5px; }
+  .dcp-main-content { padding: 8px 6px; }
+}

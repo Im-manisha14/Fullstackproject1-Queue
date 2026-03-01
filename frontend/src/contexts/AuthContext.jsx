@@ -21,9 +21,20 @@ export const AuthProvider = ({ children }) => {
   // Check for existing token on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchProfile();
+    const storedUser = localStorage.getItem('user');
+    
+    if (token && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        
+        // Verify token is still valid
+        fetchProfile();
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        logout();
+      }
     } else {
       setLoading(false);
     }
@@ -31,11 +42,32 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
       const response = await authAPI.getProfile();
       setUser(response.data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
-      logout();
+      // Only logout if it's specifically an auth failure (401)
+      // Other errors might be network issues that should not clear auth
+      if (error.response?.status === 401) {
+        console.warn('Token expired or invalid, logging out');
+        logout();
+      } else {
+        // For other errors, just use the stored user data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            logout();
+          }
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -55,7 +87,10 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: userData };
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Login failed';
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Login failed. Please check your credentials.';
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
