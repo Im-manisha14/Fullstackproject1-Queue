@@ -1,1 +1,0 @@
-"""Appointments package initialization"""

@@ -1,157 +1,151 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
-import Button from '../components/common/Button';
-import InputField from '../components/common/InputField';
-import Card from '../components/common/Card';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
 
     const result = await login(formData);
-    // Stop local loading spinner and navigate on success
     setIsLoading(false);
 
     if (result.success) {
-      const userRole = result.user?.role;
-      if (userRole === 'patient') navigate('/patient/dashboard');
-      else if (userRole === 'doctor') navigate('/doctor/dashboard');
-      else if (userRole === 'pharmacy') navigate('/pharmacy/dashboard');
+      const role = result.user?.role;
+      if (role === 'patient') navigate('/patient/dashboard');
+      else if (role === 'doctor') navigate('/doctor/dashboard');
+      else if (role === 'pharmacy') navigate('/pharmacy/dashboard');
       else navigate('/');
-      return;
     } else {
-      toast.error(result.error || 'Login failed');
+      setError(result.error || 'Login failed. Please check your credentials.');
     }
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
-  // Demo credentials for quick testing - keys match backend seed_db.py
-  const demoCredentials = [
-    { role: 'Patient', email: 'patient@example.com', password: 'password' },
-    { role: 'Doctor', email: 'doctor@example.com', password: 'password' },
-    { role: 'Pharmacy', email: 'pharmacy@example.com', password: 'password' }
+  const demoAccounts = [
+    { role: 'Patient', email: 'patient@test.com', password: 'password123', icon: 'P' },
+    { role: 'Doctor',  email: 'doctor@example.com',  password: 'password123',  icon: 'D' },
+    { role: 'Pharmacy',email: 'pharmacy@test.com',password: 'password123',icon: 'Rx' },
   ];
 
-  const fillDemoCredentials = (email, password) => {
-    setFormData({ email, password });
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <Card className="p-10 shadow-xl border-t-4 border-t-teal-600">
-          {/* Header Section */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-                <i className="fas fa-hospital-user text-white text-3xl"></i>
-              </div>
-            </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Sign in to the Hospital Information System
-            </p>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L4 5V11C4 16.55 7.84 21.74 12 22C16.16 21.74 20 16.55 20 11V5L12 2Z" 
+                    stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="1.5" 
+                    strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="15.5" cy="7.5" r="1.5" fill="currentColor"/>
+              <path d="M14.5 8.5L13 10" stroke="currentColor" strokeWidth="1" 
+                    strokeLinecap="round"/>
+            </svg>
           </div>
+          <h1>Healthcare Portal</h1>
+          <p>Secure Access • Queue-Free System</p>
+        </div>
 
-          {/* Demo Credentials */}
-          <div className="mb-6 p-4 bg-teal-50 rounded-lg border border-teal-100">
-            <h4 className="font-semibold text-teal-800 mb-3 text-xs uppercase tracking-wider text-center">Quick Login (Demo)</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {demoCredentials.map((demo, index) => (
+        <div className="auth-body">
+          {error && (
+            <div className="alert alert-error">
+              <span className="alert-icon">!</span>
+              {error}
+            </div>
+          )}
+
+          {/* Demo quick-fill */}
+          <div className="demo-section">
+            <h4>Quick Demo Login</h4>
+            <div className="demo-grid">
+              {demoAccounts.map((d) => (
                 <button
-                  key={index}
+                  key={d.role}
                   type="button"
-                  onClick={() => fillDemoCredentials(demo.email, demo.password)}
-                  className="flex flex-col items-center justify-center p-2 rounded hover:bg-teal-100 transition-colors duration-150"
+                  className="demo-btn"
+                  onClick={() => setFormData({ email: d.email, password: d.password })}
                 >
-                  <span className="text-xs font-medium text-teal-700">{demo.role}</span>
+                  <span className="demo-btn-icon">{d.icon}</span>
+                  {d.role}
                 </button>
               ))}
             </div>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-5">
-              <InputField
-                label="Email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                icon={User}
-                required
-                className="transition-all duration-200 focus-within:transform focus-within:-translate-y-1"
-              />
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <div className="input-wrapper">
+                <span className="input-icon">@</span>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+            </div>
 
-              <div className="relative">
-                <InputField
-                  label="Password"
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrapper">
+                <span className="input-icon">*</span>
+                <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
+                  className="form-control"
+                  placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Enter your password"
-                  icon={Lock}
                   required
-                  className="transition-all duration-200 focus-within:transform focus-within:-translate-y-1"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
+                  className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[38px] text-gray-400 hover:text-teal-600 transition-colors"
+                  tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? 'hide' : 'show'}
                 </button>
               </div>
             </div>
 
-            <div>
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full justify-center py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
-                isLoading={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign In'}
-              </Button>
-            </div>
+            <button
+              type="submit"
+              className="btn btn-primary btn-block"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <><span className="loading-spinner"></span> Signing in...</>
+              ) : 'Sign In'}
+            </button>
           </form>
+        </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-teal-600 hover:text-teal-500 hover:underline transition-all">
-                Register here
-              </Link>
-            </p>
-          </div>
-        </Card>
-
-        <div className="text-center">
-          <p className="text-xs text-gray-500 opacity-75">
-            © 2026 Hospital Information System. Secure & Encrypted.
-          </p>
+        <div className="auth-footer">
+          Don't have an account?{' '}
+          <Link to="/register">Create account</Link>
         </div>
       </div>
     </div>
