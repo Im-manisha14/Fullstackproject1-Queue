@@ -108,6 +108,11 @@ const PatientDashboard = () => {
       const active = activeList[0] || null;
       setActiveAppointment(active);
       activeApptRef.current = active;
+
+      // Also filter appointments for display in 'My Appointments' table
+      setAppointments(
+        appts.filter(a => ['booked', 'in_queue', 'in_consultation'].includes(a.status) && a.appointment_date >= today)
+      );
       setSelectedIdx(0);
       if (active) {
         try {
@@ -176,10 +181,10 @@ const PatientDashboard = () => {
       const [selH, selM] = bookingForm.appointment_time.split(':').map(Number);
       const selMins = selH * 60 + selM;
       const nowMins = now.getHours() * 60 + now.getMinutes();
+      // Allow booking for current time and future times
       if (selMins < nowMins) {
-        // Slot has expired — clear it and show an error so user picks a fresh slot
         setBookingForm(prev => ({ ...prev, appointment_time: '' }));
-        setTimeError('The selected time has passed. Please select a new time.');
+        setTimeError('The selected time has passed. Please select the current or a future time.');
         return;
       }
     }
@@ -204,6 +209,38 @@ const PatientDashboard = () => {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
   const formatTime = (t) => t ? new Date('2000-01-01T' + t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+  // Live wait time clock
+  // --- Live wait time clock (continuous, like doctor portal) ---
+  const [waitSeconds, setWaitSeconds] = useState(null);
+  const waitTimerRef = useRef(null);
+
+  useEffect(() => {
+    // Always show a running clock, even for 'Your turn!'
+    let initialSeconds = 0;
+    if (liveQueue?.estimated_wait_time !== undefined) {
+      initialSeconds = Math.max(0, Math.floor(liveQueue.estimated_wait_time * 60));
+    }
+    setWaitSeconds(initialSeconds);
+    if (waitTimerRef.current) clearInterval(waitTimerRef.current);
+    waitTimerRef.current = setInterval(() => {
+      setWaitSeconds(prev => (prev !== null ? prev + 1 : 1)); // count up like a real clock
+    }, 1000);
+    return () => {
+      if (waitTimerRef.current) {
+        clearInterval(waitTimerRef.current);
+        waitTimerRef.current = null;
+      }
+    };
+  }, [liveQueue?.estimated_wait_time]);
+
+  // Format timer as mm:ss, like doctor portal
+  const formatWaitClock = (seconds) => {
+    if (seconds === null) return '--:--';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   const getTimeAgo = () => {
     const seconds = Math.floor((new Date() - lastUpdate) / 1000);
     if (seconds < 10) return 'Just now';
@@ -265,36 +302,47 @@ const PatientDashboard = () => {
       {/* Appointment tabs — shown when patient has multiple active bookings */}
       {activeAppointments.length > 1 && (
         <div className="lq-appt-tabs">
-          {activeAppointments.map((appt, idx) => {
-            const initials = (appt.doctor_name || '').replace('Dr. ', '').split(' ').slice(0, 2).map(w => w[0]).join(''); 
-            const isToday = appt.appointment_date === new Date().toISOString().split('T')[0];
-            
-            return (
-              <button
-                key={appt.id}
-                className={`lq-appt-tab${selectedIdx === idx ? ' active' : ''}`}
-                onClick={() => {
-                  setSelectedIdx(idx);
-                  setActiveAppointment(appt);
-                  activeApptRef.current = appt;  // keep ref in sync
-                  setLiveQueue(null);
-                  patientAPI.getQueueStatus(appt.id)
-                    .then(r => setLiveQueue(r.data))
-                    .catch(() => {});
-                }}
-              >
-                <span className="lq-tab-avatar">{initials}</span>
-                <div className="lq-tab-info">
-                  <div className="lq-tab-name">{appt.doctor_name}</div>
-                  <div className="lq-tab-date">
-                    {formatDate(appt.appointment_date)}
-                    {isToday && <small style={{color:'#22c55e',marginLeft:'4px'}}>Today</small>}
+          {/* Show only one tab per doctor, even if multiple appointments */}
+          {(() => {
+            const uniqueDoctors = [];
+            const seen = new Set();
+            activeAppointments.forEach(appt => {
+              const key = appt.doctor_id || appt.doctor_name;
+              if (!seen.has(key)) {
+                seen.add(key);
+                uniqueDoctors.push(appt);
+              }
+            });
+            return uniqueDoctors.map((appt, idx) => {
+              const initials = (appt.doctor_name || '').replace('Dr. ', '').split(' ').slice(0, 2).map(w => w[0]).join(''); 
+              const isToday = appt.appointment_date === new Date().toISOString().split('T')[0];
+              return (
+                <button
+                  key={appt.doctor_id || appt.doctor_name}
+                  className={`lq-appt-tab${selectedIdx === idx ? ' active' : ''}`}
+                  onClick={() => {
+                    setSelectedIdx(idx);
+                    setActiveAppointment(appt);
+                    activeApptRef.current = appt;
+                    setLiveQueue(null);
+                    patientAPI.getQueueStatus(appt.id)
+                      .then(r => setLiveQueue(r.data))
+                      .catch(() => {});
+                  }}
+                >
+                  <span className="lq-tab-avatar">{initials}</span>
+                  <div className="lq-tab-info">
+                    <div className="lq-tab-name">{appt.doctor_name}</div>
+                    <div className="lq-tab-date">
+                      {formatDate(appt.appointment_date)}
+                      {isToday && <small style={{color:'#22c55e',marginLeft:'4px'}}>Today</small>}
+                    </div>
+                    <div className="lq-tab-token" style={{fontSize:'10px',color:'#6b7280'}}>Token #{appt.token_number}</div>
                   </div>
-                  <div className="lq-tab-token" style={{fontSize:'10px',color:'#6b7280'}}>Token #{appt.token_number}</div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            });
+          })()}
         </div>
       )}
 
@@ -346,12 +394,20 @@ const PatientDashboard = () => {
               </div>
               <div className="lq-sc">
                 <div className="lq-sc-label">Wait Time</div>
-                <div className="lq-sc-value green">
-                  {liveQueue?.estimated_wait_time !== undefined ? (
-                    liveQueue.estimated_wait_time === 0 ? 'Your turn!' :
-                    liveQueue.estimated_wait_time < 60 ? `${liveQueue.estimated_wait_time} min` :
-                    `${Math.floor(liveQueue.estimated_wait_time / 60)}h ${liveQueue.estimated_wait_time % 60}m`
-                  ) : '—'}
+                <div className="lq-sc-value green" style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                  {/* Live wait time clock, styled like doctor portal */}
+                  <span style={{
+                    fontFamily: 'Monaco, Courier New, monospace',
+                    fontWeight: 700,
+                    fontSize: '18px',
+                    background: 'rgba(214, 158, 46, 0.1)',
+                    color: '#D69E2E',
+                    borderRadius: '6px',
+                    padding: '4px 12px',
+                  }}>{formatWaitClock(waitSeconds)}</span>
+                  {waitSeconds === 0 && (
+                    <span style={{fontWeight:700,color:'#40916C',marginLeft:'8px',fontSize:'20px'}}>Your turn!</span>
+                  )}
                 </div>
               </div>
             </div>

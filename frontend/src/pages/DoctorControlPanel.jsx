@@ -104,11 +104,6 @@ const DoctorControlPanel = () => {
   const medInputRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Database Reset State
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [dbStatus, setDbStatus] = useState(null);
-
   /* ═══════════════════════════════════════════════════════════════════════════════
      🏥 UTILITY FUNCTIONS - DATA PROCESSING
   ═══════════════════════════════════════════════════════════════════════════════ */
@@ -202,34 +197,6 @@ const DoctorControlPanel = () => {
       console.error('Failed to load database status:', error);
     }
   }, []);
-
-  const handleDatabaseReset = async () => {
-    setResetLoading(true);
-    try {
-      await databaseAPI.resetDatabase();
-      setMsg('✅ Database reset successfully! All data cleared and IDs reset to start from 1.');
-      setError('');
-      setShowResetModal(false);
-      
-      // Clear local state
-      setQueue([]);
-      setSummary({});
-      setSelectedPatient(null);
-      setConsultingPatient(null);
-      setShowRx(false);
-      
-      // Reload data
-      setTimeout(() => {
-        window.location.reload(); // Full page reload to ensure clean state
-      }, 2000);
-      
-    } catch (error) {
-      setError(`❌ Database reset failed: ${error.response?.data?.error || error.message}`);
-      setMsg('');
-    } finally {
-      setResetLoading(false);
-    }
-  };
 
   /* ═══════════════════════════════════════════════════════════════════════════════
      🏥 DATA LOADING - HOSPITAL OPERATIONS
@@ -455,13 +422,6 @@ const DoctorControlPanel = () => {
     }
   }, [msg, error]);
 
-  // Load database status when modal opens
-  useEffect(() => {
-    if (showResetModal) {
-      loadDatabaseStatus();
-    }
-  }, [showResetModal, loadDatabaseStatus]);
-
   /* ═══════════════════════════════════════════════════════════════════════════════
      🏥 RENDER - PRODUCTION HOSPITAL CONTROL PANEL
   ═══════════════════════════════════════════════════════════════════════════════ */
@@ -508,10 +468,6 @@ const DoctorControlPanel = () => {
               <span>Switch Doctor</span>
             </button>
             
-            <button className="dcp-reset-btn" onClick={() => setShowResetModal(true)}>
-              <Database size={18} />
-              <span>Reset DB</span>
-            </button>
           </div>
         </div>
       </header>
@@ -874,71 +830,6 @@ const DoctorControlPanel = () => {
           </div>
         </div>
       </main>
-
-      {/* ═══════════════════════════════════════════════════════════════════════════════
-           🗄️ DATABASE RESET MODAL
-      ═══════════════════════════════════════════════════════════════════════════════ */}
-      {showResetModal && (
-        <div className="dcp-modal-overlay" onClick={() => setShowResetModal(false)}>
-          <div className="dcp-modal" onClick={e => e.stopPropagation()}>
-            <div className="dcp-modal-header">
-              <h3>🗄️ Database Reset</h3>
-              <button className="dcp-modal-close" onClick={() => setShowResetModal(false)}>×</button>
-            </div>
-            
-            <div className="dcp-modal-content">
-              <div className="dcp-reset-warning">
-                <Trash2 size={48} color="#ff4757" />
-                <h4>⚠️ WARNING: Complete Data Wipe</h4>
-                <p>This action will permanently delete:</p>
-                <ul>
-                  <li>✗ All user accounts (patients, doctors, pharmacy)</li>
-                  <li>✗ All appointments and queue data</li>
-                  <li>✗ All prescriptions and medicines</li>
-                  <li>✗ All hospitals and departments</li>
-                  <li>✗ All audit logs and system history</li>
-                </ul>
-                <p><strong>The system will start completely fresh with no data.</strong></p>
-                
-                {dbStatus && (
-                  <div className="dcp-db-status">
-                    <h5>Current Database Status:</h5>
-                    <div className="dcp-status-grid">
-                      <span>Users: <strong>{dbStatus.users}</strong></span>
-                      <span>Appointments: <strong>{dbStatus.appointments}</strong></span>
-                      <span>Hospitals: <strong>{dbStatus.hospitals}</strong></span>
-                      <span>Total Records: <strong>{dbStatus.total_records}</strong></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="dcp-modal-actions">
-              <button className="dcp-btn-secondary" onClick={() => setShowResetModal(false)}>
-                Cancel
-              </button>
-              <button 
-                className="dcp-btn-danger" 
-                onClick={handleDatabaseReset}
-                disabled={resetLoading}
-              >
-                {resetLoading ? (
-                  <>
-                    <div className="dcp-spinner"></div>
-                    Resetting Database...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={16} />
-                    Yes, Reset Database
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -21,7 +21,15 @@ const DoctorSelect = () => {
         if (!token) { navigate('/'); return; }
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const res = await api.get('/api/doctors');
-        const list = Array.isArray(res.data) ? res.data : (res.data?.doctors || []);
+        let list = Array.isArray(res.data) ? res.data : (res.data?.doctors || []);
+        // Remove duplicate doctors by user_id or id
+        const seen = new Set();
+        list = list.filter(d => {
+          const key = d.user_id || d.id;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         setDoctors(list);
 
         // Group by hospital
