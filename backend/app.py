@@ -1158,9 +1158,9 @@ def validate_token():
         app.logger.error(f'Token validation error: {str(e)}')
         return jsonify({'error': 'Token validation failed'}), 401
 
-@app.route('/api/auth/profile', methods=['GET'])
+@app.route('/api/auth/profile', methods=['GET', 'PUT'])
 @jwt_required()
-def get_profile():
+def get_update_profile():
     try:
         current_user_id = get_jwt_identity()
         user = db.session.get(User, current_user_id)
@@ -1168,9 +1168,27 @@ def get_profile():
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
-        return jsonify(user.to_dict()), 200
+        if request.method == 'GET':
+            return jsonify(user.to_dict()), 200
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            
+            # Update allowed fields
+            if 'full_name' in data and data['full_name'].strip():
+                user.full_name = data['full_name'].strip()
+            if 'phone' in data and data['phone'].strip():
+                user.phone = data['phone'].strip()
+            
+            db.session.commit()
+            
+            return jsonify({
+                'message': 'Profile updated successfully',
+                'user': user.to_dict()
+            }), 200
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # =======================
@@ -1324,6 +1342,8 @@ def book_appointment():
             return jsonify({'error': 'doctor_id is required'}), 400
         if not data.get('appointment_date'):
             return jsonify({'error': 'appointment_date is required'}), 400
+        if not data.get('appointment_time'):
+            return jsonify({'error': 'appointment_time is required'}), 400
 
         # Accept doctor_id as DoctorProfile.id (UUID) - look up profile first
         doctor_profile = DoctorProfile.query.get(data['doctor_id'])
@@ -1334,13 +1354,23 @@ def book_appointment():
         if not doctor or doctor.role != 'doctor':
             return jsonify({'error': 'Invalid doctor'}), 400
 
-        # Parse date and optional time
+        # Parse date and time
         appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
-        time_str = data.get('appointment_time') or '09:00'
+        time_str = data['appointment_time']
         try:
             appointment_time = datetime.strptime(time_str, '%H:%M').time()
         except ValueError:
-            appointment_time = datetime.strptime('09:00', '%H:%M').time()
+            return jsonify({'error': 'Invalid time format. Use HH:MM (e.g. 09:30)'}), 400
+
+        # Reject past date/time combinations
+        from datetime import date as date_cls
+        now = datetime.now()
+        if appointment_date < date_cls.today():
+            return jsonify({'error': 'Cannot book an appointment for a past date'}), 400
+        if appointment_date == date_cls.today():
+            appointment_datetime = datetime.combine(appointment_date, appointment_time)
+            if appointment_datetime <= now:
+                return jsonify({'error': 'Cannot book an appointment for a past time. Please select a current or future time slot'}), 400
 
         # Generate next token number for this doctor+date
         from sqlalchemy import text
@@ -1352,7 +1382,6 @@ def book_appointment():
         token_number = result[0] if result else 1
 
         # Appointments for today go directly into the queue
-        from datetime import date as date_cls
         initial_status = 'in_queue' if appointment_date == date_cls.today() else 'booked'
 
         appointment = Appointment(
@@ -1646,13 +1675,16 @@ def next_patient():
 def get_queue_status(appointment_id):
     try:
         current_user_id = get_jwt_identity()
+        app.logger.info(f'Queue status request: appointment_id={appointment_id}, user_id={current_user_id}')
+        
         appointment = Appointment.query.filter_by(
             id=appointment_id,
             patient_id=current_user_id
         ).first()
         
         if not appointment:
-            return jsonify({'error': 'Appointment not found'}), 404
+            app.logger.warning(f'Appointment not found or not owned by user: appointment_id={appointment_id}, user_id={current_user_id}')
+            return jsonify({'error': 'Appointment not found or access denied'}), 404
         
         # Calculate queue position — count all active appointments ahead (booked + in_queue + consulting)
         ahead_count = Appointment.query.filter(
@@ -1799,12 +1831,11 @@ def call_next_patient():
         date_str = datetime.now().strftime('%Y-%m-%d')
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        # Get next patient in queue
+        # Get next patient in queue - check both 'booked' and 'in_queue' statuses
         next_appointment = Appointment.query.filter_by(
             doctor_id=current_user_id,
-            appointment_date=appointment_date,
-            status='booked'
-        ).order_by(Appointment.token_number).first()
+            appointment_date=appointment_date
+        ).filter(Appointment.status.in_(['booked', 'in_queue'])).order_by(Appointment.token_number).first()
         
         if not next_appointment:
             return jsonify({'message': 'No patients in queue'}), 404

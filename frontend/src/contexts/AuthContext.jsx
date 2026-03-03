@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { authAPI } from '../utils/api';
 
 // Create the context
@@ -40,7 +40,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchProfile = async () => {
+  // Memoize logout so fetchProfile can depend on a stable reference
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+  }, []);
+
+  // useCallback ensures fetchProfile has a stable reference — without this,
+  // every setUser() call creates a new fetchProfile, re-triggering any
+  // useEffect that lists fetchProfile as a dependency (infinite loop).
+  const fetchProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -71,7 +82,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
   const login = async (credentials) => {
     try {
@@ -110,12 +121,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    delete api.defaults.headers.common['Authorization'];
-    setUser(null);
-  };
+  const updateProfile = useCallback(async (profileData) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.updateProfile(profileData);
+      const updatedUser = response.data.user;
+      
+      // Update both state and localStorage
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Profile update failed';
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const value = {
     user,
@@ -123,6 +146,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
+    fetchProfile,
     isAuthenticated: !!user,
     isPatient: user?.role === 'patient',
     isDoctor: user?.role === 'doctor',

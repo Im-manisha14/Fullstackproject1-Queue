@@ -1,10 +1,10 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { patientAPI, ensureArray } from '../utils/api';
+import { patientAPI, ensureArray, authAPI } from '../utils/api';
 import { Check, Clipboard, Pill } from 'lucide-react';
 
 const PatientDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile, fetchProfile } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [hospitals, setHospitals] = useState([]);
@@ -23,16 +23,42 @@ const PatientDashboard = () => {
   // ref so the polling interval always sees the currently selected appointment
   // without being a useEffect dependency (which would reset selection)
   const activeApptRef = useRef(null);
-  const [displayName, setDisplayName] = useState('');
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [profileForm, setProfileForm] = useState({ full_name: '', phone: '' });
+  const [timeError, setTimeError] = useState('');
   const [bookingForm, setBookingForm] = useState({
-    hospital_id: '', doctor_id: '', appointment_date: new Date().toISOString().split('T')[0], appointment_time: '', department_id: '', patient_name: '', symptoms: ''
+    hospital_id: '', doctor_id: '', appointment_date: new Date().toISOString().split('T')[0], appointment_time: '', department_id: '', patient_name: user?.full_name || '', symptoms: ''
   });
+
+  // Refresh user data when component mounts to get latest profile info
+  useEffect(() => {
+    const refreshUserProfile = async () => {
+      try {
+        if (user && fetchProfile) {
+          await fetchProfile();
+        }
+      } catch (error) {
+        console.warn('Could not refresh user profile:', error);
+        // If profile refresh fails, continue with existing user data
+      }
+    };
+    
+    refreshUserProfile();
+  }, [fetchProfile]);
 
   const loadData = useCallback(async () => {
     try {
       console.log('Loading patient dashboard data...');
       console.log('User:', user);
       console.log('Token:', localStorage.getItem('token') ? 'Present' : 'Missing');
+      
+      // Verify authentication before making API calls
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        setBookError('Authentication required. Please log in again.');
+        return;
+      }
       
       // First load appointments, prescriptions, and hospitals
       const [apptRes, presRes, hospitalsRes] = await Promise.all([
@@ -83,10 +109,20 @@ const PatientDashboard = () => {
       setSelectedIdx(0);
       if (active) {
         try {
+          console.log('Loading queue status for appointment:', active.id, 'Patient ID:', user?.id);
           const qRes = await patientAPI.getQueueStatus(active.id);
           setLiveQueue(qRes.data);
+          console.log('Queue status loaded successfully');
         } catch (err) {
           console.error('Failed to load queue status:', err);
+          console.error('Error details:', {
+            status: err.response?.status,
+            message: err.response?.data?.message,
+            appointmentId: active.id,
+            userId: user?.id
+          });
+          // Don't treat queue status failure as critical - patient can still use the app
+          setLiveQueue(null);
         }
       }
       setLastUpdate(new Date());
@@ -140,15 +176,52 @@ const PatientDashboard = () => {
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     setBookMsg(''); setBookError('');
+
+    // Re-validate at submit time — the selected slot may have become past
+    // while the user was filling out the form
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (bookingForm.appointment_date === todayStr && bookingForm.appointment_time) {
+      const now = new Date();
+      const [selH, selM] = bookingForm.appointment_time.split(':').map(Number);
+      const selMins = selH * 60 + selM;
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      if (selMins < nowMins) {
+        // Slot has expired — clear it and show an error so user picks a fresh slot
+        setBookingForm(prev => ({ ...prev, appointment_time: '' }));
+        setTimeError('The selected time has passed. Please select a new time.');
+        return;
+      }
+    }
+
     try {
       await patientAPI.bookAppointment(bookingForm);
-      if (bookingForm.patient_name.trim()) setDisplayName(bookingForm.patient_name.trim());
       setBookMsg('Appointment booked successfully!');
+      setTimeError('');
       setShowBookingForm(false);
-      setBookingForm({ hospital_id: '', department_id: '', doctor_id: '', appointment_date: new Date().toISOString().split('T')[0], appointment_time: '', patient_name: '', symptoms: '' });
-      await loadData();
+      setBookingForm({ hospital_id: '', department_id: '', doctor_id: '', appointment_date: new Date().toISOString().split('T')[0], appointment_time: '', patient_name: user?.full_name || '', symptoms: '' });
+      // Give a small delay before reloading data to ensure backend processing is complete
+      setTimeout(() => {
+        loadData();
+      }, 1000);
     } catch (err) {
+      console.error('Booking error:', err);
       setBookError(err.response?.data?.message || err.response?.data?.error || 'Booking failed');
+    }
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setBookMsg(''); setBookError('');
+    try {
+      const result = await updateProfile(profileForm);
+      if (result.success) {
+        setBookMsg('Profile updated successfully!');
+        setShowProfileForm(false);
+      } else {
+        setBookError(result.error || 'Profile update failed');
+      }
+    } catch (err) {
+      setBookError('Failed to update profile');
     }
   };
 
@@ -204,8 +277,17 @@ const PatientDashboard = () => {
     <div>
       {/* Header */}
       <div className="dash-header">
-        {displayName && <h2>{displayName}</h2>}
+        <h2>Welcome, {user?.full_name || 'Patient'}</h2>
         <p style={{fontSize:'13px',color:'var(--text-muted)',fontWeight:'400'}}>Real-Time Queue Tracking</p>
+        <button 
+          onClick={() => {
+            setProfileForm({ full_name: user?.full_name || '', phone: user?.phone || '' });
+            setShowProfileForm(true);
+          }}
+          style={{fontSize:'12px',padding:'4px 8px',background:'var(--primary)',color:'white',border:'none',borderRadius:'4px',cursor:'pointer',marginLeft:'auto'}}
+        >
+          Update Profile
+        </button>
       </div>
 
       {/* Alerts */}
@@ -407,18 +489,36 @@ const PatientDashboard = () => {
                     className="form-control" 
                     value={bookingForm.appointment_date}
                     min={new Date().toISOString().split('T')[0]}
-                    onChange={e => setBookingForm({...bookingForm, appointment_date: e.target.value})} 
+                    onChange={e => setBookingForm({...bookingForm, appointment_date: e.target.value, appointment_time: ''})} 
                     required 
                   />
                 </div>
                 <div className="form-group">
-                  <label>Time (optional)</label>
-                  <input 
-                    type="time" 
-                    className="form-control" 
+                  <label>Time *</label>
+                  <input
+                    type="time"
+                    className={`form-control${timeError ? ' input-error' : ''}`}
                     value={bookingForm.appointment_time}
-                    onChange={e => setBookingForm({...bookingForm, appointment_time: e.target.value})} 
+                    onChange={e => {
+                      const picked = e.target.value; // 'HH:MM'
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      if (bookingForm.appointment_date === todayStr && picked) {
+                        const [h, m] = picked.split(':').map(Number);
+                        const now = new Date();
+                        if (h * 60 + m < now.getHours() * 60 + now.getMinutes()) {
+                          setTimeError('Please select a current or future time.');
+                          setBookingForm({...bookingForm, appointment_time: ''});
+                          return;
+                        }
+                      }
+                      setTimeError('');
+                      setBookingForm({...bookingForm, appointment_time: picked});
+                    }}
+                    required
                   />
+                  {timeError && (
+                    <small style={{color:'#ef4444',marginTop:'4px',display:'block'}}>{timeError}</small>
+                  )}
                 </div>
               </div>
 
@@ -456,6 +556,49 @@ const PatientDashboard = () => {
               <button type="submit" className="btn btn-primary" disabled={!bookingForm.doctor_id}>
                 Confirm Booking
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Update Form */}
+      {showProfileForm && (
+        <div className="card mb-4">
+          <div className="card-header">
+            <span className="card-title">Update Profile</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowProfileForm(false)}>✕</button>
+          </div>
+          <div className="card-body">
+            <form onSubmit={handleProfileUpdate}>
+              <div className="form-group">
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter your full name"
+                  value={profileForm.full_name}
+                  onChange={e => setProfileForm({...profileForm, full_name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  className="form-control"
+                  placeholder="Enter your phone number"
+                  value={profileForm.phone}
+                  onChange={e => setProfileForm({...profileForm, phone: e.target.value})}
+                />
+              </div>
+              <div style={{display:'flex',gap:'12px'}}>
+                <button type="submit" className="btn btn-primary">
+                  Update Profile
+                </button>
+                <button type="button" className="btn btn-outline" onClick={() => setShowProfileForm(false)}>
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         </div>

@@ -45,14 +45,14 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401) {
       const url = error.config?.url || '';
-      // Only force-logout for actual auth endpoints, not data polling
-      const isAuthEndpoint = url.includes('/api/patient/') || url.includes('/api/doctor/') || url.includes('/api/pharmacy/');
       const isPublicEndpoint = url.includes('/api/hospitals') || url.includes('/api/departments') || url.includes('/api/doctors');
+      const isPollingEndpoint = url.includes('/queue-status') || url.includes('/api/doctor/queue') || url.includes('/api/doctor/daily-summary');
 
-      if (isAuthEndpoint && !isPublicEndpoint && !_loggingOut) {
+      // Only auto-logout on hard auth failures — not on polling or public endpoints
+      if (!isPublicEndpoint && !isPollingEndpoint && !_loggingOut) {
         const token = localStorage.getItem('token');
-        // Only logout if no token at all, or if this is a login/profile endpoint
-        if (!token || url.includes('/api/auth/login') || url.includes('/api/auth/profile')) {
+        // Only logout if no token exists at all, meaning the session has truly expired
+        if (!token) {
           _loggingOut = true;
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -93,6 +93,7 @@ export const authAPI = {
   login: (credentials) => api.post('/api/auth/login', credentials),
   register: (userData) => api.post('/api/auth/register', userData),
   getProfile: () => api.get('/api/auth/profile'),
+  updateProfile: (profileData) => api.put('/api/auth/profile', profileData),
   validateToken: () => api.get('/api/auth/validate'),
 };
 

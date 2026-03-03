@@ -270,6 +270,10 @@ input, select, textarea { font-family: inherit; }
   box-shadow: 0 0 0 3px rgba(91,124,153,0.1);
 }
 .form-control::placeholder { color: #9ca3af; }
+.form-control.input-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+}
 .input-wrapper { position: relative; }
 .input-icon {
   position: absolute;
