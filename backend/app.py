@@ -483,6 +483,7 @@ class Appointment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    patient_name = db.Column(db.String(100))  # Allow custom patient names for family bookings etc
     hospital_id = db.Column(db.String(36), db.ForeignKey('hospitals.id'))
     department_id = db.Column(db.String(36), db.ForeignKey('departments.id'))
     doctor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -503,9 +504,11 @@ class Appointment(db.Model):
 
     def to_dict(self):
         doctor_profile = DoctorProfile.query.filter_by(user_id=self.doctor_id).first()
+        # Use custom patient_name if provided, otherwise fallback to registered user name
+        patient_display_name = self.patient_name or (self.patient.full_name if self.patient else None)
         return {
             'id': self.id,
-            'patient_name': self.patient.full_name if self.patient else None,
+            'patient_name': patient_display_name,
             'doctor_name': self.doctor.full_name if self.doctor else None,
             'hospital_name': self.hospital.name if self.hospital else None,
             'department_name': self.department.name if self.department else None,
@@ -1372,11 +1375,11 @@ def book_appointment():
             if appointment_datetime <= now:
                 return jsonify({'error': 'Cannot book an appointment for a past time. Please select a current or future time slot'}), 400
 
-        # Generate next token number for this doctor+date
+        # Generate next token number for this doctor+date (starting from 1 each day)
         from sqlalchemy import text
         result = db.session.execute(
             text('SELECT COALESCE(MAX(token_number), 0) + 1 FROM appointments '
-                 'WHERE doctor_id = :did AND appointment_date = :dt'),
+                 'WHERE doctor_id = :did AND appointment_date = :dt AND status != "expired"'),
             {'did': doctor_profile.user_id, 'dt': appointment_date}
         ).fetchone()
         token_number = result[0] if result else 1
@@ -1384,8 +1387,21 @@ def book_appointment():
         # Appointments for today go directly into the queue
         initial_status = 'in_queue' if appointment_date == date_cls.today() else 'booked'
 
+        # Validate patient name input
+        patient_name = data.get('patient_name', '').strip()
+        if not patient_name:
+            return jsonify({'error': 'Patient name is required'}), 400
+        
+        # Validate patient name format
+        if len(patient_name) < 2:
+            return jsonify({'error': 'Patient name must be at least 2 characters long'}), 400
+        
+        if not re.match(r'^[a-zA-Z\s\.\-\']+$', patient_name):
+            return jsonify({'error': 'Patient name can only contain letters, spaces, dots, hyphens, and apostrophes'}), 400
+
         appointment = Appointment(
             patient_id=current_user_id,
+            patient_name=patient_name,
             doctor_id=doctor_profile.user_id,
             hospital_id=doctor_profile.hospital_id,
             department_id=doctor_profile.department_id,
@@ -1698,11 +1714,34 @@ def get_queue_status(appointment_id):
         doctor_profile = DoctorProfile.query.filter_by(user_id=appointment.doctor_id).first()
         current_token = doctor_profile.current_token if doctor_profile else 0
         
+        # Calculate more accurate estimated waiting time
+        now = datetime.now()
+        appointment_datetime = datetime.combine(appointment.appointment_date, appointment.time(9, 0)) if appointment.appointment_time is None else datetime.combine(appointment.appointment_date, appointment.appointment_time)
+        
+        # Base consultation time (7-10 minutes average)
+        consultation_minutes = 8
+        
+        # If appointment is scheduled today, calculate from current time
+        if appointment.appointment_date == now.date():
+            # If we're past the appointment time, calculate based on queue position
+            if now >= appointment_datetime or ahead_count > 0:
+                estimated_wait_minutes = ahead_count * consultation_minutes
+            else:
+                # Still before appointment time
+                time_until_appointment = (appointment_datetime - now).total_seconds() / 60
+                estimated_wait_minutes = max(0, time_until_appointment) + (ahead_count * consultation_minutes)
+        else:
+            # Future appointment - show queue-based estimate
+            estimated_wait_minutes = ahead_count * consultation_minutes
+        
+        # Cap maximum wait time at reasonable level
+        estimated_wait_minutes = min(estimated_wait_minutes, 240)  # Max 4 hours
+        
         return jsonify({
             'appointment': appointment.to_dict(),
             'queue_position': ahead_count + 1,
             'current_token': current_token,
-            'estimated_wait_time': ahead_count * 15,
+            'estimated_wait_time': max(0, int(estimated_wait_minutes)),
             'status': appointment.status
         }), 200
         
@@ -1828,6 +1867,8 @@ def get_doctor_queue_v1():
 def call_next_patient():
     try:
         current_user_id = get_jwt_identity()
+        app.logger.info(f'Doctor {current_user_id} calling next patient')
+        
         date_str = datetime.now().strftime('%Y-%m-%d')
         appointment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
@@ -1838,9 +1879,13 @@ def call_next_patient():
         ).filter(Appointment.status.in_(['booked', 'in_queue'])).order_by(Appointment.token_number).first()
         
         if not next_appointment:
-            return jsonify({'message': 'No patients in queue'}), 404
+            app.logger.warning(f'No patients in queue for doctor {current_user_id} on {appointment_date}')
+            return jsonify({'message': 'No patients waiting in queue'}), 404
+        
+        app.logger.info(f'Calling patient {next_appointment.id} (Token: {next_appointment.token_number})')
         
         # Update appointment status
+        old_status = next_appointment.status
         next_appointment.status = 'consulting'
         next_appointment.actual_start_time = datetime.utcnow()
         
@@ -1850,6 +1895,7 @@ def call_next_patient():
             doctor_profile.current_token = next_appointment.token_number
         
         db.session.commit()
+        app.logger.info(f'Patient status changed from {old_status} to consulting')
         
         # Log the status change
         log_entry = QueueLog(
@@ -1861,11 +1907,12 @@ def call_next_patient():
         db.session.commit()
         
         return jsonify({
-            'message': 'Next patient called',
+            'message': 'Next patient called successfully',
             'appointment': next_appointment.to_dict()
         }), 200
         
     except Exception as e:
+        app.logger.error(f'Error calling next patient: {str(e)}')
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -2440,110 +2487,66 @@ print("=" * 60 + "\n")
 # UTILITY ROUTES
 # =======================
 
-@app.route('/api/initialize-db', methods=['POST'])
-def initialize_database():
+@app.route('/api/database/reset', methods=['POST'])
+@jwt_required()
+def reset_database_endpoint():
+    """Reset database to completely clean state - admin only"""
     try:
-        # Drop all tables and recreate
-        db.drop_all()
-        db.create_all()
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
         
-        # Create default departments
-        departments = [
-            Department(name='General Medicine', description='General consultation and treatment'),
-            Department(name='Pediatrics', description='Child healthcare and treatment'),
-            Department(name='Cardiology', description='Heart and cardiovascular treatment'),
-            Department(name='Orthopedics', description='Bone and joint treatment'),
-            Department(name='Dermatology', description='Skin and hair treatment'),
-            Department(name='ENT', description='Ear, Nose, and Throat treatment'),
-            Department(name='Gynecology', description='Women\'s health and treatment')
-        ]
+        # Only allow admins or for development
+        if not user or user.role not in ['admin', 'doctor']:  # Allow doctors for demo purposes
+            return jsonify({'error': 'Unauthorized - admin access required'}), 403
         
-        for dept in departments:
-            db.session.add(dept)
+        # Perform complete reset
+        success = reset_database_completely()
         
-        # Create sample medicines
-        medicines = [
-            Medicine(name='Paracetamol', generic_name='Acetaminophen', category='Analgesic', 
-                    strength='500mg', form='tablet', price_per_unit=2.0, stock_quantity=100),
-            Medicine(name='Amoxicillin', generic_name='Amoxicillin', category='Antibiotic', 
-                    strength='250mg', form='capsule', price_per_unit=5.0, stock_quantity=50),
-            Medicine(name='Ibuprofen', generic_name='Ibuprofen', category='Anti-inflammatory', 
-                    strength='400mg', form='tablet', price_per_unit=3.0, stock_quantity=75),
-            Medicine(name='Cetirizine', generic_name='Cetirizine', category='Antihistamine', 
-                    strength='10mg', form='tablet', price_per_unit=1.5, stock_quantity=80),
-            Medicine(name='Omeprazole', generic_name='Omeprazole', category='Antacid', 
-                    strength='20mg', form='capsule', price_per_unit=4.0, stock_quantity=60)
-        ]
-        
-        for medicine in medicines:
-            db.session.add(medicine)
-        
-        # Create sample doctors and their profiles
-        sample_doctors = [
-            {
-                'username': 'dr_wilson',
-                'email': 'sarah.wilson@hospital.com',
-                'password_hash': generate_password_hash('doctor123'),
-                'full_name': 'Dr. Sarah Wilson',
-                'role': 'doctor',
-                'specialization': 'Cardiology',
-                'department_id': 3,
-                'experience_years': 10
-            },
-            {
-                'username': 'dr_brown',
-                'email': 'james.brown@hospital.com',
-                'password_hash': generate_password_hash('doctor123'),
-                'full_name': 'Dr. James Brown',
-                'role': 'doctor',
-                'specialization': 'General Medicine',
-                'department_id': 1,
-                'experience_years': 15
-            },
-            {
-                'username': 'dr_smith',
-                'email': 'emily.smith@hospital.com',
-                'password_hash': generate_password_hash('doctor123'),
-                'full_name': 'Dr. Emily Smith',
-                'role': 'doctor',
-                'specialization': 'Pediatrics',
-                'department_id': 2,
-                'experience_years': 8
-            }
-        ]
-        
-        for doctor_data in sample_doctors:
-            # Create user
-            doctor_user = User(
-                username=doctor_data['username'],
-                email=doctor_data['email'],
-                password_hash=doctor_data['password_hash'],
-                full_name=doctor_data['full_name'],
-                role=doctor_data['role'],
-                is_active=True
-            )
-            db.session.add(doctor_user)
-            db.session.flush()  # Get the user ID
+        if success:
+            return jsonify({
+                'message': 'Database reset successfully', 
+                'status': 'success',
+                'details': 'All data cleared, IDs reset to start from 1'
+            }), 200
+        else:
+            return jsonify({'error': 'Database reset failed'}), 500
             
-            # Create doctor profile
-            doctor_profile = DoctorProfile(
-                user_id=doctor_user.id,
-                department_id=doctor_data['department_id'],
-                specialization=doctor_data['specialization'],
-                experience_years=doctor_data['experience_years'],
-                consultation_fee=500.0,
-                max_patients_per_day=20,
-                current_token=0
+    except Exception as e:
+        return jsonify({'error': f'Reset failed: {str(e)}'}), 500
+
+
+@app.route('/api/database/status', methods=['GET'])
+def get_database_status():
+    """Get current database status and record counts"""
+    try:
+        status = {
+            'users': User.query.count(),
+            'hospitals': Hospital.query.count(), 
+            'departments': Department.query.count(),
+            'doctors': User.query.filter_by(role='doctor').count(),
+            'patients': User.query.filter_by(role='patient').count(),
+            'appointments': Appointment.query.count(),
+            'prescriptions': Prescription.query.count(),
+            'medicines': Medicine.query.count(),
+            'total_records': (
+                User.query.count() + Hospital.query.count() + Department.query.count() +
+                DoctorProfile.query.count() + Appointment.query.count() + 
+                Prescription.query.count() + Medicine.query.count()
+            ),
+            'is_clean': (
+                User.query.count() == 0 and Hospital.query.count() == 0 and 
+                Department.query.count() == 0 and Appointment.query.count() == 0
             )
-            db.session.add(doctor_profile)
+        }
         
-        db.session.commit()
-        
-        return jsonify({'message': 'Database initialized successfully with sample doctors'}), 200
+        return jsonify({
+            'status': 'success',
+            'database': status,
+            'message': 'Database is clean and ready for fresh data' if status['is_clean'] else 'Database contains existing data'
+        }), 200
         
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'Status check failed: {str(e)}'}), 500
 
 @app.route('/api/stats', methods=['GET'])
 @jwt_required()
@@ -2671,42 +2674,76 @@ def migrate_database():
 
 # PRODUCTION DATA SEEDING FUNCTION
 def seed_production_data():
-    """Seed production-ready hospitals and departments"""
+    """Seed production-ready hospitals and departments - DISABLED for clean start"""
+    # Data seeding disabled - system starts completely clean
+    # Use /api/database/reset endpoint to initialize if needed
+    app.logger.info('Data seeding disabled - system starting clean')
+    pass
+
+
+def reset_database_completely():
+    """Reset database to completely clean state - removes ALL data and resets IDs"""
     try:
-        # Create default hospital if doesn't exist
-        if not Hospital.query.first():
-            hospital = Hospital(
-                id=str(uuid.uuid4()),
-                name='Coimbatore Medical Center',
-                location='Coimbatore', 
-                active=True
-            )
-            db.session.add(hospital)
-            db.session.flush()  # Get the ID
-            
-            # Create essential departments
-            departments = [
-                'Cardiology', 'Neurology', 'Orthopedics', 'Dermatology',
-                'General Medicine', 'Pediatrics', 'Gynecology', 'ENT', 
-                'Ophthalmology', 'Gastroenterology'
-            ]
-            
-            for dept_name in departments:
-                department = Department(
-                    id=str(uuid.uuid4()),
-                    hospital_id=hospital.id,
-                    name=dept_name,
-                    description=f'{dept_name} Department',
-                    is_active=True
-                )
-                db.session.add(department)
-            
-            db.session.commit()
-            app.logger.info('Production data seeded successfully')
-            
+        app.logger.info('Starting complete database reset...')
+        
+        # Clear all data from all tables in correct order (respecting foreign keys)
+        # Delete in reverse order of dependencies
+        
+        # 1. Clear audit logs and queue logs first (no dependencies)
+        db.session.execute(text('DELETE FROM audit_logs'))
+        db.session.execute(text('DELETE FROM queue_logs'))
+        
+        # 2. Clear prescriptions (depends on appointments and medicines)
+        db.session.execute(text('DELETE FROM prescriptions'))
+        
+        # 3. Clear appointments (depends on users and doctor_profiles)  
+        db.session.execute(text('DELETE FROM appointments'))
+        
+        # 4. Clear doctor profiles (depends on users and departments)
+        db.session.execute(text('DELETE FROM doctor_profiles'))
+        
+        # 5. Clear users (referenced by appointments, prescriptions, doctor_profiles)
+        db.session.execute(text('DELETE FROM users'))
+        
+        # 6. Clear medicines (referenced by prescriptions)
+        db.session.execute(text('DELETE FROM medicines'))
+        
+        # 7. Clear departments (referenced by doctor_profiles)
+        db.session.execute(text('DELETE FROM departments'))
+        
+        # 8. Clear hospitals (referenced by departments)
+        db.session.execute(text('DELETE FROM hospitals'))
+        
+        # Reset auto-increment counters (SQLite syntax)
+        tables_to_reset = [
+            'users', 'hospitals', 'departments', 'doctor_profiles', 
+            'appointments', 'prescriptions', 'medicines', 'queue_logs', 'audit_logs'
+        ]
+        
+        for table in tables_to_reset:
+            try:
+                # Reset SQLite sequence
+                db.session.execute(text(f'DELETE FROM sqlite_sequence WHERE name="{table}"'))
+            except Exception as e:
+                # Table might not have auto-increment or might not exist in sqlite_sequence
+                app.logger.debug(f'Could not reset sequence for {table}: {e}')
+        
+        db.session.commit()
+        
+        # Verify reset
+        total_records = (
+            User.query.count() + Hospital.query.count() + Department.query.count() +
+            DoctorProfile.query.count() + Appointment.query.count() + 
+            Prescription.query.count() + Medicine.query.count()
+        )
+        
+        app.logger.info(f'Database reset complete. Total records remaining: {total_records}')
+        return True
+        
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f'Seeding failed: {str(e)}')
+        app.logger.error(f'Database reset failed: {e}')
+        return False
 
 # =======================
 # AUTO CLEANUP — PAST APPOINTMENTS
@@ -2718,7 +2755,7 @@ def cleanup_past_appointments():
         today = date.today()
         expired = Appointment.query.filter(
             Appointment.appointment_date < today,
-            Appointment.status.in_(['booked', 'in_queue', 'consulting'])
+            Appointment.status.in_(['booked', 'in_queue', 'in_consultation', 'consulting'])
         ).all()
         count = len(expired)
         for appt in expired:
@@ -2726,9 +2763,53 @@ def cleanup_past_appointments():
         if count:
             db.session.commit()
             app.logger.info(f'Auto-cleanup: marked {count} past appointment(s) as expired')
+            
+        # Reset token numbers for doctors with appointments today
+        reset_daily_tokens()
+            
     except Exception as e:
         db.session.rollback()
         app.logger.error(f'Auto-cleanup failed: {e}')
+
+
+def reset_daily_tokens():
+    """Reset token numbers to start from 1 for each doctor each day."""
+    try:
+        today = date.today()
+        
+        # Get all doctors with appointments today
+        doctors_today = db.session.execute(
+            text('SELECT DISTINCT doctor_id FROM appointments '
+                 'WHERE appointment_date = :today AND status != "expired"'),
+            {'today': today}
+        ).fetchall()
+        
+        for doctor_row in doctors_today:
+            doctor_id = doctor_row[0]
+            
+            # Get appointments for this doctor today, ordered by creation time
+            appointments = db.session.execute(
+                text('SELECT id, token_number FROM appointments '
+                     'WHERE doctor_id = :did AND appointment_date = :today '
+                     'AND status != "expired" ORDER BY id'),
+                {'did': doctor_id, 'today': today}
+            ).fetchall()
+            
+            # Reassign token numbers starting from 1
+            for idx, appt_row in enumerate(appointments, 1):
+                if appt_row[1] != idx:  # Only update if token number is different
+                    db.session.execute(
+                        text('UPDATE appointments SET token_number = :token '
+                             'WHERE id = :appt_id'),
+                        {'token': idx, 'appt_id': appt_row[0]}
+                    )
+        
+        db.session.commit()
+        app.logger.info(f'Reset token numbers for {len(doctors_today)} doctor(s)')
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Token reset failed: {e}')
 
 
 def _nightly_cleanup_loop():
@@ -2755,11 +2836,14 @@ if __name__ == '__main__':
         # Create database tables
         db.create_all()
         
-        # Seed production data
-        seed_production_data()
+        # Seed production data - DISABLED for clean start
+        # seed_production_data()  # Commented out - system starts completely clean
 
         # Clean up any leftover past appointments on startup
         cleanup_past_appointments()
+        
+        # Also run an immediate token reset for today's appointments
+        reset_daily_tokens()
 
         # Schedule nightly cleanup at midnight
         schedule_nightly_cleanup()

@@ -1187,3 +1187,272 @@
   .dcp-stat { font-size: 10px; padding: 2px 5px; }
   .dcp-main-content { padding: 8px 6px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   🗄️ DATABASE RESET FUNCTIONALITY
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Database Reset Button */
+.dcp-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.dcp-reset-btn:hover {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  transform: translateY(-1px);
+}
+
+.dcp-reset-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+/* Modal Overlay */
+.dcp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Modal Container */
+.dcp-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header */
+.dcp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--dcp-border);
+}
+
+.dcp-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dcp-text);
+}
+
+.dcp-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--dcp-text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.dcp-modal-close:hover {
+  background: var(--dcp-border);
+  color: var(--dcp-text);
+}
+
+/* Modal Content */
+.dcp-modal-content {
+  padding: 24px;
+}
+
+/* Reset Warning Section */
+.dcp-reset-warning {
+  text-align: center;
+  color: var(--dcp-text);
+}
+
+.dcp-reset-warning h4 {
+  margin: 16px 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #dc3545;
+}
+
+.dcp-reset-warning p {
+  margin: 12px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.dcp-reset-warning ul {
+  text-align: left;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dcp-reset-warning li {
+  margin: 8px 0;
+  font-size: 15px;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* Database Status Display */
+.dcp-db-status {
+  background: var(--dcp-background);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.dcp-db-status h5 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dcp-text);
+}
+
+.dcp-status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--dcp-text-light);
+}
+
+.dcp-status-grid strong {
+  color: var(--dcp-text);
+  font-weight: 600;
+}
+
+/* Modal Actions */
+.dcp-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--dcp-border);
+  background: var(--dcp-background);
+}
+
+/* Button Styles */
+.dcp-btn-secondary {
+  padding: 10px 20px;
+  background: white;
+  color: var(--dcp-text-light);
+  border: 1px solid var(--dcp-border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-btn-secondary:hover {
+  background: var(--dcp-background);
+  color: var(--dcp-text);
+  border-color: var(--dcp-text-light);
+}
+
+.dcp-btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dcp-btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.dcp-btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Loading Spinner */
+.dcp-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Modal */
+@media (max-width: 600px) {
+  .dcp-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .dcp-modal-header,
+  .dcp-modal-content,
+  .dcp-modal-actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .dcp-status-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dcp-modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .dcp-btn-secondary,
+  .dcp-btn-danger {
+    width: 100%;
+    justify-content: center;
+  }
+}

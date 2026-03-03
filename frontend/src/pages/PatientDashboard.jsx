@@ -23,8 +23,6 @@ const PatientDashboard = () => {
   // ref so the polling interval always sees the currently selected appointment
   // without being a useEffect dependency (which would reset selection)
   const activeApptRef = useRef(null);
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [profileForm, setProfileForm] = useState({ full_name: '', phone: '' });
   const [timeError, setTimeError] = useState('');
   const [bookingForm, setBookingForm] = useState({
     hospital_id: '', doctor_id: '', appointment_date: new Date().toISOString().split('T')[0], appointment_time: '', department_id: '', patient_name: user?.full_name || '', symptoms: ''
@@ -100,7 +98,11 @@ const PatientDashboard = () => {
           const aToday = a.appointment_date === today ? 0 : 1;
           const bToday = b.appointment_date === today ? 0 : 1;
           if (aToday !== bToday) return aToday - bToday;
-          return new Date(a.appointment_date) - new Date(b.appointment_date);
+          if (a.appointment_date !== b.appointment_date) {
+            return new Date(a.appointment_date) - new Date(b.appointment_date);
+          }
+          // Same date: sort by doctor name to group appointments
+          return (a.doctor_name || '').localeCompare(b.doctor_name || '');
         });
       setActiveAppointments(activeList);
       const active = activeList[0] || null;
@@ -151,20 +153,9 @@ const PatientDashboard = () => {
           })
           .catch(() => setIsRefreshing(false));
       }
-    }, 5000);
+    }, 60000); // Update every 1 minute for accurate wait times
     return () => clearInterval(interval);
   }, []); // mount/unmount only — ref keeps it current
-
-  // Live wait timer — counts up from when the appointment was booked, updates every 1 minute
-  const [waitElapsed, setWaitElapsed] = useState(0);
-  useEffect(() => {
-    if (!activeAppointment?.created_at) { setWaitElapsed(0); return; }
-    const bookedAt = new Date(activeAppointment.created_at);
-    const tick = () => setWaitElapsed(Math.floor((Date.now() - bookedAt.getTime()) / 60000));
-    tick();
-    const t = setInterval(tick, 60000);
-    return () => clearInterval(t);
-  }, [activeAppointment?.created_at]);
 
   const loadDoctors = async (departmentId) => {
     try {
@@ -209,21 +200,7 @@ const PatientDashboard = () => {
     }
   };
 
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    setBookMsg(''); setBookError('');
-    try {
-      const result = await updateProfile(profileForm);
-      if (result.success) {
-        setBookMsg('Profile updated successfully!');
-        setShowProfileForm(false);
-      } else {
-        setBookError(result.error || 'Profile update failed');
-      }
-    } catch (err) {
-      setBookError('Failed to update profile');
-    }
-  };
+
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
   const formatTime = (t) => t ? new Date('2000-01-01T' + t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
@@ -279,15 +256,6 @@ const PatientDashboard = () => {
       <div className="dash-header">
         <h2>Welcome, {user?.full_name || 'Patient'}</h2>
         <p style={{fontSize:'13px',color:'var(--text-muted)',fontWeight:'400'}}>Real-Time Queue Tracking</p>
-        <button 
-          onClick={() => {
-            setProfileForm({ full_name: user?.full_name || '', phone: user?.phone || '' });
-            setShowProfileForm(true);
-          }}
-          style={{fontSize:'12px',padding:'4px 8px',background:'var(--primary)',color:'white',border:'none',borderRadius:'4px',cursor:'pointer',marginLeft:'auto'}}
-        >
-          Update Profile
-        </button>
       </div>
 
       {/* Alerts */}
@@ -298,7 +266,9 @@ const PatientDashboard = () => {
       {activeAppointments.length > 1 && (
         <div className="lq-appt-tabs">
           {activeAppointments.map((appt, idx) => {
-            const initials = (appt.doctor_name || '').replace('Dr. ', '').split(' ').slice(0, 2).map(w => w[0]).join('');
+            const initials = (appt.doctor_name || '').replace('Dr. ', '').split(' ').slice(0, 2).map(w => w[0]).join(''); 
+            const isToday = appt.appointment_date === new Date().toISOString().split('T')[0];
+            
             return (
               <button
                 key={appt.id}
@@ -316,7 +286,11 @@ const PatientDashboard = () => {
                 <span className="lq-tab-avatar">{initials}</span>
                 <div className="lq-tab-info">
                   <div className="lq-tab-name">{appt.doctor_name}</div>
-                  <div className="lq-tab-date">{formatDate(appt.appointment_date)}</div>
+                  <div className="lq-tab-date">
+                    {formatDate(appt.appointment_date)}
+                    {isToday && <small style={{color:'#22c55e',marginLeft:'4px'}}>Today</small>}
+                  </div>
+                  <div className="lq-tab-token" style={{fontSize:'10px',color:'#6b7280'}}>Token #{appt.token_number}</div>
                 </div>
               </button>
             );
@@ -373,11 +347,11 @@ const PatientDashboard = () => {
               <div className="lq-sc">
                 <div className="lq-sc-label">Wait Time</div>
                 <div className="lq-sc-value green">
-                  {waitElapsed < 1
-                    ? 'Just now'
-                    : waitElapsed < 60
-                      ? `${waitElapsed} min`
-                      : `${Math.floor(waitElapsed / 60)}h ${waitElapsed % 60}m`}
+                  {liveQueue?.estimated_wait_time !== undefined ? (
+                    liveQueue.estimated_wait_time === 0 ? 'Your turn!' :
+                    liveQueue.estimated_wait_time < 60 ? `${liveQueue.estimated_wait_time} min` :
+                    `${Math.floor(liveQueue.estimated_wait_time / 60)}h ${liveQueue.estimated_wait_time % 60}m`
+                  ) : '—'}
                 </div>
               </div>
             </div>
@@ -561,48 +535,7 @@ const PatientDashboard = () => {
         </div>
       )}
 
-      {/* Profile Update Form */}
-      {showProfileForm && (
-        <div className="card mb-4">
-          <div className="card-header">
-            <span className="card-title">Update Profile</span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowProfileForm(false)}>✕</button>
-          </div>
-          <div className="card-body">
-            <form onSubmit={handleProfileUpdate}>
-              <div className="form-group">
-                <label>Full Name *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter your full name"
-                  value={profileForm.full_name}
-                  onChange={e => setProfileForm({...profileForm, full_name: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input
-                  type="tel"
-                  className="form-control"
-                  placeholder="Enter your phone number"
-                  value={profileForm.phone}
-                  onChange={e => setProfileForm({...profileForm, phone: e.target.value})}
-                />
-              </div>
-              <div style={{display:'flex',gap:'12px'}}>
-                <button type="submit" className="btn btn-primary">
-                  Update Profile
-                </button>
-                <button type="button" className="btn btn-outline" onClick={() => setShowProfileForm(false)}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
 
       {/* My Appointments & Prescriptions */}
       <div className="content-grid-2">

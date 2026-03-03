@@ -134,6 +134,12 @@ export const utilAPI = {
   getStats: () => api.get('/api/stats'),
 };
 
+// Database Management APIs
+export const databaseAPI = {
+  resetDatabase: () => api.post('/api/database/reset'),
+  getDatabaseStatus: () => api.get('/api/database/status'),
+};
+
 // Export the helper
 export { ensureArray };
 

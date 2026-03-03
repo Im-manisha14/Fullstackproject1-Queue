@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doctorAPI } from '../utils/api';
+import { doctorAPI, databaseAPI } from '../utils/api';
 import { 
   Users, Clock, CheckCircle, AlertTriangle, User, 
   Phone, FileText, Timer, ChevronRight, Stethoscope,
-  Calendar, Activity, Bell, LogOut, CircleDot
+  Calendar, Activity, Bell, LogOut, CircleDot, Database, Trash2
 } from 'lucide-react';
 import './DoctorControlPanel.css';
 
@@ -104,6 +104,11 @@ const DoctorControlPanel = () => {
   const medInputRef = useRef(null);
   const timerRef = useRef(null);
 
+  // Database Reset State
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [dbStatus, setDbStatus] = useState(null);
+
   /* ═══════════════════════════════════════════════════════════════════════════════
      🏥 UTILITY FUNCTIONS - DATA PROCESSING
   ═══════════════════════════════════════════════════════════════════════════════ */
@@ -183,6 +188,46 @@ const DoctorControlPanel = () => {
         return 'status-completed';
       default:
         return 'status-waiting';
+    }
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════════════════
+     🗄️ DATABASE MANAGEMENT - RESET OPERATIONS
+  ═══════════════════════════════════════════════════════════════════════════════ */
+  const loadDatabaseStatus = useCallback(async () => {
+    try {
+      const response = await databaseAPI.getDatabaseStatus();
+      setDbStatus(response.data.database);
+    } catch (error) {
+      console.error('Failed to load database status:', error);
+    }
+  }, []);
+
+  const handleDatabaseReset = async () => {
+    setResetLoading(true);
+    try {
+      await databaseAPI.resetDatabase();
+      setMsg('✅ Database reset successfully! All data cleared and IDs reset to start from 1.');
+      setError('');
+      setShowResetModal(false);
+      
+      // Clear local state
+      setQueue([]);
+      setSummary({});
+      setSelectedPatient(null);
+      setConsultingPatient(null);
+      setShowRx(false);
+      
+      // Reload data
+      setTimeout(() => {
+        window.location.reload(); // Full page reload to ensure clean state
+      }, 2000);
+      
+    } catch (error) {
+      setError(`❌ Database reset failed: ${error.response?.data?.error || error.message}`);
+      setMsg('');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -287,8 +332,12 @@ const DoctorControlPanel = () => {
     setMsg(''); 
     setError('');
     
+    console.log('handleCallNext called - attempting to call next patient');
+    
     try {
       const response = await doctorAPI.callNext();
+      console.log('Call next response:', response.data);
+      
       const called = response.data?.appointment || response.data?.current_patient;
       
       if (called) {
@@ -300,11 +349,13 @@ const DoctorControlPanel = () => {
         setSelectedPatient(called);
         setConsultingPatient(called);
         setMsg('Patient called successfully - Ready for consultation');
+        console.log('Successfully called patient:', called.patient_name);
         await Promise.all([loadQueue(), loadSummary()]);
       }
       
     } catch (e) {
-      setError(e.response?.data?.message || 'No patients waiting in queue');
+      console.error('Error calling next patient:', e);
+      setError(e.response?.data?.message || e.response?.data?.error || 'Failed to call next patient');
     }
   };
 
@@ -355,12 +406,12 @@ const DoctorControlPanel = () => {
   useEffect(() => {
     const initializeSystem = async () => {
       setLoading(true);
-      await Promise.all([loadProfile(), loadQueue(), loadSummary()]);
+      await Promise.all([loadProfile(), loadQueue(), loadSummary(), loadDatabaseStatus()]);
       setLoading(false);
     };
     
     initializeSystem();
-  }, [loadProfile, loadQueue, loadSummary]);
+  }, [loadProfile, loadQueue, loadSummary, loadDatabaseStatus]);
 
   // Live polling system
   useEffect(() => {
@@ -403,6 +454,13 @@ const DoctorControlPanel = () => {
       return () => clearTimeout(timer);
     }
   }, [msg, error]);
+
+  // Load database status when modal opens
+  useEffect(() => {
+    if (showResetModal) {
+      loadDatabaseStatus();
+    }
+  }, [showResetModal, loadDatabaseStatus]);
 
   /* ═══════════════════════════════════════════════════════════════════════════════
      🏥 RENDER - PRODUCTION HOSPITAL CONTROL PANEL
@@ -448,6 +506,11 @@ const DoctorControlPanel = () => {
             <button className="dcp-logout-btn" onClick={() => navigate('/doctor/select')}>
               <LogOut size={18} />
               <span>Switch Doctor</span>
+            </button>
+            
+            <button className="dcp-reset-btn" onClick={() => setShowResetModal(true)}>
+              <Database size={18} />
+              <span>Reset DB</span>
             </button>
           </div>
         </div>
@@ -811,6 +874,71 @@ const DoctorControlPanel = () => {
           </div>
         </div>
       </main>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════════
+           🗄️ DATABASE RESET MODAL
+      ═══════════════════════════════════════════════════════════════════════════════ */}
+      {showResetModal && (
+        <div className="dcp-modal-overlay" onClick={() => setShowResetModal(false)}>
+          <div className="dcp-modal" onClick={e => e.stopPropagation()}>
+            <div className="dcp-modal-header">
+              <h3>🗄️ Database Reset</h3>
+              <button className="dcp-modal-close" onClick={() => setShowResetModal(false)}>×</button>
+            </div>
+            
+            <div className="dcp-modal-content">
+              <div className="dcp-reset-warning">
+                <Trash2 size={48} color="#ff4757" />
+                <h4>⚠️ WARNING: Complete Data Wipe</h4>
+                <p>This action will permanently delete:</p>
+                <ul>
+                  <li>✗ All user accounts (patients, doctors, pharmacy)</li>
+                  <li>✗ All appointments and queue data</li>
+                  <li>✗ All prescriptions and medicines</li>
+                  <li>✗ All hospitals and departments</li>
+                  <li>✗ All audit logs and system history</li>
+                </ul>
+                <p><strong>The system will start completely fresh with no data.</strong></p>
+                
+                {dbStatus && (
+                  <div className="dcp-db-status">
+                    <h5>Current Database Status:</h5>
+                    <div className="dcp-status-grid">
+                      <span>Users: <strong>{dbStatus.users}</strong></span>
+                      <span>Appointments: <strong>{dbStatus.appointments}</strong></span>
+                      <span>Hospitals: <strong>{dbStatus.hospitals}</strong></span>
+                      <span>Total Records: <strong>{dbStatus.total_records}</strong></span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="dcp-modal-actions">
+              <button className="dcp-btn-secondary" onClick={() => setShowResetModal(false)}>
+                Cancel
+              </button>
+              <button 
+                className="dcp-btn-danger" 
+                onClick={handleDatabaseReset}
+                disabled={resetLoading}
+              >
+                {resetLoading ? (
+                  <>
+                    <div className="dcp-spinner"></div>
+                    Resetting Database...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Yes, Reset Database
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

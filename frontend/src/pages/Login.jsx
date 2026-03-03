@@ -36,8 +36,8 @@ const Login = () => {
   };
 
   const demoAccounts = [
-    { role: 'Patient', email: 'patient@test.com', password: 'password123', icon: 'P' },
-    { role: 'Doctor',  email: 'doctor@example.com',  password: 'password123',  icon: 'D' },
+    { role: 'Patient', email: 'patient@test.com', password: 'testpass123', icon: 'P' },
+    { role: 'Doctor',  email: 'doctor@test.com',  password: 'testpass123',  icon: 'D' },
     { role: 'Pharmacy',email: 'pharmacy@test.com',password: 'password123',icon: 'Rx' },
   ];
 
