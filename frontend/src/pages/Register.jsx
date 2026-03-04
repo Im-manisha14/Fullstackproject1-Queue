@@ -70,7 +70,10 @@ ole_ + r.value} className="role-label">
               <div className="form-group">
                 <label htmlFor="full_name">Full Name</label>
                 <input id="full_name" type="text" name="full_name" className="form-control"
-                  placeholder="John Doe" value={formData.full_name} onChange={handleChange} required />
+                  placeholder="e.g., John Doe, Mary O'Connor, José María" value={formData.full_name} onChange={handleChange} required minLength="2" />
+                <small className="form-help">
+                  Accepts letters, spaces, dots (.), hyphens (-), and apostrophes ('). Minimum 2 characters.
+                </small>
               </div>
               <div className="form-group">
                 <label htmlFor="username">Username</label>

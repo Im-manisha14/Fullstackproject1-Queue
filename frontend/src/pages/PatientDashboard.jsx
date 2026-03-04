@@ -480,11 +480,15 @@ const PatientDashboard = () => {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Enter patient full name"
+                  placeholder="Enter full name (e.g., John Doe, Mary O'Connor, José María)"
                   value={bookingForm.patient_name}
                   onChange={e => setBookingForm({...bookingForm, patient_name: e.target.value})}
                   required
+                  minLength="2"
                 />
+                <small className="form-help">
+                  Accepts letters, spaces, dots (.), hyphens (-), and apostrophes ('). Minimum 2 characters.
+                </small>
               </div>
               <div className="form-row">
                 <div className="form-group">

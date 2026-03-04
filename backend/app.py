@@ -281,8 +281,9 @@ def validate_user_input(data, required_fields=None):
         full_name = str(data['full_name']).strip()
         if len(full_name) < 2:
             errors['full_name'] = "Full name must be at least 2 characters long"
-        if not re.match(r'^[a-zA-Z\s\.\-]+$', full_name):
-            errors['full_name'] = "Full name can only contain letters, spaces, dots, and hyphens"
+        # Allow letters (including international), spaces, dots, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-ZÀ-ÿĀ-žА-я\u4e00-\u9fff\s\.\-\']+$', full_name, re.UNICODE):
+            errors['full_name'] = "Full name can only contain letters, spaces, dots, hyphens, and apostrophes"
     
     # Validate role
     if 'role' in data:
@@ -1396,7 +1397,8 @@ def book_appointment():
         if len(patient_name) < 2:
             return jsonify({'error': 'Patient name must be at least 2 characters long'}), 400
         
-        if not re.match(r'^[a-zA-Z\s\.\-\']+$', patient_name):
+        # Allow letters (including international), spaces, dots, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-ZÀ-ÿĀ-žА-я\u4e00-\u9fff\s\.\-\']+$', patient_name, re.UNICODE):
             return jsonify({'error': 'Patient name can only contain letters, spaces, dots, hyphens, and apostrophes'}), 400
 
         appointment = Appointment(
