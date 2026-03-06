@@ -218,11 +218,18 @@ const DoctorControlPanel = () => {
       
       // Process and sort queue by hospital priority
       // Use backend priority field first (set by triage), fall back to symptom-based detection
-      const processedQueue = list.map(patient => ({
-        ...patient,
-        urgency: patient.priority || getUrgencyLevel(patient),
-        display_time: formatTime(patient.appointment_time)
-      }));
+      const processedQueue = list.map(patient => {
+        const appointmentTime = new Date(patient.appointment_time);
+        const currentTime = new Date();
+        const waitTime = Math.max(0, Math.floor((currentTime - appointmentTime) / 60000)); // Wait time in minutes
+
+        return {
+          ...patient,
+          urgency: patient.priority || getUrgencyLevel(patient),
+          display_time: formatTime(patient.appointment_time),
+          waitTime: `${waitTime} min`
+        };
+      });
 
       // Hospital sorting: Consulting → Urgent → Priority → Normal → Completed
       const sortedQueue = processedQueue.sort((a, b) => {
@@ -441,11 +448,11 @@ const DoctorControlPanel = () => {
         <div className="dcp-header-content">
           <div className="dcp-doctor-identity">
             <div className="dcp-doctor-avatar">
-              {initials(profile?.full_name || user?.name || 'Doctor')}
+              {initials(profile?.full_name || user?.full_name || 'Doctor')}
             </div>
             <div className="dcp-doctor-info">
-              <h1 className="dcp-doctor-name">{profile?.full_name || user?.name || 'Doctor Portal'}</h1>
-              <p className="dcp-doctor-specialty">{profile?.specialty || 'General Medicine'}</p>
+              <h1 className="dcp-doctor-name">{profile?.full_name || user?.full_name || 'Doctor Portal'}</h1>
+              <p className="dcp-doctor-specialty">{profile?.specialization || 'General Medicine'}</p>
             </div>
           </div>
           
@@ -502,15 +509,16 @@ const DoctorControlPanel = () => {
                   <tr>
                     <th>Token</th>
                     <th>Patient</th>
-                    <th className="visit-cell">Visit</th>
+                    <th className="visit-cell">Visit Time</th>
                     <th className="urgency-cell">Urgency</th>
                     <th>Status</th>
+                    <th>Wait Time</th>
                   </tr>
                 </thead>
                 <tbody>
                   {queue.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="dcp-queue-empty">
+                      <td colSpan="6" className="dcp-queue-empty">
                         No patients in queue
                       </td>
                     </tr>
@@ -522,27 +530,24 @@ const DoctorControlPanel = () => {
                         onClick={() => setSelectedPatient(patient)}
                       >
                         <td className="token-cell">
-                          <span className="token-number">#{patient.token_number || '—'}</span>
+                          <span className="token-number">#{patient.token_number || 'N/A'}</span>
                         </td>
                         <td className="patient-cell">
                           <div className="patient-info">
                             <span className="patient-name">{patient.patient_name || 'Unknown Patient'}</span>
-                            <span className="patient-time">{patient.display_time}</span>
                           </div>
                         </td>
-                        <td className="visit-cell">
-                          <span className="visit-type">{patient.visit_type || 'Regular'}</span>
+                        <td className="time-cell">
+                          <span className="appointment-time">{patient.display_time || formatTime(patient.appointment_time) || 'Unknown Time'}</span>
                         </td>
                         <td className="urgency-cell">
-                          <div className={`urgency-indicator urgency-${patient.urgency}`}>
-                            <CircleDot size={12} />
-                            <span>{patient.urgency.toUpperCase()}</span>
-                          </div>
+                          <span className={`urgency-badge urgency-${patient.urgency || 'normal'}`}>{patient.urgency || 'normal'}</span>
                         </td>
                         <td className="status-cell">
-                          <span className={`status-badge ${getStatusClass(patient.status)}`}>
-                            {getStatusDisplay(patient.status)}
-                          </span>
+                          <span className="status">{patient.status || 'Unknown Status'}</span>
+                        </td>
+                        <td className="wait-time-cell">
+                          <span className="wait-time">{patient.waitTime}</span>
                         </td>
                       </tr>
                     ))

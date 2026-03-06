@@ -210,6 +210,35 @@ const PharmacyDashboard = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   };
+
+  // Format HH:MM time to 12-hour format
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '—';
+    try {
+      const hmMatch = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
+      if (hmMatch) {
+        let h = parseInt(hmMatch[1], 10);
+        const m = hmMatch[2];
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${m} ${ampm}`;
+      }
+      const date = new Date(timeStr);
+      if (isNaN(date.getTime())) return timeStr;
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch {
+      return timeStr;
+    }
+  };
+  
+  // Calculate wait time for each prescription
+  const calculateWaitTime = (appointmentTime) => {
+    if (!appointmentTime) return 'N/A';
+    const now = new Date();
+    const appointmentDate = new Date(appointmentTime);
+    const diffInMinutes = Math.floor((now - appointmentDate) / 60000);
+    return diffInMinutes > 0 ? `${diffInMinutes} min` : 'Now';
+  };
   
   // Get next action button for prescription
   const getActionButton = (prescription) => {
@@ -343,45 +372,83 @@ const PharmacyDashboard = () => {
             </div>
             <div className="table-wrapper">
               {liveQueue.length > 0 ? (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Token</th>
-                      <th>Patient</th>
-                      <th className="ph-doctor-col">Doctor</th>
-                      <th className="ph-time-col">Time</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {liveQueue.map(prescription => (
-                      <tr 
-                        key={prescription.id}
-                        onClick={() => selectPrescription(prescription.id)}
-                        style={{
-                          cursor: 'pointer',
-                          background: selectedPrescription?.id === prescription.id ? 'rgba(91,124,153,0.05)' : 'white'
-                        }}
-                      >
-                        <td>
-                          <strong style={{fontFamily:'monospace',fontSize:'15px'}}>
-                            #{prescription.token_number || prescription.pickup_token}
-                          </strong>
-                        </td>
-                        <td>{prescription.patient_name}</td>
-                        <td className="ph-doctor-col">{prescription.doctor_name}</td>
-                        <td className="ph-time-col" style={{fontSize:'12px',color:'var(--text-muted)'}}>
-                          {formatDate(prescription.created_at)}
-                        </td>
-                        <td>{statusBadge(prescription.pharmacy_status)}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {getActionButton(prescription)}
-                        </td>
+                <>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Token</th>
+                        <th>Patient</th>
+                        <th className="ph-doctor-col">Doctor</th>
+                        <th className="ph-time-col">Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {liveQueue.map(prescription => {
+                        const waitTime = calculateWaitTime(prescription.appointment_time);
+                        return (
+                          <tr 
+                            key={prescription.id}
+                            onClick={() => selectPrescription(prescription.id)}
+                            style={{
+                              cursor: 'pointer',
+                              background: selectedPrescription?.id === prescription.id ? 'rgba(91,124,153,0.05)' : 'white'
+                            }}
+                          >
+                            <td>
+                              <span className="token-number">#{prescription.token_number || 'N/A'}</span>
+                            </td>
+                            <td>
+                              <span className="patient-name">{prescription.patient_name || 'Unknown Patient'}</span>
+                            </td>
+                            <td>
+                              <span className="doctor-name">{prescription.doctor_name || 'Unknown Doctor'}</span>
+                            </td>
+                            <td>
+                              <span className="appointment-time">{formatTime(prescription.appointment_time)}</span>
+                            </td>
+                            <td>
+                              {statusBadge(prescription.pharmacy_status)}
+                            </td>
+                            <td onClick={e => e.stopPropagation()}>
+                              {getActionButton(prescription)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  
+                  {/* Pagination */}
+                  {recordsPages > 1 && (
+                    <div style={{
+                      display:'flex',
+                      justifyContent:'center',
+                      alignItems:'center',
+                      gap:'8px',
+                      padding:'16px'
+                    }}>
+                      <button 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setRecordsPage(p => Math.max(1, p - 1))}
+                        disabled={recordsPage === 1}
+                      >
+                        Previous
+                      </button>
+                      <span style={{fontSize:'13px',color:'var(--text-muted)'}}>
+                        Page {recordsPage} of {recordsPages}
+                      </span>
+                      <button 
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setRecordsPage(p => Math.min(recordsPages, p + 1))}
+                        disabled={recordsPage === recordsPages}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="empty-state">
                   <Pill size={40} className="empty-state-icon" style={{color: 'var(--text-muted)', marginBottom: '10px'}} />
@@ -416,7 +483,7 @@ const PharmacyDashboard = () => {
                 
                 <div style={{marginBottom:'16px'}}>
                   <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Patient</div>
-                  <div>{selectedPrescription.patient_name}</div>
+                  <div>{selectedPrescription.patient_name || selectedPrescription.full_name}</div>
                 </div>
                 
                 <div style={{marginBottom:'16px'}}>

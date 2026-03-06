@@ -8,6 +8,7 @@ from sqlalchemy import text, func
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, get_jwt
 from flask_cors import CORS
+from flask_migrate import Migrate
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, time, date, timezone
@@ -76,6 +77,7 @@ app.config['SECRET_KEY'] = SECRET_KEY
 # Initialize extensions
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
+migrate = Migrate(app, db)
 
 # CORS Configuration - allow any localhost port for local development
 # Generates a list covering ports 3000-3099 so Vite can rotate freely
@@ -546,14 +548,16 @@ class Prescription(db.Model):
     doctor = db.relationship('User', foreign_keys=[doctor_id])
     
     def to_dict(self):
+        appt = self.appointment
         return {
             'id': self.id,
             'appointment_id': self.appointment_id,
-            'token_number': self.appointment.token_number if self.appointment else None,
+            'token_number': appt.token_number if appt else None,
+            'appointment_time': appt.appointment_time.strftime('%H:%M') if appt and appt.appointment_time else None,
             'patient_id': self.patient_id,
-            'patient_name': self.patient.full_name,
+            'patient_name': self.patient.full_name if self.patient else 'Unknown Patient',
             'doctor_id': self.doctor_id,
-            'doctor_name': self.doctor.full_name,
+            'doctor_name': self.doctor.full_name if self.doctor else 'Unknown Doctor',
             'prescription_data': self.prescription_data,
             'pharmacy_status': self.pharmacy_status,
             'pharmacy_notes': self.pharmacy_notes,
@@ -1926,65 +1930,22 @@ def complete_consultation():
         data = request.get_json()
         
         appointment_id = data.get('appointment_id')
-        doctor_notes = data.get('doctor_notes', '')
-        prescription_data = data.get('prescription_data', [])
         
-        appointment = Appointment.query.filter_by(
-            id=appointment_id,
-            doctor_id=current_user_id,
-            status='consulting'
-        ).first()
-        
+        appointment = Appointment.query.get(appointment_id)
         if not appointment:
-            return jsonify({'error': 'Active consultation not found'}), 404
+            return jsonify({'error': 'Appointment not found'}), 404
         
-        # Update appointment
         appointment.status = 'completed'
-        appointment.actual_end_time = datetime.utcnow()
-        appointment.doctor_notes = doctor_notes
-        
-        # Create prescription if provided
-        prescription_id = None
-        if prescription_data:
-            prescription = Prescription(
-                appointment_id=appointment.id,
-                patient_id=appointment.patient_id,
-                doctor_id=current_user_id,
-                prescription_data=prescription_data,
-                pickup_token=str(random.randint(1000, 9999))
-            )
-            db.session.add(prescription)
-            db.session.commit()
-            prescription_id = prescription.id
-            
-            # Add to pharmacy queue for real-time updates
-            prescription_queue.append(prescription.id)
-            
-            # Notify pharmacy (disabled for now)
-            # socketio.emit('new_prescription', {
-            #     'prescription_id': prescription.id,
-            #     'patient_name': appointment.patient.full_name,
-            #     'pickup_token': prescription.pickup_token
-            # }, room='pharmacy')
-        
-        db.session.commit()
-        
-        # Log completion
-        log_entry = QueueLog(
-            appointment_id=appointment.id,
-            status_change='Consultation completed',
-            notes=f'Prescription created: {prescription_id}' if prescription_id else 'No prescription'
-        )
-        db.session.add(log_entry)
+        appointment.actual_end_time = datetime.now()
         db.session.commit()
         
         return jsonify({
-            'message': 'Consultation completed successfully',
-            'prescription_id': prescription_id
+            'message': 'Consultation completed',
+            'patient_name': appointment.patient.full_name if appointment.patient else 'Unknown',
+            'appointment_time': appointment.actual_end_time.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': appointment.status
         }), 200
-        
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # Frontend expects /api/prescriptions endpoint
@@ -2122,7 +2083,7 @@ def get_pharmacy_prescriptions():
         
         if date_to:
             date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
-            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
             query = query.filter(Prescription.created_at <= date_to_obj)
         
         # Get total count
@@ -2638,8 +2599,6 @@ def migrate_database():
                 ON medicines (LOWER(name));
             """))
             migration_results.append('Created medicine name unique index')
-        except Exception as e:
-            migration_results.append(f'Medicine index: {str(e)[:100]}')
         except Exception as e:
             migration_results.append(f'Medicine index: {str(e)[:100]}')
         
