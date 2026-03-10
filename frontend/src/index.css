@@ -791,7 +791,7 @@ tr:last-child td { border-bottom: none; }
   background: rgba(82,183,136,0.06);
   animation: pulse-badge 1.8s ease-in-out infinite;
 }
-.lq-pos-icon { font-size: 18px; flex-shrink: 0; opacity: 0.7; }
+.lq-pos-icon { display: flex; align-items: center; flex-shrink: 0; opacity: 0.7; }
 .lq-pos-main {
   font-size: 13px;
   font-weight: 700;
@@ -812,7 +812,7 @@ tr:last-child td { border-bottom: none; }
   border-radius: 12px;
   margin-bottom: 24px;
 }
-.lq-empty-icon { font-size: 44px; margin-bottom: 14px; opacity: 0.25; }
+.lq-empty-icon { display: flex; justify-content: center; margin-bottom: 14px; opacity: 0.3; color: var(--text-muted); }
 .lq-empty h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .lq-empty p  { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; max-width: 360px; margin-left: auto; margin-right: auto; }
 

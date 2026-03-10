@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import { Pill, ClipboardList, Package, ChevronRight, X, RefreshCw, Plus } from 'lucide-react';
+import { Pill, ClipboardList, Package, ChevronRight, X, RefreshCw, Plus, Check, RotateCcw } from 'lucide-react';
 import './PharmacyDashboard.css';
 
 const PharmacyDashboard = () => {
@@ -161,9 +161,9 @@ const PharmacyDashboard = () => {
 
   const phBadge = (status) => {
     const map = {
-      pending:   <span className="ph-badge ph-badge-pending">● New</span>,
-      preparing: <span className="ph-badge ph-badge-preparing">⟳ Preparing</span>,
-      ready:     <span className="ph-badge ph-badge-ready">✓ Ready</span>,
+      pending:   <span className="ph-badge ph-badge-pending">New</span>,
+      preparing: <span className="ph-badge ph-badge-preparing">Preparing</span>,
+      ready:     <span className="ph-badge ph-badge-ready">Ready</span>,
       dispensed: <span className="ph-badge ph-badge-dispensed">Dispensed</span>,
       cancelled: <span className="ph-badge ph-badge-cancelled">Cancelled</span>,
     };
@@ -175,8 +175,8 @@ const PharmacyDashboard = () => {
     const sz = compact ? 'ph-btn ph-btn-sm' : 'ph-btn ph-btn-full';
     if (s === 'pending')   return <button className={`${sz} ph-btn-amber`}   onClick={e => { e.stopPropagation(); updateStatus(px.id, 'preparing'); }} disabled={actionLoading}>Start Preparing</button>;
     if (s === 'preparing') return <button className={`${sz} ph-btn-green`}   onClick={e => { e.stopPropagation(); updateStatus(px.id, 'ready'); }}    disabled={actionLoading}>Mark Ready</button>;
-    if (s === 'ready')     return <button className={`${sz} ph-btn-primary`} onClick={e => { e.stopPropagation(); updateStatus(px.id, 'dispensed'); }} disabled={actionLoading}>Dispense ✓</button>;
-    if (s === 'dispensed') return <span style={{fontSize:'12px',color:'#6B7280'}}>✓ Done</span>;
+    if (s === 'ready')     return <button className={`${sz} ph-btn-primary`} onClick={e => { e.stopPropagation(); updateStatus(px.id, 'dispensed'); }} disabled={actionLoading}>Dispense</button>;
+    if (s === 'dispensed') return <span style={{fontSize:'12px',color:'#6B7280'}}>Dispensed</span>;
     return null;
   };
 
@@ -196,7 +196,7 @@ const PharmacyDashboard = () => {
       {/* ══════════════════════ HEADER ══════════════════════ */}
       <div className="ph-hdr">
         <div className="ph-hdr-left">
-          <h2>💊 Pharmacy Portal</h2>
+          <h2>Pharmacy Portal</h2>
           <div className="ph-hdr-date">
             {new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </div>
@@ -216,8 +216,8 @@ const PharmacyDashboard = () => {
 
       <div style={{padding: '0 0 32px'}}>
         {/* Alerts */}
-        {error   && <div className="ph-alert ph-alert-error"   style={{marginBottom:'16px'}}>⚠ {error}</div>}
-        {success && <div className="ph-alert ph-alert-success" style={{marginBottom:'16px'}}>✓ {success}</div>}
+        {error   && <div className="ph-alert ph-alert-error"   style={{marginBottom:'16px'}}>{error}</div>}
+        {success && <div className="ph-alert ph-alert-success" style={{marginBottom:'16px'}}>{success}</div>}
 
         {/* Stats Row (queue tab) */}
         {activeTab === 'queue' && (
@@ -230,14 +230,14 @@ const PharmacyDashboard = () => {
               </div>
             </div>
             <div className="ph-stat-card">
-              <div className="ph-stat-icon amber">⟳</div>
+              <div className="ph-stat-icon amber"><RotateCcw size={18}/></div>
               <div>
                 <div className="ph-stat-num">{stats.preparing}</div>
                 <div className="ph-stat-lbl">Preparing</div>
               </div>
             </div>
             <div className="ph-stat-card">
-              <div className="ph-stat-icon green">✓</div>
+              <div className="ph-stat-icon green"><Check size={18}/></div>
               <div>
                 <div className="ph-stat-num">{stats.ready}</div>
                 <div className="ph-stat-lbl">Ready</div>

@@ -682,7 +682,7 @@ const DoctorControlPanel = () => {
                           >
                             <option value="">— Select Medicine —</option>
                             {suggested.length > 0 && (
-                              <optgroup label={`✦ Suggested for symptoms`}>
+                              <optgroup label="Suggested for symptoms">
                                 {suggested.map(m => (
                                   <option key={m.name} value={m.name}>
                                     {m.name}  ({m.dosage})
@@ -789,7 +789,7 @@ const DoctorControlPanel = () => {
                                 prescription_data: prev.prescription_data.filter((_, i) => i !== idx)
                               }))}
                               title="Remove"
-                            >✕</button>
+                            >×</button>
                           </div>
                         ))}
                       </div>

@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { patientAPI, ensureArray, authAPI } from '../utils/api';
-import { Check, Clipboard, Pill } from 'lucide-react';
+import { Check, Clipboard, Pill, Calendar, Clock } from 'lucide-react';
 
 const PatientDashboard = () => {
   const { user, logout, updateProfile, fetchProfile } = useAuth();
@@ -384,10 +384,10 @@ const PatientDashboard = () => {
                   <div className="lq-doctor-spec">{activeAppointment.doctor_specialization}</div>
                 )}
                 <div className="lq-doctor-meta">
-                  <span className="lq-meta-chip">📅 {formatDate(activeAppointment.appointment_date)}</span>
-                  <span className="lq-meta-chip">🕙 {formatTime(activeAppointment.appointment_time)}</span>
+                  <span className="lq-meta-chip"><Calendar size={11}/> {formatDate(activeAppointment.appointment_date)}</span>
+                  <span className="lq-meta-chip"><Clock size={11}/> {formatTime(activeAppointment.appointment_time)}</span>
                   {activeAppointment.hospital_name && (
-                    <span className="lq-meta-chip">🏥 {activeAppointment.hospital_name}</span>
+                    <span className="lq-meta-chip">{activeAppointment.hospital_name}</span>
                   )}
                 </div>
               </div>
@@ -438,7 +438,7 @@ const PatientDashboard = () => {
                 className={`lq-position-bar${queuePosition.pulse ? ' pulse-bar' : ''}`}
                 style={{ borderLeftColor: queuePosition.color }}
               >
-                <span className="lq-pos-icon">⏱</span>
+                <span className="lq-pos-icon"><Clock size={16}/></span>
                 <div>
                   <div className="lq-pos-main" style={{ color: queuePosition.color }}>
                     {queuePosition.text}
@@ -453,7 +453,7 @@ const PatientDashboard = () => {
         );
       })() : (
         <div className="lq-empty">
-          <div className="lq-empty-icon">📅</div>
+          <div className="lq-empty-icon"><Calendar size={48}/></div>
           <h3>No Active Appointment</h3>
           <p>Book an appointment to start tracking your queue position in real-time</p>
           <button className="btn btn-primary" onClick={() => setShowBookingForm(true)}>
@@ -467,7 +467,7 @@ const PatientDashboard = () => {
         <div className="card mb-4">
           <div className="card-header">
             <span className="card-title">Book Appointment</span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowBookingForm(false)}>✕</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowBookingForm(false)}>×</button>
           </div>
           <div className="card-body">
             <form onSubmit={handleBookAppointment}>
