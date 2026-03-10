@@ -581,12 +581,15 @@ tr:last-child td { border-bottom: none; }
 .lq-tab-name { font-size: 13px; font-weight: 700; color: var(--text); }
 .lq-tab-date { font-size: 11px; color: var(--text-muted); }
 
+/* ════════════════════════════════════════
+   Live Queue Card
+════════════════════════════════════════ */
 .lq-card {
   background: var(--white);
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border);
-  border-top: 4px solid var(--primary);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  border-top: 3px solid var(--primary);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
   margin-bottom: 24px;
   overflow: hidden;
 }
@@ -596,22 +599,22 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  background: #FAFBFC;
+  background: #F8FAFC;
 }
 .lq-live-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(82,183,136,0.1);
-  border: 1px solid rgba(82,183,136,0.3);
+  background: rgba(82,183,136,0.08);
+  border: 1px solid rgba(82,183,136,0.25);
   border-radius: 20px;
-  padding: 4px 10px;
+  padding: 4px 12px;
 }
 .lq-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   background: #52B788;
   border-radius: 50%;
   flex-shrink: 0;
@@ -622,11 +625,12 @@ tr:last-child td { border-bottom: none; }
   font-weight: 700;
   color: #2D9B6F;
   text-transform: uppercase;
-  letter-spacing: 0.7px;
+  letter-spacing: 0.8px;
 }
 .lq-time-ago {
   font-size: 11px;
   color: var(--text-muted);
+  margin-left: 2px;
 }
 
 /* ── Doctor section ── */
@@ -634,26 +638,27 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--border);
 }
 .lq-avatar {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, #4A6B85 100%);
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(91,124,153,0.3);
 }
 .lq-doctor-info { flex: 1; min-width: 0; }
 .lq-doctor-name {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 2px;
@@ -665,83 +670,128 @@ tr:last-child td { border-bottom: none; }
   font-size: 12px;
   color: var(--primary);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .lq-doctor-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .lq-meta-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
   border-radius: 20px;
   padding: 3px 10px;
+  font-weight: 500;
 }
-.lq-meta-chip svg, .lq-meta-chip span.icon { font-size: 12px; }
 
-/* ── Stats row: 4 equal chips ── */
+/* ── Stats row ── */
 .lq-stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  padding: 0;
   border-bottom: 1px solid var(--border);
-  background: #fafbfd;
+  background: #F8FAFC;
 }
 .lq-sc {
-  padding: 20px 16px;
+  padding: 22px 16px;
   text-align: center;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 .lq-sc:last-child { border-right: none; }
 .lq-sc-label {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   color: var(--text-muted);
 }
 .lq-sc-value {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.lq-sc-value.green  { color: var(--secondary-dark); }
-.lq-sc-value.muted  { color: var(--text-muted); }
+.lq-sc-value.green { color: var(--secondary-dark); }
+.lq-sc-value.muted { color: var(--text-muted); }
 .lq-sc-value.token-highlight {
   color: var(--primary);
-  font-size: 32px;
+  font-size: 34px;
 }
+.lq-sc-wait {
+  /* override flex for the timer badge */
+  display: block;
+}
+/* ── Wait time badge ── */
+.lq-timer-badge {
+  display: inline-block;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 20px;
+  color: #B7791F;
+  background: #FFF8E6;
+  border: 1px solid #F6D860;
+  border-radius: 8px;
+  padding: 5px 14px;
+  letter-spacing: 1px;
+}
+
+/* ── Queue progress ── */
+.lq-progress-section {
+  padding: 14px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.lq-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.lq-progress-track {
+  background: #E9EEF4;
+  border-radius: 99px;
+  height: 7px;
+  overflow: hidden;
+}
+.lq-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--primary);
+  transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.lq-progress-fill.fill-amber { background: #F59E0B; }
+.lq-progress-fill.fill-green  { background: #22C55E; }
 
 /* ── Position alert bar ── */
 .lq-position-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 13px 20px;
+  gap: 12px;
+  padding: 14px 20px;
   border-left: 4px solid var(--primary);
-  background: #FAFBFC;
+  background: #F8FAFC;
   transition: background 0.3s, border-color 0.3s;
 }
 .lq-position-bar.pulse-bar {
-  background: rgba(82,183,136,0.07);
-  animation: pulse-badge 1.5s ease-in-out infinite;
+  background: rgba(82,183,136,0.06);
+  animation: pulse-badge 1.8s ease-in-out infinite;
 }
-.lq-pos-icon { font-size: 16px; flex-shrink: 0; }
+.lq-pos-icon { font-size: 18px; flex-shrink: 0; opacity: 0.7; }
 .lq-pos-main {
   font-size: 13px;
   font-weight: 700;
@@ -750,7 +800,7 @@ tr:last-child td { border-bottom: none; }
 .lq-pos-sub {
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 /* ── Empty state ── */

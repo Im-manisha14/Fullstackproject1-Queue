@@ -1237,6 +1237,7 @@ def get_doctors():
     try:
         hospital_id = request.args.get('hospital_id')
         department_id = request.args.get('department_id')
+        today_only = request.args.get('today_only', 'false').lower() == 'true'
         
         query = db.session.query(DoctorProfile, User).join(User).filter(
             DoctorProfile.active == True,
@@ -1250,13 +1251,35 @@ def get_doctors():
 
         doctors = query.all()
         
+        today = date.today()
+        
+        # Build a map of doctor_id -> today's appointment count
+        today_counts = {}
+        if today_only or True:  # always compute so we can sort
+            from sqlalchemy import func
+            rows = db.session.query(
+                Appointment.doctor_id,
+                func.count(Appointment.id).label('cnt')
+            ).filter(
+                Appointment.appointment_date == today,
+                Appointment.status.in_(['booked', 'in_queue', 'consulting', 'completed'])
+            ).group_by(Appointment.doctor_id).all()
+            today_counts = {r.doctor_id: r.cnt for r in rows}
+        
         result = []
         for doctor_profile, user in doctors:
+            appt_count_today = today_counts.get(doctor_profile.user_id, 0)
+            if today_only and appt_count_today == 0:
+                continue
             doctor_data = doctor_profile.to_dict()
             doctor_data['doctor_name'] = user.full_name
             doctor_data['full_name'] = user.full_name
             doctor_data['email'] = user.email
+            doctor_data['appointments_today'] = appt_count_today
             result.append(doctor_data)
+        
+        # Sort: doctors with today's appointments first
+        result.sort(key=lambda d: d['appointments_today'], reverse=True)
         
         return jsonify(result), 200
     except Exception as e:

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doctorAPI, databaseAPI } from '../utils/api';
+import { doctorAPI, databaseAPI, patientAPI } from '../utils/api';
+import api from '../utils/api';
 import { 
   Users, Clock, CheckCircle, AlertTriangle, User, 
   Phone, FileText, Timer, ChevronRight, Stethoscope,
@@ -383,9 +384,22 @@ const DoctorControlPanel = () => {
       await Promise.all([loadProfile(), loadQueue(), loadSummary(), loadDatabaseStatus()]);
       setLoading(false);
     };
-    
     initializeSystem();
   }, [loadProfile, loadQueue, loadSummary, loadDatabaseStatus]);
+
+  // After load: if this doctor has no patients today but another doctor does, go to Switch Doctor
+  useEffect(() => {
+    if (loading) return;
+    const activePatients = prevQueueRef.current.filter(p =>
+      ['booked', 'in_queue', 'consulting'].includes(p.status)
+    );
+    if (activePatients.length > 0) return; // this doctor has patients — stay
+    api.get('/api/doctors').then(res => {
+      const list = Array.isArray(res.data) ? res.data : (res.data?.doctors || []);
+      const anyHasAppts = list.some(d => (d.appointments_today || 0) > 0);
+      if (anyHasAppts) navigate('/doctor/select');
+    }).catch(() => {});
+  }, [loading, navigate]);
 
   // Live polling system
   useEffect(() => {
