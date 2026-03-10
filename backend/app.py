@@ -1953,6 +1953,8 @@ def complete_consultation():
         data = request.get_json()
         
         appointment_id = data.get('appointment_id')
+        prescription_data = data.get('prescription_data', [])
+        doctor_notes = data.get('doctor_notes', '')
         
         appointment = Appointment.query.get(appointment_id)
         if not appointment:
@@ -1960,15 +1962,35 @@ def complete_consultation():
         
         appointment.status = 'completed'
         appointment.actual_end_time = datetime.now()
+        
+        prescription_id = None
+        # Create prescription if medicines were prescribed
+        if prescription_data:
+            import random, string
+            token = ''.join(random.choices(string.digits, k=6))
+            prescription = Prescription(
+                appointment_id=appointment.id,
+                patient_id=appointment.patient_id,
+                doctor_id=current_user_id,
+                prescription_data={'medicines': prescription_data, 'notes': doctor_notes},
+                pharmacy_status='pending',
+                pickup_token=token
+            )
+            db.session.add(prescription)
+            db.session.flush()  # get prescription.id before commit
+            prescription_id = prescription.id
+        
         db.session.commit()
         
         return jsonify({
             'message': 'Consultation completed',
             'patient_name': appointment.patient.full_name if appointment.patient else 'Unknown',
             'appointment_time': appointment.actual_end_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'status': appointment.status
+            'status': appointment.status,
+            'prescription_id': prescription_id
         }), 200
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # Frontend expects /api/prescriptions endpoint
@@ -2137,7 +2159,7 @@ def get_today_prescriptions():
             Prescription.created_at >= today_start,
             Prescription.created_at <= today_end,
             Prescription.is_deleted == False,
-            Prescription.pharmacy_status != 'dispensed'
+            Prescription.pharmacy_status.notin_(['dispensed', 'cancelled'])
         ).order_by(Prescription.created_at.asc()).all()
         
         return jsonify([p.to_dict() for p in prescriptions]), 200
@@ -2182,6 +2204,7 @@ def update_prescription_status(prescription_id):
                 return jsonify({'error': 'Cannot modify dispensed prescription'}), 400
             
             # If dispensing, validate stock and deduct atomically
+            dispensing_log = []
             if new_status == 'dispensed' and prescription.pharmacy_status != 'dispensed':
                 prescription_medicines = prescription.prescription_data.get('medicines', [])
                 
@@ -2221,7 +2244,6 @@ def update_prescription_status(prescription_id):
                     }), 400
                 
                 # Deduct stock atomically
-                dispensing_log = []
                 for med_item in prescription_medicines:
                     medicine_name = med_item.get('name', '').strip()
                     quantity_needed = int(med_item.get('quantity', 0))

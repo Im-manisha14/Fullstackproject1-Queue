@@ -1,582 +1,414 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import { Pill, Clipboard, Check, AlertCircle } from 'lucide-react';
+import { Pill, ClipboardList, Package, ChevronRight, X, RefreshCw, Plus } from 'lucide-react';
+import './PharmacyDashboard.css';
 
 const PharmacyDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('queue');
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  // Live Queue State
+
+  // Live Queue
   const [liveQueue, setLiveQueue] = useState([]);
-  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [selectedPx, setSelectedPx] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
-  
-  // Records State
+
+  // Records
   const [records, setRecords] = useState([]);
-  const [recordsPage, setRecordsPage] = useState(1);
-  const [recordsTotal, setRecordsTotal] = useState(0);
-  const [recordsPages, setRecordsPages] = useState(0);
+  const [recPage, setRecPage] = useState(1);
+  const [recTotal, setRecTotal] = useState(0);
+  const [recPages, setRecPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  
-  // Inventory State
+
+  // Inventory
   const [medicines, setMedicines] = useState([]);
-  const [editingMedicine, setEditingMedicine] = useState(null);
-  const [showMedicineModal, setShowMedicineModal] = useState(false);
-  
-  // Polling interval ref
-  const pollIntervalRef = useRef(null);
-  
-  // Load live queue on mount and set up polling
+  const [editingMed, setEditingMed] = useState(null);
+  const [showMedModal, setShowMedModal] = useState(false);
+  const [isAddMed, setIsAddMed] = useState(false);
+
+  const pollRef = useRef(null);
+  const BLANK_MED = { name:'', generic_name:'', category:'', strength:'', form:'',
+    batch_number:'', price_per_unit:0, stock_quantity:0, reorder_level:10,
+    expiry_date:'', manufacturer:'', is_available:true };
+
+  /* ── Polling ── */
   useEffect(() => {
     if (activeTab === 'queue') {
       loadLiveQueue();
-      pollIntervalRef.current = setInterval(() => {
-        loadLiveQueue();
-      }, 5000); // Poll every 5 seconds
+      pollRef.current = setInterval(loadLiveQueue, 5000);
     }
-    
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [activeTab]);
-  
-  // Load records when filters change
+
   useEffect(() => {
-    if (activeTab === 'records') {
-      loadRecords();
-    }
-  }, [recordsPage, statusFilter, activeTab]);
-  
-  // Load inventory when tab changes
+    if (activeTab === 'records') loadRecords();
+  }, [recPage, statusFilter, activeTab]);
+
   useEffect(() => {
-    if (activeTab === 'inventory') {
-      loadInventory();
-    }
+    if (activeTab === 'inventory') loadInventory();
   }, [activeTab]);
-  
-  // Load live queue (today's active prescriptions)
+
+  /* ── API ── */
   const loadLiveQueue = async () => {
     try {
-      const response = await api.get('/api/pharmacy/prescriptions/today');
-      setLiveQueue(response.data);
+      const r = await api.get('/api/pharmacy/prescriptions/today');
+      setLiveQueue(r.data);
       setLastUpdate(Date.now());
-    } catch (err) {
-      console.error('Failed to load live queue:', err);
-    }
+    } catch {}
   };
-  
-  // Load prescription records with pagination
+
   const loadRecords = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: recordsPage,
-        limit: 20,
-        status: statusFilter
-      });
-      
-      if (searchQuery) params.append('search', searchQuery);
-      if (dateFrom) params.append('date_from', dateFrom);
-      if (dateTo) params.append('date_to', dateTo);
-      
-      const response = await api.get(`/api/pharmacy/prescriptions?${params}`);
-      setRecords(response.data.prescriptions);
-      setRecordsTotal(response.data.total);
-      setRecordsPages(response.data.pages);
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to load records');
-      setLoading(false);
-    }
+      const p = new URLSearchParams({ page: recPage, limit: 20, status: statusFilter });
+      if (searchQuery) p.append('search', searchQuery);
+      if (dateFrom) p.append('date_from', dateFrom);
+      if (dateTo) p.append('date_to', dateTo);
+      const r = await api.get(`/api/pharmacy/prescriptions?${p}`);
+      setRecords(r.data.prescriptions || []);
+      setRecTotal(r.data.total || 0);
+      setRecPages(r.data.pages || 0);
+    } catch { setError('Failed to load records'); }
+    finally { setLoading(false); }
   };
-  
-  // Load medicine inventory
+
   const loadInventory = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/pharmacy/medicines');
-      setMedicines(response.data);
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to load inventory');
-      setLoading(false);
-    }
-  };
-  
-  // Update prescription status
-  const updatePrescriptionStatus = async (prescriptionId, newStatus) => {
-    try {
-      setLoading(true);
-      await api.put(`/api/pharmacy/prescriptions/${prescriptionId}/status`, {
-        status: newStatus
-      });
-      setSuccess(`Prescription ${newStatus} successfully`);
-      setTimeout(() => setSuccess(''), 3000);
-      
-      // Reload queue
-      await loadLiveQueue();
-      
-      // Clear selection if dispensed or cancelled
-      if (newStatus === 'dispensed' || newStatus === 'cancelled') {
-        setSelectedPrescription(null);
-      } else {
-        // Reload selected prescription details
-        const response = await api.get(`/api/pharmacy/prescriptions/${prescriptionId}`);
-        setSelectedPrescription(response.data);
-      }
-      
-      setLoading(false);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update status');
-      setTimeout(() => setError(''), 3000);
-      setLoading(false);
-    }
-  };
-  
-  // Update medicine
-  const updateMedicine = async (medicineId, data) => {
-    try {
-      setLoading(true);
-      await api.put(`/api/pharmacy/medicines/${medicineId}`, data);
-      setSuccess('Medicine updated successfully');
-      setTimeout(() => setSuccess(''), 3000);
-      setShowMedicineModal(false);
-      setEditingMedicine(null);
-      await loadInventory();
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to update medicine');
-      setTimeout(() => setError(''), 3000);
-      setLoading(false);
-    }
-  };
-  
-  // Select prescription for detailed view
-  const selectPrescription = async (prescriptionId) => {
-    try {
-      const response = await api.get(`/api/pharmacy/prescriptions/${prescriptionId}`);
-      setSelectedPrescription(response.data);
-    } catch (err) {
-      setError('Failed to load prescription details');
-      setTimeout(() => setError(''), 3000);
-    }
-  };
-  
-  // Status badge component
-  const statusBadge = (status) => {
-    const badges = {
-      pending: <span className="badge badge-blue">NEW</span>,
-      preparing: <span className="badge badge-orange">PREPARING</span>,
-      ready: <span className="badge badge-green">READY</span>,
-      dispensed: <span className="badge" style={{background:'#6b7280',color:'white'}}>DISPENSED</span>,
-      cancelled: <span className="badge badge-red">CANCELLED</span>
-    };
-    return badges[status] || <span className="badge">{status}</span>;
-  };
-  
-  // Stock status badge
-  const stockStatusBadge = (medicine) => {
-    if (medicine.stock_quantity < 10) {
-      return <span className="badge badge-red">CRITICAL</span>;
-    } else if (medicine.stock_quantity < 50) {
-      return <span className="badge badge-orange">LOW STOCK</span>;
-    }
-    return <span className="badge badge-green">AVAILABLE</span>;
-  };
-  
-  // Get time ago
-  const getTimeAgo = (timestamp) => {
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) return 'Just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours}h ago`;
-  };
-  
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const r = await api.get('/api/pharmacy/medicines');
+      setMedicines(r.data);
+    } catch { setError('Failed to load inventory'); }
+    finally { setLoading(false); }
   };
 
-  // Format HH:MM time to 12-hour format
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '—';
+  const updateStatus = async (id, status) => {
     try {
-      const hmMatch = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
-      if (hmMatch) {
-        let h = parseInt(hmMatch[1], 10);
-        const m = hmMatch[2];
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        h = h % 12 || 12;
-        return `${h}:${m} ${ampm}`;
+      setActionLoading(true);
+      await api.put(`/api/pharmacy/prescriptions/${id}/status`, { status });
+      showSuccess(`Marked as ${status}`);
+      await loadLiveQueue();
+      if (status === 'dispensed' || status === 'cancelled') {
+        setSelectedPx(null);
+      } else {
+        const r = await api.get(`/api/pharmacy/prescriptions/${id}`);
+        setSelectedPx(r.data);
       }
-      const date = new Date(timeStr);
-      if (isNaN(date.getTime())) return timeStr;
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    } catch {
-      return timeStr;
-    }
+    } catch (e) {
+      const msg = e.response?.data?.error || 'Failed to update';
+      const issues = e.response?.data?.stock_issues;
+      setError(issues ? `${msg}: ${issues.join('; ')}` : msg);
+      setTimeout(() => setError(''), 5000);
+    } finally { setActionLoading(false); }
   };
-  
-  // Calculate wait time for each prescription
-  const calculateWaitTime = (appointmentTime) => {
-    if (!appointmentTime) return 'N/A';
-    const now = new Date();
-    const appointmentDate = new Date(appointmentTime);
-    const diffInMinutes = Math.floor((now - appointmentDate) / 60000);
-    return diffInMinutes > 0 ? `${diffInMinutes} min` : 'Now';
+
+  const saveMedicine = async (data) => {
+    try {
+      setActionLoading(true);
+      if (isAddMed) {
+        await api.post('/api/pharmacy/medicines', data);
+        showSuccess('Medicine added to inventory');
+      } else {
+        await api.put(`/api/pharmacy/medicines/${data.id}`, data);
+        showSuccess('Medicine updated');
+      }
+      setShowMedModal(false);
+      setEditingMed(null);
+      await loadInventory();
+    } catch { setError('Failed to save medicine'); setTimeout(() => setError(''), 3000); }
+    finally { setActionLoading(false); }
   };
-  
-  // Get next action button for prescription
-  const getActionButton = (prescription) => {
-    if (prescription.pharmacy_status === 'pending') {
-      return (
-        <button 
-          className="btn btn-secondary btn-sm"
-          onClick={() => updatePrescriptionStatus(prescription.id, 'preparing')}
-          disabled={loading}
-        >
-          Start Preparing
-        </button>
-      );
-    } else if (prescription.pharmacy_status === 'preparing') {
-      return (
-        <button 
-          className="btn btn-success btn-sm"
-          onClick={() => updatePrescriptionStatus(prescription.id, 'ready')}
-          disabled={loading}
-        >
-          Mark Ready
-        </button>
-      );
-    } else if (prescription.pharmacy_status === 'ready') {
-      return (
-        <button 
-          className="btn btn-primary btn-sm"
-          onClick={() => updatePrescriptionStatus(prescription.id, 'dispensed')}
-          disabled={loading}
-        >
-          Dispense
-        </button>
-      );
-    } else if (prescription.pharmacy_status === 'dispensed') {
-      return <button className="btn btn-sm" disabled style={{opacity:0.5}}>Completed</button>;
-    }
+
+  const selectPx = async (id) => {
+    try {
+      const r = await api.get(`/api/pharmacy/prescriptions/${id}`);
+      setSelectedPx(r.data);
+    } catch { setError('Failed to load prescription'); setTimeout(() => setError(''), 3000); }
+  };
+
+  const showSuccess = (msg) => { setSuccess(msg); setTimeout(() => setSuccess(''), 3000); };
+
+  /* ── Helpers ── */
+  const timeAgo = (ts) => {
+    const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+    if (s < 60) return 'Just now';
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    return `${Math.floor(m / 60)}h ago`;
+  };
+
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+      + ' ' + new Date(d).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  };
+
+  const fmtTime = (t) => {
+    if (!t) return '—';
+    const m = String(t).match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return t;
+    let h = parseInt(m[1], 10);
+    const min = m[2], ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${min} ${ap}`;
+  };
+
+  const phBadge = (status) => {
+    const map = {
+      pending:   <span className="ph-badge ph-badge-pending">● New</span>,
+      preparing: <span className="ph-badge ph-badge-preparing">⟳ Preparing</span>,
+      ready:     <span className="ph-badge ph-badge-ready">✓ Ready</span>,
+      dispensed: <span className="ph-badge ph-badge-dispensed">Dispensed</span>,
+      cancelled: <span className="ph-badge ph-badge-cancelled">Cancelled</span>,
+    };
+    return map[status] || <span className="ph-badge ph-badge-dispensed">{status}</span>;
+  };
+
+  const actionBtn = (px, compact = false) => {
+    const s = px.pharmacy_status;
+    const sz = compact ? 'ph-btn ph-btn-sm' : 'ph-btn ph-btn-full';
+    if (s === 'pending')   return <button className={`${sz} ph-btn-amber`}   onClick={e => { e.stopPropagation(); updateStatus(px.id, 'preparing'); }} disabled={actionLoading}>Start Preparing</button>;
+    if (s === 'preparing') return <button className={`${sz} ph-btn-green`}   onClick={e => { e.stopPropagation(); updateStatus(px.id, 'ready'); }}    disabled={actionLoading}>Mark Ready</button>;
+    if (s === 'ready')     return <button className={`${sz} ph-btn-primary`} onClick={e => { e.stopPropagation(); updateStatus(px.id, 'dispensed'); }} disabled={actionLoading}>Dispense ✓</button>;
+    if (s === 'dispensed') return <span style={{fontSize:'12px',color:'#6B7280'}}>✓ Done</span>;
     return null;
   };
-  
+
+  const stockClass = (qty) => qty < 10 ? 'critical' : qty < 50 ? 'low' : 'ok';
+  const stockPct   = (qty, reorder) => Math.min(100, Math.round((qty / Math.max(reorder * 3, 100)) * 100));
+
+  /* ── Stats ── */
+  const stats = {
+    pending:   liveQueue.filter(p => p.pharmacy_status === 'pending').length,
+    preparing: liveQueue.filter(p => p.pharmacy_status === 'preparing').length,
+    ready:     liveQueue.filter(p => p.pharmacy_status === 'ready').length,
+    total:     liveQueue.length,
+  };
+
   return (
-    <div className="dashboard-container">
-      {/* Header */}
-      <div className="ph-header" style={{
-        marginBottom: '24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div>
-          <h2 style={{fontSize: '22px', fontWeight: '700', marginBottom: '4px'}}>
-            Pharmacy Portal
-          </h2>
-          <div style={{fontSize: '13px', color: 'var(--text-muted)'}}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+    <div className="ph-root">
+      {/* ══════════════════════ HEADER ══════════════════════ */}
+      <div className="ph-hdr">
+        <div className="ph-hdr-left">
+          <h2>💊 Pharmacy Portal</h2>
+          <div className="ph-hdr-date">
+            {new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </div>
         </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+        <div className="ph-hdr-right">
           {activeTab === 'queue' && (
-            <div style={{
-              background: 'rgba(82,183,136,0.1)',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#52B788',
-                animation: 'pulse 2s infinite'
-              }}></div>
-              <span style={{fontSize: '12px', fontWeight: '600', color: '#52B788'}}>
-                LIVE
-              </span>
-              <span style={{fontSize: '11px', color: 'var(--text-muted)'}}>
-                {getTimeAgo(lastUpdate)}
-              </span>
+            <div className="ph-live-dot">
+              <div className="ph-live-pulse"></div>
+              LIVE · {timeAgo(lastUpdate)}
             </div>
           )}
-          <span className="badge badge-blue" style={{fontSize:'13px',padding:'6px 12px'}}>
-            {liveQueue.length} Active
-          </span>
+          <span className="ph-stat-pill blue">{stats.pending} Pending</span>
+          <span className="ph-stat-pill amber">{stats.preparing} Preparing</span>
+          <span className="ph-stat-pill green">{stats.ready} Ready</span>
         </div>
       </div>
-      
-      {/* Alerts */}
-      {error && (
-        <div className="alert alert-error" style={{marginBottom:'16px'}}>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="alert alert-success" style={{marginBottom:'16px'}}>
-          {success}
-        </div>
-      )}
-      
-      {/* Tabs */}
-      <div className="tabs" style={{marginBottom:'24px'}}>
-        <button 
-          className={'tab-btn' + (activeTab === 'queue' ? ' active' : '')} 
-          onClick={() => setActiveTab('queue')}
-        >
-          Live Queue
-        </button>
-        <button 
-          className={'tab-btn' + (activeTab === 'records' ? ' active' : '')} 
-          onClick={() => setActiveTab('records')}
-        >
-          Records
-        </button>
-        <button 
-          className={'tab-btn' + (activeTab === 'inventory' ? ' active' : '')} 
-          onClick={() => setActiveTab('inventory')}
-        >
-          Inventory
-        </button>
-      </div>
-      
-      {/* LIVE QUEUE TAB */}
-      {activeTab === 'queue' && (
-        <div className={`ph-queue-wrap${selectedPrescription ? ' has-detail' : ''}`}>
-          {/* Prescriptions Table */}
-          <div className="card">
-            <div className="card-header">
-              <span className="card-title">Active Prescriptions</span>
+
+      <div style={{padding: '0 0 32px'}}>
+        {/* Alerts */}
+        {error   && <div className="ph-alert ph-alert-error"   style={{marginBottom:'16px'}}>⚠ {error}</div>}
+        {success && <div className="ph-alert ph-alert-success" style={{marginBottom:'16px'}}>✓ {success}</div>}
+
+        {/* Stats Row (queue tab) */}
+        {activeTab === 'queue' && (
+          <div className="ph-stats-row" style={{marginBottom:'20px'}}>
+            <div className="ph-stat-card">
+              <div className="ph-stat-icon blue"><Pill size={18}/></div>
+              <div>
+                <div className="ph-stat-num">{stats.pending}</div>
+                <div className="ph-stat-lbl">Pending</div>
+              </div>
             </div>
-            <div className="table-wrapper">
-              {liveQueue.length > 0 ? (
-                <>
-                  <table>
+            <div className="ph-stat-card">
+              <div className="ph-stat-icon amber">⟳</div>
+              <div>
+                <div className="ph-stat-num">{stats.preparing}</div>
+                <div className="ph-stat-lbl">Preparing</div>
+              </div>
+            </div>
+            <div className="ph-stat-card">
+              <div className="ph-stat-icon green">✓</div>
+              <div>
+                <div className="ph-stat-num">{stats.ready}</div>
+                <div className="ph-stat-lbl">Ready</div>
+              </div>
+            </div>
+            <div className="ph-stat-card">
+              <div className="ph-stat-icon teal"><Package size={18}/></div>
+              <div>
+                <div className="ph-stat-num">{stats.total}</div>
+                <div className="ph-stat-lbl">Active Today</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="ph-tabs">
+          <button className={`ph-tab${activeTab==='queue' ? ' active' : ''}`}     onClick={() => setActiveTab('queue')}>
+            <Pill size={13} style={{marginRight:'5px',verticalAlign:'middle'}}/>Live Queue
+          </button>
+          <button className={`ph-tab${activeTab==='records' ? ' active' : ''}`}   onClick={() => setActiveTab('records')}>
+            <ClipboardList size={13} style={{marginRight:'5px',verticalAlign:'middle'}}/>Records
+          </button>
+          <button className={`ph-tab${activeTab==='inventory' ? ' active' : ''}`} onClick={() => setActiveTab('inventory')}>
+            <Package size={13} style={{marginRight:'5px',verticalAlign:'middle'}}/>Inventory
+          </button>
+        </div>
+
+        {/* ══════════════════════ LIVE QUEUE TAB ══════════════════════ */}
+        {activeTab === 'queue' && (
+          <div className={`ph-queue-layout${selectedPx ? ' with-detail' : ''}`}>
+
+            {/* Left: Prescriptions list */}
+            <div className="ph-card">
+              <div className="ph-card-hdr">
+                <span className="ph-card-title">Active Prescriptions</span>
+                <button className="ph-btn ph-btn-ghost ph-btn-xs" onClick={loadLiveQueue} title="Refresh">
+                  <RefreshCw size={12}/>
+                </button>
+              </div>
+              <div className="ph-table-wrap">
+                {liveQueue.length > 0 ? (
+                  <table className="ph-table">
                     <thead>
                       <tr>
                         <th>Token</th>
                         <th>Patient</th>
-                        <th className="ph-doctor-col">Doctor</th>
-                        <th className="ph-time-col">Time</th>
+                        <th className="ph-col-hide-md">Doctor</th>
+                        <th className="ph-col-hide-sm">Time</th>
                         <th>Status</th>
                         <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {liveQueue.map(prescription => {
-                        const waitTime = calculateWaitTime(prescription.appointment_time);
-                        return (
-                          <tr 
-                            key={prescription.id}
-                            onClick={() => selectPrescription(prescription.id)}
-                            style={{
-                              cursor: 'pointer',
-                              background: selectedPrescription?.id === prescription.id ? 'rgba(91,124,153,0.05)' : 'white'
-                            }}
-                          >
-                            <td>
-                              <span className="token-number">#{prescription.token_number || 'N/A'}</span>
-                            </td>
-                            <td>
-                              <span className="patient-name">{prescription.patient_name || 'Unknown Patient'}</span>
-                            </td>
-                            <td>
-                              <span className="doctor-name">{prescription.doctor_name || 'Unknown Doctor'}</span>
-                            </td>
-                            <td>
-                              <span className="appointment-time">{formatTime(prescription.appointment_time)}</span>
-                            </td>
-                            <td>
-                              {statusBadge(prescription.pharmacy_status)}
-                            </td>
-                            <td onClick={e => e.stopPropagation()}>
-                              {getActionButton(prescription)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {liveQueue.map(px => (
+                        <tr
+                          key={px.id}
+                          onClick={() => selectPx(px.id)}
+                          className={selectedPx?.id === px.id ? 'ph-row-selected' : ''}
+                        >
+                          <td><span className="ph-token">#{px.token_number || px.pickup_token || '—'}</span></td>
+                          <td style={{fontWeight:'600'}}>{px.patient_name}</td>
+                          <td className="ph-col-hide-md" style={{color:'var(--ph-text-muted)',fontSize:'12px'}}>{px.doctor_name}</td>
+                          <td className="ph-col-hide-sm" style={{fontSize:'12px',color:'var(--ph-text-muted)'}}>{fmtTime(px.appointment_time)}</td>
+                          <td>{phBadge(px.pharmacy_status)}</td>
+                          <td>{actionBtn(px, true)}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
-                  
-                  {/* Pagination */}
-                  {recordsPages > 1 && (
-                    <div style={{
-                      display:'flex',
-                      justifyContent:'center',
-                      alignItems:'center',
-                      gap:'8px',
-                      padding:'16px'
-                    }}>
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setRecordsPage(p => Math.max(1, p - 1))}
-                        disabled={recordsPage === 1}
-                      >
-                        Previous
-                      </button>
-                      <span style={{fontSize:'13px',color:'var(--text-muted)'}}>
-                        Page {recordsPage} of {recordsPages}
-                      </span>
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setRecordsPage(p => Math.min(recordsPages, p + 1))}
-                        disabled={recordsPage === recordsPages}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="empty-state">
-                  <Pill size={40} className="empty-state-icon" style={{color: 'var(--text-muted)', marginBottom: '10px'}} />
-                  <p>No active prescriptions</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Selected Prescription Detail */}
-          {selectedPrescription && (
-            <div className="card ph-detail-panel" style={{position:'sticky',top:'20px',maxHeight:'calc(100vh - 100px)',overflowY:'auto'}}>
-              <div className="card-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span className="card-title">Prescription Details</span>
-                <button 
-                  className="btn btn-sm"
-                  onClick={() => setSelectedPrescription(null)}
-                  style={{padding:'4px 8px'}}
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="card-body">
-                <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'11px',color:'var(--text-muted)',textTransform:'uppercase',marginBottom:'4px'}}>
-                    Token Number
-                  </div>
-                  <div style={{fontSize:'24px',fontWeight:'800',fontFamily:'monospace',color:'var(--primary)'}}>
-                    #{selectedPrescription.token_number || selectedPrescription.pickup_token}
-                  </div>
-                </div>
-                
-                <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Patient</div>
-                  <div>{selectedPrescription.patient_name || selectedPrescription.full_name}</div>
-                </div>
-                
-                <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Doctor</div>
-                  <div>{selectedPrescription.doctor_name}</div>
-                </div>
-                
-                <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Status</div>
-                  {statusBadge(selectedPrescription.pharmacy_status)}
-                </div>
-                
-                <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Medicines</div>
-                  <ul style={{listStyle:'none',padding:0,margin:0}}>
-                    {selectedPrescription.prescription_data?.map((med, i) => (
-                      <li key={i} style={{
-                        background:'rgba(91,124,153,0.05)',
-                        padding:'10px 12px',
-                        borderRadius:'var(--radius)',
-                        marginBottom:'8px'
-                      }}>
-                        <div style={{fontSize:'14px',fontWeight:'600',marginBottom:'4px'}}>
-                          {med.name}
-                        </div>
-                        <div style={{fontSize:'12px',color:'var(--text-muted)'}}>
-                          {med.dosage} • {med.frequency} • {med.duration}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {selectedPrescription.pharmacy_notes && (
-                  <div style={{marginBottom:'16px'}}>
-                    <div style={{fontSize:'12px',fontWeight:'600',marginBottom:'8px'}}>Notes</div>
-                    <div style={{
-                      background:'white',
-                      padding:'10px 12px',
-                      borderRadius:'var(--radius)',
-                      border:'1px solid var(--border)',
-                      fontSize:'13px'
-                    }}>
-                      {selectedPrescription.pharmacy_notes}
-                    </div>
+                ) : (
+                  <div className="ph-empty">
+                    <div className="ph-empty-icon"><Pill size={26}/></div>
+                    <h4>No active prescriptions</h4>
+                    <p>Prescriptions appear here once a doctor completes a consultation</p>
                   </div>
                 )}
-                
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                  {selectedPrescription.pharmacy_status !== 'dispensed' && selectedPrescription.pharmacy_status !== 'cancelled' && (
-                    <>
-                      {getActionButton(selectedPrescription)}
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => updatePrescriptionStatus(selectedPrescription.id, 'cancelled')}
-                        disabled={loading}
+              </div>
+            </div>
+
+            {/* Right: Detail panel */}
+            {selectedPx && (
+              <div className="ph-card ph-detail">
+                <div className="ph-card-hdr">
+                  <span className="ph-card-title">Prescription Detail</span>
+                  <button className="ph-close-btn" onClick={() => setSelectedPx(null)}><X size={14}/></button>
+                </div>
+                <div style={{padding:'16px'}}>
+
+                  <div className="ph-detail-section">
+                    <div className="ph-detail-label">Token</div>
+                    <div className="ph-token-big">#{selectedPx.token_number || selectedPx.pickup_token || '—'}</div>
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'16px'}}>
+                    <div className="ph-detail-section" style={{margin:0}}>
+                      <div className="ph-detail-label">Patient</div>
+                      <div className="ph-detail-value">{selectedPx.patient_name}</div>
+                    </div>
+                    <div className="ph-detail-section" style={{margin:0}}>
+                      <div className="ph-detail-label">Doctor</div>
+                      <div className="ph-detail-value" style={{fontSize:'13px'}}>{selectedPx.doctor_name}</div>
+                    </div>
+                  </div>
+
+                  <div className="ph-detail-section">
+                    <div className="ph-detail-label">Status</div>
+                    <div>{phBadge(selectedPx.pharmacy_status)}</div>
+                  </div>
+
+                  <div className="ph-detail-section">
+                    <div className="ph-detail-label">Medicines ({(selectedPx.prescription_data?.medicines || []).length})</div>
+                    {(selectedPx.prescription_data?.medicines || []).map((m, i) => (
+                      <div key={i} className="ph-med-item">
+                        <div className="ph-med-name">
+                          {m.name}
+                          {m.quantity && <span className="ph-med-qty">×{m.quantity}</span>}
+                        </div>
+                        <div className="ph-med-detail">{m.dosage} · {m.frequency} · {m.duration}</div>
+                      </div>
+                    ))}
+                    {(selectedPx.prescription_data?.medicines || []).length === 0 && (
+                      <div style={{fontSize:'12px',color:'var(--ph-text-muted)'}}>No medicines listed</div>
+                    )}
+                  </div>
+
+                  {selectedPx.prescription_data?.notes && (
+                    <div className="ph-detail-section">
+                      <div className="ph-detail-label">Doctor's Notes</div>
+                      <div className="ph-notes-box">{selectedPx.prescription_data.notes}</div>
+                    </div>
+                  )}
+
+                  {selectedPx.pharmacy_notes && (
+                    <div className="ph-detail-section">
+                      <div className="ph-detail-label">Pharmacy Notes</div>
+                      <div className="ph-notes-box">{selectedPx.pharmacy_notes}</div>
+                    </div>
+                  )}
+
+                  {selectedPx.pharmacy_status !== 'dispensed' && selectedPx.pharmacy_status !== 'cancelled' && (
+                    <div className="ph-detail-actions">
+                      {actionBtn(selectedPx)}
+                      <button
+                        className="ph-btn ph-btn-danger ph-btn-full"
+                        onClick={() => updateStatus(selectedPx.id, 'cancelled')}
+                        disabled={actionLoading}
                       >
                         Cancel Prescription
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* RECORDS TAB */}
-      {activeTab === 'records' && (
-        <div>
-          {/* Filters */}
-          <div className="card" style={{marginBottom:'20px'}}>
-            <div className="card-body">
-              <div className="form-row ph-filter-row">
-                <div className="form-group">
-                  <label>Search</label>
-                  <input 
-                    type="text"
-                    className="form-control"
-                    placeholder="Patient name or token..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+            )}
+          </div>
+        )}
+
+        {/* ══════════════════════ RECORDS TAB ══════════════════════ */}
+        {activeTab === 'records' && (
+          <div>
+            <div className="ph-card" style={{marginBottom:'16px'}}>
+              <div className="ph-filter-bar">
+                <div className="ph-filter-group">
+                  <span className="ph-filter-label">Search</span>
+                  <input className="ph-input" placeholder="Patient name or token…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key==='Enter' && (setRecPage(1), loadRecords())}/>
                 </div>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select 
-                    className="form-control"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
+                <div className="ph-filter-group">
+                  <span className="ph-filter-label">Status</span>
+                  <select className="ph-input" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setRecPage(1); }}>
+                    <option value="all">All</option>
                     <option value="pending">Pending</option>
                     <option value="preparing">Preparing</option>
                     <option value="ready">Ready</option>
@@ -584,316 +416,217 @@ const PharmacyDashboard = () => {
                     <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>From Date</label>
-                  <input 
-                    type="date"
-                    className="form-control"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
+                <div className="ph-filter-group">
+                  <span className="ph-filter-label">From</span>
+                  <input type="date" className="ph-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)}/>
                 </div>
-                <div className="form-group">
-                  <label>To Date</label>
-                  <input 
-                    type="date"
-                    className="form-control"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
+                <div className="ph-filter-group">
+                  <span className="ph-filter-label">To</span>
+                  <input type="date" className="ph-input" value={dateTo} onChange={e => setDateTo(e.target.value)}/>
                 </div>
-                <div style={{display:'flex',alignItems:'flex-end'}}>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={loadRecords}
-                    disabled={loading}
-                  >
-                    Search
-                  </button>
+                <div className="ph-filter-group">
+                  <span className="ph-filter-label">&nbsp;</span>
+                  <button className="ph-btn ph-btn-primary" onClick={() => { setRecPage(1); loadRecords(); }} disabled={loading}>Search</button>
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Records Table */}
-          <div className="card">
-            <div className="card-header">
-              <span className="card-title">Prescription Records</span>
-              <div style={{fontSize:'13px',color:'var(--text-muted)'}}>
-                {recordsTotal} total records
+
+            <div className="ph-card">
+              <div className="ph-card-hdr">
+                <span className="ph-card-title">Prescription Records</span>
+                <span className="ph-card-meta">{recTotal} total</span>
               </div>
-            </div>
-            <div className="table-wrapper">
-              {records.length > 0 ? (
-                <>
-                  <table>
+              <div className="ph-table-wrap">
+                {loading ? (
+                  <div className="ph-spinner"><div className="ph-spinner-ring"></div></div>
+                ) : records.length > 0 ? (
+                  <table className="ph-table">
                     <thead>
                       <tr>
-                        <th className="ph-id-col">ID</th>
+                        <th className="ph-col-hide-md">#</th>
                         <th>Token</th>
                         <th>Patient</th>
-                        <th className="ph-records-doctor-col">Doctor</th>
-                        <th className="ph-date-col">Date</th>
+                        <th className="ph-col-hide-md">Doctor</th>
+                        <th className="ph-col-hide-sm">Date</th>
                         <th>Status</th>
                         <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {records.map(record => (
-                        <tr key={record.id}>
-                          <td className="ph-id-col"><strong>#{record.id}</strong></td>
-                          <td style={{fontFamily:'monospace'}}>
-                            {record.token_number || record.pickup_token}
-                          </td>
-                          <td>{record.patient_name}</td>
-                          <td className="ph-records-doctor-col">{record.doctor_name}</td>
-                          <td className="ph-date-col" style={{fontSize:'12px'}}>{formatDate(record.created_at)}</td>
-                          <td>{statusBadge(record.pharmacy_status)}</td>
+                      {records.map(r => (
+                        <tr key={r.id} className="ph-row-static">
+                          <td className="ph-col-hide-md" style={{fontWeight:'700',color:'var(--ph-text-muted)',fontSize:'12px'}}>#{r.id}</td>
+                          <td><span className="ph-token">#{r.token_number || r.pickup_token || '—'}</span></td>
+                          <td style={{fontWeight:'600'}}>{r.patient_name}</td>
+                          <td className="ph-col-hide-md" style={{fontSize:'12px',color:'var(--ph-text-muted)'}}>{r.doctor_name}</td>
+                          <td className="ph-col-hide-sm" style={{fontSize:'11px',color:'var(--ph-text-muted)'}}>{fmtDate(r.created_at)}</td>
+                          <td>{phBadge(r.pharmacy_status)}</td>
                           <td>
-                            <button 
-                              className="btn btn-outline btn-xs"
-                              onClick={() => {
-                                selectPrescription(record.id);
-                                setActiveTab('queue');
-                              }}
-                            >
-                              View
+                            <button className="ph-btn ph-btn-ghost ph-btn-xs" onClick={() => { selectPx(r.id); setActiveTab('queue'); }}>
+                              View <ChevronRight size={11}/>
                             </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  
-                  {/* Pagination */}
-                  {recordsPages > 1 && (
-                    <div style={{
-                      display:'flex',
-                      justifyContent:'center',
-                      alignItems:'center',
-                      gap:'8px',
-                      padding:'16px'
-                    }}>
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setRecordsPage(p => Math.max(1, p - 1))}
-                        disabled={recordsPage === 1}
-                      >
-                        Previous
-                      </button>
-                      <span style={{fontSize:'13px',color:'var(--text-muted)'}}>
-                        Page {recordsPage} of {recordsPages}
-                      </span>
-                      <button 
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setRecordsPage(p => Math.min(recordsPages, p + 1))}
-                        disabled={recordsPage === recordsPages}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="empty-state">
-                  <Clipboard size={40} className="empty-state-icon" style={{color: 'var(--text-muted)', marginBottom: '10px'}} />
-                  <p>No records found</p>
+                ) : (
+                  <div className="ph-empty">
+                    <div className="ph-empty-icon"><ClipboardList size={26}/></div>
+                    <h4>No records found</h4>
+                    <p>Try adjusting your filters</p>
+                  </div>
+                )}
+              </div>
+              {recPages > 1 && (
+                <div className="ph-pagination">
+                  <button className="ph-btn ph-btn-ghost ph-btn-sm" onClick={() => setRecPage(p => Math.max(1, p-1))} disabled={recPage===1}>← Prev</button>
+                  <span>Page {recPage} of {recPages}</span>
+                  <button className="ph-btn ph-btn-ghost ph-btn-sm" onClick={() => setRecPage(p => Math.min(recPages, p+1))} disabled={recPage===recPages}>Next →</button>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      )}
-      
-      {/* INVENTORY TAB */}
-      {activeTab === 'inventory' && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Medicine Inventory</span>
-          </div>
-          <div className="table-wrapper">
-            {medicines.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Medicine Name</th>
-                    <th className="ph-cat-col">Category</th>
-                    <th className="ph-batch-col">Batch #</th>
-                    <th className="ph-expiry-col">Expiry Date</th>
-                    <th>Stock</th>
-                    <th className="ph-price-col">Price</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {medicines.map(medicine => (
-                    <tr key={medicine.id}>
-                      <td>
-                        <div style={{fontWeight:'600'}}>{medicine.name}</div>
-                        {medicine.generic_name && (
-                          <div style={{fontSize:'11px',color:'var(--text-muted)'}}>
-                            {medicine.generic_name}
-                          </div>
-                        )}
-                      </td>
-                      <td className="ph-cat-col">{medicine.category || '—'}</td>
-                      <td className="ph-batch-col" style={{fontFamily:'monospace',fontSize:'12px'}}>
-                        {medicine.batch_number || '—'}
-                      </td>
-                      <td className="ph-expiry-col" style={{fontSize:'12px'}}>
-                        {medicine.expiry_date ? new Date(medicine.expiry_date).toLocaleDateString() : '—'}
-                      </td>
-                      <td>
-                        <strong style={{fontSize:'15px'}}>{medicine.stock_quantity}</strong>
-                      </td>
-                      <td className="ph-price-col">₹{medicine.price_per_unit?.toFixed(2)}</td>
-                      <td>{stockStatusBadge(medicine)}</td>
-                      <td>
-                        <button 
-                          className="btn btn-outline btn-xs"
-                          onClick={() => {
-                            setEditingMedicine(medicine);
-                            setShowMedicineModal(true);
-                          }}
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="empty-state">
-                <Pill size={40} className="empty-state-icon" style={{color: 'var(--text-muted)', marginBottom: '10px'}} />
-                <p>No medicines in inventory</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Medicine Edit Modal */}
-      {showMedicineModal && editingMedicine && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: 'var(--radius-lg)',
-            width: '90%',
-            maxWidth: '600px',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <h3 style={{fontSize: '18px', fontWeight: '700'}}>Update Medicine</h3>
-              <button 
-                onClick={() => {
-                  setShowMedicineModal(false);
-                  setEditingMedicine(null);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)'
-                }}
-              >
-                ✕
+        )}
+
+        {/* ══════════════════════ INVENTORY TAB ══════════════════════ */}
+        {activeTab === 'inventory' && (
+          <div className="ph-card">
+            <div className="ph-card-hdr">
+              <span className="ph-card-title">Medicine Inventory</span>
+              <button className="ph-btn ph-btn-primary ph-btn-sm" onClick={() => { setEditingMed({...BLANK_MED}); setIsAddMed(true); setShowMedModal(true); }}>
+                <Plus size={13}/> Add Medicine
               </button>
             </div>
-            <div style={{padding: '24px'}}>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                updateMedicine(editingMedicine.id, editingMedicine);
-              }}>
-                <div className="form-row ph-modal-form-row">
-                  <div className="form-group">
-                    <label>Stock Quantity</label>
-                    <input 
-                      type="number"
-                      className="form-control"
-                      value={editingMedicine.stock_quantity}
-                      onChange={(e) => setEditingMedicine({...editingMedicine, stock_quantity: parseInt(e.target.value)})}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Price Per Unit</label>
-                    <input 
-                      type="number"
-                      step="0.01"
-                      className="form-control"
-                      value={editingMedicine.price_per_unit}
-                      onChange={(e) => setEditingMedicine({...editingMedicine, price_per_unit: parseFloat(e.target.value)})}
-                      required
-                    />
-                  </div>
+            <div className="ph-table-wrap">
+              {loading ? (
+                <div className="ph-spinner"><div className="ph-spinner-ring"></div></div>
+              ) : medicines.length > 0 ? (
+                <table className="ph-table">
+                  <thead>
+                    <tr>
+                      <th>Medicine</th>
+                      <th className="ph-col-hide-md">Category</th>
+                      <th className="ph-col-hide-md">Batch</th>
+                      <th className="ph-col-hide-sm">Expiry</th>
+                      <th>Stock</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {medicines.map(m => {
+                      const sc = stockClass(m.stock_quantity);
+                      const pct = stockPct(m.stock_quantity, m.reorder_level);
+                      return (
+                        <tr key={m.id} className="ph-row-static">
+                          <td>
+                            <div style={{fontWeight:'700',fontSize:'13px'}}>{m.name}</div>
+                            {m.generic_name && <div style={{fontSize:'11px',color:'var(--ph-text-muted)'}}>{m.generic_name}</div>}
+                          </td>
+                          <td className="ph-col-hide-md" style={{fontSize:'12px',color:'var(--ph-text-muted)'}}>{m.category || '—'}</td>
+                          <td className="ph-col-hide-md" style={{fontFamily:'monospace',fontSize:'11px',color:'var(--ph-text-muted)'}}>{m.batch_number || '—'}</td>
+                          <td className="ph-col-hide-sm" style={{fontSize:'12px'}}>{m.expiry_date ? new Date(m.expiry_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}) : '—'}</td>
+                          <td>
+                            <div className="ph-stock-bar-wrap">
+                              <div>
+                                <span className={`ph-stock-num ${sc}`}>{m.stock_quantity}</span>
+                              </div>
+                              <div className="ph-stock-bar">
+                                <div className={`ph-stock-fill ${sc}`} style={{width:`${pct}%`}}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{fontWeight:'600'}}>₹{(m.price_per_unit||0).toFixed(2)}</td>
+                          <td>
+                            {sc === 'critical' && <span className="ph-badge ph-badge-cancelled">Critical</span>}
+                            {sc === 'low' && <span className="ph-badge ph-badge-preparing">Low</span>}
+                            {sc === 'ok' && <span className="ph-badge ph-badge-ready">OK</span>}
+                          </td>
+                          <td>
+                            <button className="ph-btn ph-btn-ghost ph-btn-xs" onClick={() => { setEditingMed({...m}); setIsAddMed(false); setShowMedModal(true); }}>
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="ph-empty">
+                  <div className="ph-empty-icon"><Package size={26}/></div>
+                  <h4>No medicines in inventory</h4>
+                  <p>Click "Add Medicine" to add stock</p>
                 </div>
-                
-                <div className="form-row ph-modal-form-row">
-                  <div className="form-group">
-                    <label>Batch Number</label>
-                    <input 
-                      type="text"
-                      className="form-control"
-                      value={editingMedicine.batch_number || ''}
-                      onChange={(e) => setEditingMedicine({...editingMedicine, batch_number: e.target.value})}
-                    />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ══════════════════════ MEDICINE MODAL ══════════════════════ */}
+      {showMedModal && editingMed && (
+        <div className="ph-modal-backdrop" onClick={e => { if (e.target===e.currentTarget){ setShowMedModal(false); setEditingMed(null); }}}>
+          <div className="ph-modal">
+            <div className="ph-modal-hdr">
+              <h3>{isAddMed ? 'Add New Medicine' : 'Update Medicine'}</h3>
+              <button className="ph-modal-close" onClick={() => { setShowMedModal(false); setEditingMed(null); }}><X size={16}/></button>
+            </div>
+            <div className="ph-modal-body">
+              <form onSubmit={e => { e.preventDefault(); saveMedicine(editingMed); }}>
+                <div className="ph-form-grid">
+                  <div className="ph-form-group ph-form-full">
+                    <label className="ph-form-label">Medicine Name *</label>
+                    <input className="ph-input" required value={editingMed.name} onChange={e => setEditingMed({...editingMed, name: e.target.value})} placeholder="e.g. Paracetamol 500mg"/>
                   </div>
-                  <div className="form-group">
-                    <label>Expiry Date</label>
-                    <input 
-                      type="date"
-                      className="form-control"
-                      value={editingMedicine.expiry_date ? editingMedicine.expiry_date.split('T')[0] : ''}
-                      onChange={(e) => setEditingMedicine({...editingMedicine, expiry_date: e.target.value})}
-                    />
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Generic Name</label>
+                    <input className="ph-input" value={editingMed.generic_name||''} onChange={e => setEditingMed({...editingMed, generic_name: e.target.value})}/>
                   </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Category</label>
+                    <input className="ph-input" value={editingMed.category||''} onChange={e => setEditingMed({...editingMed, category: e.target.value})} placeholder="e.g. Analgesic"/>
+                  </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Stock Quantity *</label>
+                    <input type="number" min="0" className="ph-input" required value={editingMed.stock_quantity} onChange={e => setEditingMed({...editingMed, stock_quantity: parseInt(e.target.value)||0})}/>
+                  </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Reorder Level</label>
+                    <input type="number" min="0" className="ph-input" value={editingMed.reorder_level} onChange={e => setEditingMed({...editingMed, reorder_level: parseInt(e.target.value)||0})}/>
+                  </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Price Per Unit (₹)</label>
+                    <input type="number" step="0.01" min="0" className="ph-input" value={editingMed.price_per_unit} onChange={e => setEditingMed({...editingMed, price_per_unit: parseFloat(e.target.value)||0})}/>
+                  </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Batch Number</label>
+                    <input className="ph-input" value={editingMed.batch_number||''} onChange={e => setEditingMed({...editingMed, batch_number: e.target.value})}/>
+                  </div>
+                  <div className="ph-form-group">
+                    <label className="ph-form-label">Expiry Date</label>
+                    <input type="date" className="ph-input" value={editingMed.expiry_date ? String(editingMed.expiry_date).split('T')[0] : ''} onChange={e => setEditingMed({...editingMed, expiry_date: e.target.value})}/>
+                  </div>
+                  <div className="ph-form-group ph-form-full">
+                    <label className="ph-form-label">Manufacturer</label>
+                    <input className="ph-input" value={editingMed.manufacturer||''} onChange={e => setEditingMed({...editingMed, manufacturer: e.target.value})}/>
+                  </div>
+                  {!isAddMed && (
+                    <div className="ph-form-group ph-form-full" style={{marginTop:'4px'}}>
+                      <label style={{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer'}}>
+                        <input type="checkbox" checked={editingMed.is_available} onChange={e => setEditingMed({...editingMed, is_available: e.target.checked})}/>
+                        <span style={{fontSize:'13px',fontWeight:'600'}}>Medicine is available</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
-                
-                <div className="form-group">
-                  <label style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                    <input 
-                      type="checkbox"
-                      checked={editingMedicine.is_available}
-                      onChange={(e) => setEditingMedicine({...editingMedicine, is_available: e.target.checked})}
-                    />
-                    <span>Medicine is available</span>
-                  </label>
-                </div>
-                
-                <div style={{display:'flex',gap:'12px',marginTop:'24px'}}>
-                  <button type="submit" className="btn btn-primary" style={{flex:1}} disabled={loading}>
-                    {loading ? 'Updating...' : 'Update Medicine'}
+                <div className="ph-modal-footer">
+                  <button type="submit" className="ph-btn ph-btn-primary" style={{flex:1}} disabled={actionLoading}>
+                    {actionLoading ? 'Saving…' : isAddMed ? 'Add Medicine' : 'Update Medicine'}
                   </button>
-                  <button 
-                    type="button"
-                    className="btn btn-outline"
-                    style={{flex:1}}
-                    onClick={() => {
-                      setShowMedicineModal(false);
-                      setEditingMedicine(null);
-                    }}
-                  >
+                  <button type="button" className="ph-btn ph-btn-ghost" style={{flex:1}} onClick={() => { setShowMedModal(false); setEditingMed(null); }}>
                     Cancel
                   </button>
                 </div>

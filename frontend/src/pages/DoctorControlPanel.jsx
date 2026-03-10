@@ -96,7 +96,7 @@ const DoctorControlPanel = () => {
     prescription_data: []
   });
   const [medForm, setMedForm] = useState({ 
-    name: '', dosage: '', frequency: '', duration: '' 
+    name: '', dosage: '', frequency: '', duration: '', quantity: '1' 
   });
   const [showRx, setShowRx] = useState(false);
   const [showMedDropdown, setShowMedDropdown] = useState(false);
@@ -364,7 +364,8 @@ const DoctorControlPanel = () => {
       name: medForm.name.trim(),
       dosage: medForm.dosage.trim() || '1 tablet',
       frequency: medForm.frequency.trim() || 'Once daily',
-      duration: medForm.duration.trim() || '7 days'
+      duration: medForm.duration.trim() || '7 days',
+      quantity: parseInt(medForm.quantity, 10) || 1
     };
     
     setRxForm(prev => ({
@@ -372,7 +373,7 @@ const DoctorControlPanel = () => {
       prescription_data: [...prev.prescription_data, medicine]
     }));
     
-    setMedForm({ name: '', dosage: '', frequency: '', duration: '' });
+    setMedForm({ name: '', dosage: '', frequency: '', duration: '', quantity: '1' });
   };
 
   /* ═══════════════════════════════════════════════════════════════════════════════
@@ -673,7 +674,7 @@ const DoctorControlPanel = () => {
                             onChange={e => {
                               const picked = MEDICINES_DB.find(m => m.name === e.target.value);
                               if (picked) {
-                                setMedForm({ name: picked.name, dosage: picked.dosage, frequency: picked.frequency, duration: picked.duration });
+                                setMedForm({ name: picked.name, dosage: picked.dosage, frequency: picked.frequency, duration: picked.duration, quantity: '1' });
                               } else {
                                 setMedForm(prev => ({ ...prev, name: e.target.value }));
                               }
@@ -756,6 +757,16 @@ const DoctorControlPanel = () => {
                         <option>3 months</option>
                         <option>Ongoing</option>
                       </select>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        className="dcp-med-select"
+                        placeholder="Qty"
+                        value={medForm.quantity}
+                        onChange={e => setMedForm(prev => ({...prev, quantity: e.target.value}))}
+                        style={{width:'70px'}}
+                      />
                       <button type="button" onClick={addMedicine}>
                         Add Medicine
                       </button>
@@ -768,7 +779,7 @@ const DoctorControlPanel = () => {
                           <div key={idx} className="dcp-medicine-item">
                             <div className="dcp-med-info">
                               <strong>{med.name}</strong>
-                              <span>{med.dosage} · {med.frequency} · {med.duration}</span>
+                              <span>{med.dosage} · {med.frequency} · {med.duration}{med.quantity ? ` · Qty: ${med.quantity}` : ''}</span>
                             </div>
                             <button
                               type="button"
